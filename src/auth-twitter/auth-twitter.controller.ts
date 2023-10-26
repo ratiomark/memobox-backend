@@ -11,6 +11,7 @@ import { AuthService } from 'src/auth/auth.service';
 import { AuthTwitterService } from './auth-twitter.service';
 import { AuthTwitterLoginDto } from './dto/auth-twitter-login.dto';
 import { LoginResponseType } from '../auth/types/login-response.type';
+import { AuthProviders } from '@prisma/client';
 
 @ApiTags('Auth')
 @Controller({
@@ -24,7 +25,7 @@ export class AuthTwitterController {
   ) {}
 
   @SerializeOptions({
-    groups: ['me'],
+    groups: ['ME'],
   })
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -34,6 +35,9 @@ export class AuthTwitterController {
     const socialData =
       await this.authTwitterService.getProfileByToken(loginDto);
 
-    return this.authService.validateSocialLogin('twitter', socialData);
+    return this.authService.validateSocialLogin(
+      AuthProviders.TWITTER,
+      socialData,
+    );
   }
 }

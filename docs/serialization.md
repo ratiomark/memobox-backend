@@ -34,7 +34,7 @@ export class User extends EntityHelper {
 
 ## Show private property for admins
 
-1. Create a controller that returns data only for admin and add `@SerializeOptions({ groups: ['admin'] })` to method:
+1. Create a controller that returns data only for admin and add `@SerializeOptions({ groups: ['ADMIN'] })` to method:
 
    ```ts
    // /src/users/users.controller.ts
@@ -42,7 +42,7 @@ export class User extends EntityHelper {
    // Some code here...
 
    @ApiBearerAuth()
-   @Roles(RoleEnum.admin)
+   @Roles(RoleEnum.ADMIN)
    @UseGuards(AuthGuard('jwt'), RolesGuard)
    @Controller({
      path: 'users',
@@ -54,7 +54,7 @@ export class User extends EntityHelper {
      // Some code here...
 
      @SerializeOptions({
-       groups: ['admin'],
+       groups: ['ADMIN'],
      })
      @Get(':id')
      @HttpCode(HttpStatus.OK)
@@ -66,7 +66,7 @@ export class User extends EntityHelper {
    }
    ```
 
-1. In the entity add `@Expose({ groups: ['admin'] })` to the column that should be exposed for admin:
+1. In the entity add `@Expose({ groups: ['ADMIN'] })` to the column that should be exposed for admin:
 
    ```ts
    // /src/users/entities/user.entity.ts
@@ -80,7 +80,7 @@ export class User extends EntityHelper {
      // Some code here...
 
      @Column({ unique: true, nullable: true })
-     @Expose({ groups: ['admin'] })
+     @Expose({ groups: ['ADMIN'] })
      email: string | null;
 
      // Some code here...

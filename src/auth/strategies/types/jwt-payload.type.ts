@@ -1,7 +1,6 @@
-import { Session } from 'src/session/entities/session.entity';
-import { User } from '../../../users/entities/user.entity';
+import { User, Session } from '@prisma/client';
 
-export type JwtPayloadType = Pick<User, 'id' | 'role'> & {
+export type JwtPayloadType = Pick<User, 'id' | 'roleId'> & {
   sessionId: Session['id'];
   iat: number;
   exp: number;

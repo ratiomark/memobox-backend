@@ -1,36 +1,45 @@
 import {
   ValidatorConstraint,
   ValidatorConstraintInterface,
+  ValidationArguments,
 } from 'class-validator';
-import { DataSource } from 'typeorm';
-import { ValidationArguments } from 'class-validator/types/validation/ValidationArguments';
+import { PrismaService } from 'nestjs-prisma';
 import { Injectable } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
 
-type ValidationEntity =
-  | {
-      id?: number | string;
-    }
-  | undefined;
+interface ValidationEntity {
+  id?: number | string;
+}
 
 @Injectable()
 @ValidatorConstraint({ name: 'IsNotExist', async: true })
 export class IsNotExist implements ValidatorConstraintInterface {
-  constructor(
-    @InjectDataSource()
-    private dataSource: DataSource,
-  ) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
-  async validate(value: string, validationArguments: ValidationArguments) {
-    const repository = validationArguments.constraints[0] as string;
+  async validate(value: any, validationArguments: ValidationArguments) {
+    const modelName = validationArguments.constraints[0] as string;
+    const pathToProperty = validationArguments.constraints[1];
     const currentValue = validationArguments.object as ValidationEntity;
-    const entity = (await this.dataSource.getRepository(repository).findOne({
-      where: {
-        [validationArguments.property]: value,
-      },
-    })) as ValidationEntity;
 
-    if (entity?.id === currentValue?.id) {
+    const whereCondition = {
+      [pathToProperty]: value,
+    };
+
+    let entity;
+
+    switch (modelName) {
+      case 'Role':
+        entity = await this.prismaService.role.findFirst({
+          where: whereCondition,
+        });
+        break;
+      case 'Status':
+        entity = await this.prismaService.status.findFirst({
+          where: whereCondition,
+        });
+        break;
+    }
+
+    if ((entity as ValidationEntity)?.id === currentValue?.[pathToProperty]) {
       return true;
     }
 

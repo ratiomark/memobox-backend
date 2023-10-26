@@ -1,28 +1,24 @@
-import {
-  CreateDateColumn,
-  Entity,
-  Index,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  DeleteDateColumn,
-} from 'typeorm';
-import { User } from '../../users/entities/user.entity';
-import { EntityHelper } from 'src/utils/entity-helper';
+import { Session } from '@prisma/client';
+import { ApiProperty } from '@nestjs/swagger';
 
-@Entity()
-export class Session extends EntityHelper {
-  @PrimaryGeneratedColumn()
+export class SessionEntity implements Session {
+  @ApiProperty({ example: 1 })
   id: number;
 
-  @ManyToOne(() => User, {
-    eager: true,
-  })
-  @Index()
-  user: User;
-
-  @CreateDateColumn()
+  @ApiProperty({ example: '2022-10-21T14:28:32.615Z' })
   createdAt: Date;
 
-  @DeleteDateColumn()
-  deletedAt: Date;
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    example: '2022-10-21T14:28:32.615Z',
+  })
+  deletedAt: Date | null;
+
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    example: 1,
+  })
+  userId: number | null;
 }

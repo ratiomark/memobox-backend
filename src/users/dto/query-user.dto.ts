@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Role } from '../../roles/entities/role.entity';
+import { User, Role } from '@prisma/client';
 import {
   IsNumber,
   IsOptional,
@@ -7,13 +7,13 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Transform, Type, plainToInstance } from 'class-transformer';
-import { User } from '../entities/user.entity';
+import { RoleEntity } from '../../roles/entities/role.entity';
 
 export class FilterUserDto {
-  @ApiProperty({ type: Role })
+  @ApiProperty({ type: RoleEntity })
   @IsOptional()
   @ValidateNested({ each: true })
-  @Type(() => Role)
+  @Type(() => RoleEntity)
   roles?: Role[] | null;
 }
 

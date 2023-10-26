@@ -1,34 +1,43 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptions } from 'src/utils/types/find-options.type';
-import { DeepPartial, Repository } from 'typeorm';
-import { Forgot } from './entities/forgot.entity';
-import { NullableType } from '../utils/types/nullable.type';
+import { PrismaService } from 'nestjs-prisma';
+import { Forgot, Prisma, User } from '@prisma/client';
+type ForgotWithUser = Forgot & {
+  user: User | null;
+};
 
 @Injectable()
 export class ForgotService {
-  constructor(
-    @InjectRepository(Forgot)
-    private readonly forgotRepository: Repository<Forgot>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async findOne(options: FindOptions<Forgot>): Promise<NullableType<Forgot>> {
-    return this.forgotRepository.findOne({
-      where: options.where,
+  async findOne(params: Prisma.ForgotFindUniqueArgs): Promise<Forgot | null> {
+    return this.prisma.forgot.findFirst(params);
+  }
+
+  async findOneByHash(hash: string): Promise<ForgotWithUser | null> {
+    return this.prisma.forgot.findFirst({
+      where: {
+        hash,
+      },
+      include: {
+        user: true,
+      },
     });
   }
 
-  async findMany(options: FindOptions<Forgot>): Promise<Forgot[]> {
-    return this.forgotRepository.find({
-      where: options.where,
+  async findMany(where: Prisma.ForgotWhereInput): Promise<Forgot[]> {
+    return this.prisma.forgot.findMany({
+      where,
     });
   }
 
-  async create(data: DeepPartial<Forgot>): Promise<Forgot> {
-    return this.forgotRepository.save(this.forgotRepository.create(data));
+  async create(data: Prisma.ForgotCreateInput): Promise<Forgot> {
+    return this.prisma.forgot.create({ data });
   }
 
   async softDelete(id: Forgot['id']): Promise<void> {
-    await this.forgotRepository.softDelete(id);
+    await this.prisma.forgot.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
   }
 }

@@ -1,99 +1,68 @@
-import {
-  Column,
-  AfterLoad,
-  CreateDateColumn,
-  DeleteDateColumn,
-  Entity,
-  Index,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-  BeforeInsert,
-  BeforeUpdate,
-} from 'typeorm';
-import { Role } from '../../roles/entities/role.entity';
-import { Status } from '../../statuses/entities/status.entity';
-import { FileEntity } from '../../files/entities/file.entity';
-import bcrypt from 'bcryptjs';
-import { EntityHelper } from 'src/utils/entity-helper';
-import { AuthProvidersEnum } from 'src/auth/auth-providers.enum';
+import { ApiProperty } from '@nestjs/swagger';
+import { AuthProviders, User } from '@prisma/client';
 import { Exclude, Expose } from 'class-transformer';
 
-@Entity()
-export class User extends EntityHelper {
-  @PrimaryGeneratedColumn()
+export class UserEntity implements User {
+  constructor(partial: Partial<UserEntity>) {
+    Object.assign(this, partial);
+  }
+
+  @ApiProperty({ example: 1 })
   id: number;
 
-  // For "string | null" we need to use String type.
-  // More info: https://github.com/typeorm/typeorm/issues/2567
-  @Column({ type: String, unique: true, nullable: true })
-  @Expose({ groups: ['me', 'admin'] })
+  @ApiProperty({ example: 'user@example.com', required: false, nullable: true })
+  @Expose({ groups: ['ME', 'ADMIN'] })
   email: string | null;
 
-  @Column({ nullable: true })
   @Exclude({ toPlainOnly: true })
-  password: string;
+  password: string | null;
 
+  // NOTE: do i need this here?
   @Exclude({ toPlainOnly: true })
   public previousPassword: string;
 
-  @AfterLoad()
-  public loadPreviousPassword(): void {
-    this.previousPassword = this.password;
-  }
+  // FIXME: del string from provider types
+  @ApiProperty({ example: AuthProviders.EMAIL, enum: AuthProviders })
+  @Expose({ groups: ['ME', 'ADMIN'] })
+  provider: AuthProviders;
 
-  @BeforeInsert()
-  @BeforeUpdate()
-  async setPassword() {
-    if (this.previousPassword !== this.password && this.password) {
-      const salt = await bcrypt.genSalt();
-      this.password = await bcrypt.hash(this.password, salt);
-    }
-  }
-
-  @Column({ default: AuthProvidersEnum.email })
-  @Expose({ groups: ['me', 'admin'] })
-  provider: string;
-
-  @Index()
-  @Column({ type: String, nullable: true })
-  @Expose({ groups: ['me', 'admin'] })
+  @ApiProperty({ example: '1234567890', required: false, nullable: true })
+  @Expose({ groups: ['ME', 'ADMIN'] })
   socialId: string | null;
 
-  @Index()
-  @Column({ type: String, nullable: true })
+  @ApiProperty({ example: 'John', required: false, nullable: true })
   firstName: string | null;
 
-  @Index()
-  @Column({ type: String, nullable: true })
+  @ApiProperty({ example: 'Doe', required: false, nullable: true })
   lastName: string | null;
 
-  @ManyToOne(() => FileEntity, {
-    eager: true,
-  })
-  photo?: FileEntity | null;
+  @ApiProperty({ example: 1, required: false, nullable: true })
+  photoId: string | null;
 
-  @ManyToOne(() => Role, {
-    eager: true,
-  })
-  role?: Role | null;
+  @ApiProperty({ example: 1, required: false, nullable: true })
+  roleId: number | null;
 
-  @ManyToOne(() => Status, {
-    eager: true,
-  })
-  status?: Status;
+  @ApiProperty({ example: 1, required: false, nullable: true })
+  statusId: number | null;
 
-  @Column({ type: String, nullable: true })
-  @Index()
+  @ApiProperty({
+    example: '$2a$10$iZD60DpMaubTI1EB.p/YruKGxUP4xO.lll7kDBtnDW2QyhM8lsw1q',
+    required: false,
+    nullable: true,
+  })
   @Exclude({ toPlainOnly: true })
   hash: string | null;
 
-  @CreateDateColumn()
+  @ApiProperty({ example: '2022-10-21T14:48:00.000Z' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @ApiProperty({ example: '2022-10-21T14:48:00.000Z' })
   updatedAt: Date;
 
-  @DeleteDateColumn()
-  deletedAt: Date;
+  @ApiProperty({
+    example: '2022-10-21T14:48:00.000Z',
+    required: false,
+    nullable: true,
+  })
+  deletedAt: Date | null;
 }

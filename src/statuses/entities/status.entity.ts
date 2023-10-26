@@ -1,16 +1,10 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Status as PrismaStatus } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
-import { Allow } from 'class-validator';
-import { EntityHelper } from 'src/utils/entity-helper';
 
-@Entity()
-export class Status extends EntityHelper {
+export class StatusEntity implements PrismaStatus {
   @ApiProperty({ example: 1 })
-  @PrimaryColumn()
   id: number;
 
-  @Allow()
   @ApiProperty({ example: 'Active' })
-  @Column()
-  name?: string;
+  name: string;
 }

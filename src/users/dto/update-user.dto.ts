@@ -1,21 +1,28 @@
 import { PartialType } from '@nestjs/swagger';
 import { CreateUserDto } from './create-user.dto';
-
 import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { Role } from '../../roles/entities/role.entity';
-import { IsEmail, IsOptional, MinLength, Validate } from 'class-validator';
-import { Status } from 'src/statuses/entities/status.entity';
+import {
+  IsEmail,
+  IsInt,
+  IsOptional,
+  IsString,
+  MinLength,
+  Validate,
+} from 'class-validator';
 import { IsNotExist } from 'src/utils/validators/is-not-exists.validator';
 import { FileEntity } from 'src/files/entities/file.entity';
 import { IsExist } from 'src/utils/validators/is-exists.validator';
 import { lowerCaseTransformer } from 'src/utils/transformers/lower-case.transformer';
+import { RoleEntity } from '../../roles/entities/role.entity';
+import { StatusEntity } from '../../statuses/entities/status.entity';
+import { AuthProviders } from '@prisma/client';
 
 export class UpdateUserDto extends PartialType(CreateUserDto) {
   @ApiProperty({ example: 'test1@example.com' })
   @Transform(lowerCaseTransformer)
   @IsOptional()
-  @Validate(IsNotExist, ['User'], {
+  @Validate(IsNotExist, ['USER'], {
     message: 'emailAlreadyExists',
   })
   @IsEmail()
@@ -24,9 +31,9 @@ export class UpdateUserDto extends PartialType(CreateUserDto) {
   @ApiProperty()
   @IsOptional()
   @MinLength(6)
-  password?: string;
+  password?: string | null;
 
-  provider?: string;
+  provider?: AuthProviders;
 
   socialId?: string | null;
 
@@ -38,26 +45,29 @@ export class UpdateUserDto extends PartialType(CreateUserDto) {
   @IsOptional()
   lastName?: string | null;
 
-  @ApiProperty({ type: () => FileEntity })
+  @ApiProperty({ type: FileEntity })
   @IsOptional()
+  @IsString()
   @Validate(IsExist, ['FileEntity', 'id'], {
     message: 'imageNotExists',
   })
-  photo?: FileEntity | null;
+  photoId?: string | null;
 
-  @ApiProperty({ type: Role })
+  @ApiProperty({ type: RoleEntity })
   @IsOptional()
+  @IsInt()
   @Validate(IsExist, ['Role', 'id'], {
     message: 'roleNotExists',
   })
-  role?: Role | null;
+  roleId?: number | null;
 
-  @ApiProperty({ type: Status })
+  @ApiProperty({ type: StatusEntity })
   @IsOptional()
+  @IsInt()
   @Validate(IsExist, ['Status', 'id'], {
     message: 'statusNotExists',
   })
-  status?: Status;
+  statusId?: number | null;
 
   hash?: string | null;
 }

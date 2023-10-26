@@ -11,6 +11,7 @@ import { AuthService } from 'src/auth/auth.service';
 import { AuthAppleService } from './auth-apple.service';
 import { AuthAppleLoginDto } from './dto/auth-apple-login.dto';
 import { LoginResponseType } from '../auth/types/login-response.type';
+import { AuthProviders } from '@prisma/client';
 
 @ApiTags('Auth')
 @Controller({
@@ -24,13 +25,16 @@ export class AuthAppleController {
   ) {}
 
   @SerializeOptions({
-    groups: ['me'],
+    groups: ['ME'],
   })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: AuthAppleLoginDto): Promise<LoginResponseType> {
     const socialData = await this.authAppleService.getProfileByToken(loginDto);
 
-    return this.authService.validateSocialLogin('apple', socialData);
+    return this.authService.validateSocialLogin(
+      AuthProviders.APPLE,
+      socialData,
+    );
   }
 }

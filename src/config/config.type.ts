@@ -58,7 +58,7 @@ export type GoogleConfig = {
   clientSecret?: string;
 };
 
-export type MailConfig = {
+export type EmailConfig = {
   port: number;
   host?: string;
   user?: string;
@@ -77,12 +77,12 @@ export type TwitterConfig = {
 
 export type AllConfigType = {
   app: AppConfig;
-  apple: AppleConfig;
   auth: AuthConfig;
   database: DatabaseConfig;
-  facebook: FacebookConfig;
   file: FileConfig;
+  mail: EmailConfig;
+  apple: AppleConfig;
+  facebook: FacebookConfig;
   google: GoogleConfig;
-  mail: MailConfig;
   twitter: TwitterConfig;
 };

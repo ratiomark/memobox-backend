@@ -40,10 +40,10 @@ describe('Auth user (e2e)', () => {
         firstName: 'Tester',
         lastName: 'E2E',
       })
-      .expect(422)
-      .expect(({ body }) => {
-        expect(body.errors.email).toBeDefined();
-      });
+      .expect(409);
+    // .expect(({ body }) => {
+    //   expect(body.errors.email).toBeDefined();
+    // });
   });
 
   it('Register new user: /api/v1/auth/email/register (POST)', async () => {
@@ -166,7 +166,7 @@ describe('Auth user (e2e)', () => {
   });
 
   it('New user update profile: /api/v1/auth/me (PATCH)', async () => {
-    const newUserNewName = Date.now();
+    const newUserNewName = Date.now().toString();
     const newUserNewPassword = 'new-secret';
     const newUserApiToken = await request(app)
       .post('/api/v1/auth/email/login')

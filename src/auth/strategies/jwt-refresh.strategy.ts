@@ -21,10 +21,15 @@ export class JwtRefreshStrategy extends PassportStrategy(
   public validate(
     payload: JwtRefreshPayloadType,
   ): OrNeverType<JwtRefreshPayloadType> {
+    console.log('*** Inside JwtRefreshStrategy validate method ***');
+    console.log('Payload:', payload);
+
     if (!payload.sessionId) {
+      console.log('No sessionId in payload, throwing UnauthorizedException.');
       throw new UnauthorizedException();
     }
 
+    console.log('Validation successful, returning payload.');
     return payload;
   }
 }

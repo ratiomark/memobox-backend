@@ -21,13 +21,13 @@ import { RoleEnum } from 'src/roles/roles.enum';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from 'src/roles/roles.guard';
 import { infinityPagination } from 'src/utils/infinity-pagination';
-import { User } from './entities/user.entity';
+import { User } from '@prisma/client';
 import { InfinityPaginationResultType } from '../utils/types/infinity-pagination-result.type';
 import { NullableType } from '../utils/types/nullable.type';
 import { QueryUserDto } from './dto/query-user.dto';
 
 @ApiBearerAuth()
-@Roles(RoleEnum.admin)
+@Roles(RoleEnum.ADMIN)
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @ApiTags('Users')
 @Controller({
@@ -38,7 +38,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @SerializeOptions({
-    groups: ['admin'],
+    groups: ['ADMIN'],
   })
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -47,7 +47,7 @@ export class UsersController {
   }
 
   @SerializeOptions({
-    groups: ['admin'],
+    groups: ['ADMIN'],
   })
   @Get()
   @HttpCode(HttpStatus.OK)
@@ -74,16 +74,20 @@ export class UsersController {
   }
 
   @SerializeOptions({
-    groups: ['admin'],
+    groups: ['ADMIN'],
   })
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   findOne(@Param('id') id: string): Promise<NullableType<User>> {
-    return this.usersService.findOne({ id: +id });
+    return this.usersService.findOne({
+      where: {
+        id: +id,
+      },
+    });
   }
 
   @SerializeOptions({
-    groups: ['admin'],
+    groups: ['ADMIN'],
   })
   @Patch(':id')
   @HttpCode(HttpStatus.OK)

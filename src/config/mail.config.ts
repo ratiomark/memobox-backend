@@ -1,5 +1,5 @@
 import { registerAs } from '@nestjs/config';
-import { MailConfig } from './config.type';
+import { EmailConfig } from './config.type';
 import {
   IsString,
   IsInt,
@@ -45,7 +45,7 @@ class EnvironmentVariablesValidator {
   MAIL_REQUIRE_TLS: boolean;
 }
 
-export default registerAs<MailConfig>('mail', () => {
+export default registerAs<EmailConfig>('mail', () => {
   validateConfig(process.env, EnvironmentVariablesValidator);
 
   return {

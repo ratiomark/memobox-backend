@@ -14,12 +14,16 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       secretOrKey: configService.get('auth.secret', { infer: true }),
     });
   }
-
   public validate(payload: JwtPayloadType): OrNeverType<JwtPayloadType> {
+    console.log('*** Inside JwtStrategy validate method ***');
+    console.log('Payload:', payload);
+
     if (!payload.id) {
+      console.log('No ID in payload, throwing UnauthorizedException.');
       throw new UnauthorizedException();
     }
 
+    console.log('Validation successful, returning payload.');
     return payload;
   }
 }

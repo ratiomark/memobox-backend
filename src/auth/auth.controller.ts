@@ -21,7 +21,7 @@ import { AuthUpdateDto } from './dto/auth-update.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthRegisterLoginDto } from './dto/auth-register-login.dto';
 import { LoginResponseType } from './types/login-response.type';
-import { User } from '../users/entities/user.entity';
+import { User } from '@prisma/client';
 import { NullableType } from '../utils/types/nullable.type';
 
 @ApiTags('Auth')
@@ -33,7 +33,7 @@ export class AuthController {
   constructor(private readonly service: AuthService) {}
 
   @SerializeOptions({
-    groups: ['me'],
+    groups: ['ME'],
   })
   @Post('email/login')
   @HttpCode(HttpStatus.OK)
@@ -76,7 +76,7 @@ export class AuthController {
 
   @ApiBearerAuth()
   @SerializeOptions({
-    groups: ['me'],
+    groups: ['ME'],
   })
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
@@ -87,7 +87,7 @@ export class AuthController {
 
   @ApiBearerAuth()
   @SerializeOptions({
-    groups: ['me'],
+    groups: ['ME'],
   })
   @Post('refresh')
   @UseGuards(AuthGuard('jwt-refresh'))
@@ -110,7 +110,7 @@ export class AuthController {
 
   @ApiBearerAuth()
   @SerializeOptions({
-    groups: ['me'],
+    groups: ['ME'],
   })
   @Patch('me')
   @UseGuards(AuthGuard('jwt'))
@@ -119,6 +119,9 @@ export class AuthController {
     @Request() request,
     @Body() userDto: AuthUpdateDto,
   ): Promise<NullableType<User>> {
+    console.log('request.user', request.user);
+    console.log('userDto', userDto);
+
     return this.service.update(request.user, userDto);
   }
 

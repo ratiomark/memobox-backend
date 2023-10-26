@@ -1,32 +1,55 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptions } from 'src/utils/types/find-options.type';
-import { DeepPartial, Not, Repository } from 'typeorm';
-import { Session } from './entities/session.entity';
+import { PrismaService } from 'nestjs-prisma';
+import { Prisma, Role, Session, User } from '@prisma/client';
 import { NullableType } from '../utils/types/nullable.type';
-import { User } from 'src/users/entities/user.entity';
 
 @Injectable()
 export class SessionService {
-  constructor(
-    @InjectRepository(Session)
-    private readonly sessionRepository: Repository<Session>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async findOne(options: FindOptions<Session>): Promise<NullableType<Session>> {
-    return this.sessionRepository.findOne({
-      where: options.where,
+  async findOne(
+    where: Prisma.SessionWhereUniqueInput,
+  ): Promise<NullableType<Session>> {
+    return this.prisma.session.findUnique({
+      where,
     });
   }
 
-  async findMany(options: FindOptions<Session>): Promise<Session[]> {
-    return this.sessionRepository.find({
-      where: options.where,
+  async findOneWithUser(
+    where: Prisma.SessionWhereUniqueInput,
+  ): Promise<
+    NullableType<
+      Session & { user: NullableType<User & { role: NullableType<Role> }> }
+    >
+  > {
+    return this.prisma.session.findUnique({
+      where,
+      include: {
+        user: {
+          include: {
+            role: true,
+          },
+        },
+      },
     });
   }
 
-  async create(data: DeepPartial<Session>): Promise<Session> {
-    return this.sessionRepository.save(this.sessionRepository.create(data));
+  async findMany(where: Prisma.SessionWhereInput): Promise<Session[]> {
+    return this.prisma.session.findMany({
+      where,
+    });
+  }
+
+  async create(data: { userId: number }) {
+    return await this.prisma.session.create({
+      data: {
+        user: {
+          connect: {
+            id: data.userId,
+          },
+        },
+      },
+    });
   }
 
   async softDelete({
@@ -37,9 +60,18 @@ export class SessionService {
     user?: Pick<User, 'id'>;
     excludeId?: Session['id'];
   }): Promise<void> {
-    await this.sessionRepository.softDelete({
-      ...criteria,
-      id: criteria.id ? criteria.id : excludeId ? Not(excludeId) : undefined,
+    await this.prisma.session.updateMany({
+      where: {
+        ...criteria,
+        id: criteria.id
+          ? criteria.id
+          : excludeId
+          ? { not: { equals: excludeId } }
+          : undefined,
+      },
+      data: {
+        deletedAt: new Date(),
+      },
     });
   }
 }

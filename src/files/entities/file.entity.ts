@@ -1,31 +1,12 @@
-import {
-  Column,
-  Entity,
-  PrimaryGeneratedColumn,
-  AfterLoad,
-  AfterInsert,
-} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
+import { File } from '@prisma/client';
 import { Allow } from 'class-validator';
-import { EntityHelper } from 'src/utils/entity-helper';
-import appConfig from '../../config/app.config';
-import { AppConfig } from 'src/config/config.type';
 
-@Entity({ name: 'file' })
-export class FileEntity extends EntityHelper {
+export class FileEntity implements File {
   @ApiProperty({ example: 'cbcfa8b8-3a25-4adb-a9c6-e325f0d0f3ae' })
-  @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @ApiProperty({ example: '/path/to/file' })
   @Allow()
-  @Column()
   path: string;
-
-  @AfterLoad()
-  @AfterInsert()
-  updatePath() {
-    if (this.path.indexOf('/') === 0) {
-      this.path = (appConfig() as AppConfig).backendDomain + this.path;
-    }
-  }
 }

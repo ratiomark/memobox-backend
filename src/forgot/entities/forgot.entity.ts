@@ -1,35 +1,20 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  Index,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  DeleteDateColumn,
-} from 'typeorm';
-import { User } from '../../users/entities/user.entity';
-import { Allow } from 'class-validator';
-import { EntityHelper } from 'src/utils/entity-helper';
+import { ApiProperty } from '@nestjs/swagger';
+import { Forgot } from '@prisma/client';
+import { UserEntity } from '../../users/entities/user.entity';
 
-@Entity()
-export class Forgot extends EntityHelper {
-  @PrimaryGeneratedColumn()
+export class ForgotEntity implements Forgot {
+  @ApiProperty({ example: 1 })
   id: number;
 
-  @Allow()
-  @Column()
-  @Index()
+  @ApiProperty({ example: 'somehash123' })
   hash: string;
 
-  @Allow()
-  @ManyToOne(() => User, {
-    eager: true,
-  })
-  user: User;
+  @ApiProperty({ type: UserEntity })
+  userId: number | null;
 
-  @CreateDateColumn()
+  @ApiProperty({ example: '2022-10-21T14:48:00.000Z' })
   createdAt: Date;
 
-  @DeleteDateColumn()
-  deletedAt: Date;
+  @ApiProperty({ example: '2022-10-21T14:48:00.000Z', required: false })
+  deletedAt: Date | null;
 }

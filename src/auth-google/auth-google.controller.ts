@@ -11,6 +11,7 @@ import { AuthService } from 'src/auth/auth.service';
 import { AuthGoogleService } from './auth-google.service';
 import { AuthGoogleLoginDto } from './dto/auth-google-login.dto';
 import { LoginResponseType } from '../auth/types/login-response.type';
+import { AuthProviders } from '@prisma/client';
 
 @ApiTags('Auth')
 @Controller({
@@ -24,7 +25,7 @@ export class AuthGoogleController {
   ) {}
 
   @SerializeOptions({
-    groups: ['me'],
+    groups: ['ME'],
   })
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -33,6 +34,9 @@ export class AuthGoogleController {
   ): Promise<LoginResponseType> {
     const socialData = await this.authGoogleService.getProfileByToken(loginDto);
 
-    return this.authService.validateSocialLogin('google', socialData);
+    return this.authService.validateSocialLogin(
+      AuthProviders.GOOGLE,
+      socialData,
+    );
   }
 }
