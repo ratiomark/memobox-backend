@@ -55,7 +55,7 @@ model Status {
 model User {
   id        Int           @id @default(autoincrement())
   email     String?       @unique
-  password  String?
+  password  String        @default(uuid())
   provider  AuthProviders @default(EMAIL)
   socialId  String?
   firstName String?

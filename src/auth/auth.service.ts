@@ -4,29 +4,30 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import ms from 'ms';
-import crypto from 'crypto';
-import { JwtService } from '@nestjs/jwt';
-import bcrypt from 'bcryptjs';
-import { User, Session, AuthProviders } from '@prisma/client';
-import { AuthEmailLoginDto } from './dto/auth-email-login.dto';
-import { LoginResponseType } from './types/login-response.type';
+import { randomStringGenerator } from '@nestjs/common/utils/random-string-generator.util';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { AuthProviders, Session, User } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import ms from 'ms';
 import { AllConfigType } from 'src/config/config.type';
-import { UsersService } from 'src/users/users.service';
 import { SessionService } from 'src/session/session.service';
-import { RoleEnum } from '../roles/roles.enum';
-import { StatusEnum } from '../statuses/statuses.enum';
-import { SocialInterface } from '../social/interfaces/social.interface';
+import { UsersService } from 'src/users/users.service';
 import { ForgotService } from '../forgot/forgot.service';
 import { MailService } from '../mail/mail.service';
-import { AuthRegisterLoginDto } from './dto/auth-register-login.dto';
-import { randomStringGenerator } from '@nestjs/common/utils/random-string-generator.util';
-import { JwtRefreshPayloadType } from './strategies/types/jwt-refresh-payload.type';
-import { NullableType } from '../utils/types/nullable.type';
-import { JwtPayloadType } from './strategies/types/jwt-payload.type';
-import { AuthUpdateDto } from './dto/auth-update.dto';
+import { RoleEnum } from '../roles/roles.enum';
+import { SocialInterface } from '../social/interfaces/social.interface';
+import { StatusEnum } from '../statuses/statuses.enum';
 import { UserEntity } from '../users/entities/user.entity';
+import { NullableType } from '../utils/types/nullable.type';
+import { AuthEmailLoginDto } from './dto/auth-email-login.dto';
+import { AuthRegisterLoginDto } from './dto/auth-register-login.dto';
+import { AuthUpdateDto } from './dto/auth-update.dto';
+import { JwtPayloadType } from './strategies/types/jwt-payload.type';
+import { JwtRefreshPayloadType } from './strategies/types/jwt-refresh-payload.type';
+import { LoginResponseType } from './types/login-response.type';
+import { DevResponseService } from 'src/dev-response/dev-response.service';
 
 @Injectable()
 export class AuthService {
@@ -36,6 +37,7 @@ export class AuthService {
     private readonly sessionService: SessionService,
     private readonly forgotService: ForgotService,
     private readonly mailService: MailService,
+    private readonly devResponseService: DevResponseService,
     private readonly configService: ConfigService<AllConfigType>,
   ) {}
 
@@ -196,8 +198,8 @@ export class AuthService {
     } else {
       user = await this.usersService.create({
         email: socialEmail ?? null,
-        firstName: socialData.firstName ?? null,
-        lastName: socialData.lastName ?? null,
+        // firstName: socialData.firstName ?? null,
+        // lastName: socialData.lastName ?? null,
         socialId: socialData.id,
         provider: authProvider,
         roleId: RoleEnum.USER,
@@ -231,7 +233,7 @@ export class AuthService {
     };
   }
 
-  async register(dto: AuthRegisterLoginDto): Promise<void> {
+  async register(dto: AuthRegisterLoginDto): Promise<void | { hash: string }> {
     const hash = crypto
       .createHash('sha256')
       .update(randomStringGenerator())
@@ -239,6 +241,7 @@ export class AuthService {
 
     await this.usersService.create({
       ...dto,
+      // ...dto,
       email: dto.email.toLowerCase(),
       roleId: RoleEnum.USER,
       statusId: StatusEnum.INACTIVE,
@@ -251,9 +254,13 @@ export class AuthService {
         hash,
       },
     });
+
+    return this.devResponseService.sendResponseIfDev({ hash });
   }
 
-  async confirmEmail(hash: string): Promise<void> {
+  async confirmEmail(
+    hash: string,
+  ): Promise<void | { email_confirmed: boolean }> {
     const user = await this.usersService.findMany({
       where: { hash },
     });
@@ -274,6 +281,8 @@ export class AuthService {
       hash: null,
       statusId: StatusEnum.ACTIVE,
     });
+
+    return this.devResponseService.sendResponseIfDev({ email_confirmed: true });
   }
 
   async forgotPassword(email: string): Promise<void> {
@@ -460,4 +469,14 @@ export class AuthService {
       id: data.sessionId,
     });
   }
+
+  // sendObjectIfDev(object: any) {
+  //   if (
+  //     this.configService.getOrThrow('app.nodeEnv', {
+  //       infer: true,
+  //     }) === 'development'
+  //   ) {
+  //     return object;
+  //   }
+  // }
 }

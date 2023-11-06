@@ -15,7 +15,8 @@ export class UserEntity implements User {
   email: string | null;
 
   @Exclude({ toPlainOnly: true })
-  password: string | null;
+  password: string;
+  // password: string | null;
 
   // NOTE: do i need this here?
   @Exclude({ toPlainOnly: true })

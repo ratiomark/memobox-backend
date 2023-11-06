@@ -18,6 +18,8 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
+    // console.log('createUserDto', createUserDto);
+    // console.log(typeof createUserDto.password);
     if (typeof createUserDto.password !== 'string') {
       throw new Error('Password must be a string');
     }

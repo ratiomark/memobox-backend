@@ -31,7 +31,7 @@ export class UpdateUserDto extends PartialType(CreateUserDto) {
   @ApiProperty()
   @IsOptional()
   @MinLength(6)
-  password?: string | null;
+  password?: string;
 
   provider?: AuthProviders;
 

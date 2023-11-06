@@ -32,7 +32,7 @@ export class AuthUpdateDto {
   @IsOptional()
   @IsNotEmpty()
   @MinLength(6)
-  password?: string;
+  password: string;
 
   @ApiProperty()
   @IsOptional()

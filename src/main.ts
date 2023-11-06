@@ -12,6 +12,8 @@ import { AppModule } from './app.module';
 import validationOptions from './utils/validation-options';
 import { AllConfigType } from './config/config.type';
 
+const DOCS_ROUTE = 'docs';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: true });
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
@@ -40,8 +42,25 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, options);
-  SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup(DOCS_ROUTE, app, document);
 
-  await app.listen(configService.getOrThrow('app.port', { infer: true }));
+  await app.listen(
+    configService.getOrThrow('app.port', { infer: true }),
+    () => {
+      console.log(
+        `Listening on port http://localhost:${configService.getOrThrow(
+          'app.port',
+          {
+            infer: true,
+          },
+        )}`,
+      );
+      console.log(
+        `Docs on route http://localhost:${configService.getOrThrow('app.port', {
+          infer: true,
+        })}/${DOCS_ROUTE}`,
+      );
+    },
+  );
 }
 void bootstrap();

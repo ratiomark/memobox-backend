@@ -51,7 +51,10 @@ class EnvironmentVariablesValidator {
 
 export default registerAs<AppConfig>('app', () => {
   validateConfig(process.env, EnvironmentVariablesValidator);
-
+  // console.log('process.env.NODE_ENV', process.env.NODE_ENV);
+  // console.log('process.env.NODE_ENV', process.env.TEST_VAR);
+  // console.log('process.env.NODE_ENV', process.env.MAIL_HOST);
+  // console.log('process.env.NODE_ENV_START', process.env.NODE_ENV_START);
   return {
     nodeEnv: process.env.NODE_ENV || 'development',
     name: process.env.APP_NAME || 'app',

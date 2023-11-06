@@ -32,7 +32,7 @@ export class CreateUserDto {
   @IsNotEmpty()
   @IsString()
   @MinLength(6)
-  password?: string | null;
+  password?: string;
 
   @IsOptional()
   @IsString()
@@ -42,15 +42,15 @@ export class CreateUserDto {
   @IsString()
   socialId?: string | null;
 
-  @ApiProperty({ example: 'John' })
-  @IsNotEmpty()
-  @IsString()
-  firstName: string | null;
+  // @ApiProperty({ example: 'John' })
+  // @IsNotEmpty()
+  // @IsString()
+  // firstName: string | null;
 
-  @ApiProperty({ example: 'Doe' })
-  @IsNotEmpty()
-  @IsString()
-  lastName: string | null;
+  // @ApiProperty({ example: 'Doe' })
+  // @IsNotEmpty()
+  // @IsString()
+  // lastName: string | null;
 
   @ApiProperty({ type: () => FileEntity })
   @IsOptional()

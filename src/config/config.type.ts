@@ -78,7 +78,7 @@ export type TwitterConfig = {
 export type AllConfigType = {
   app: AppConfig;
   auth: AuthConfig;
-  database: DatabaseConfig;
+  // database: DatabaseConfig;
   file: FileConfig;
   mail: EmailConfig;
   apple: AppleConfig;

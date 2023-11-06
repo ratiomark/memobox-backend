@@ -1,6 +1,9 @@
 services:
+  # название сервиса
   postgres:
+    # какой image используем
     image: postgres:16.0-alpine
+    container_name: postgresDb
     ports:
       - ${DATABASE_PORT}:5432
     volumes:
@@ -9,14 +12,13 @@ services:
       POSTGRES_USER: ${DATABASE_USERNAME}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
       POSTGRES_DB: ${DATABASE_NAME}
-      POSTGRES_HOST: ${DATABASE_HOST}
-    env_file:
-      - .env
-
+  # название сервиса
   maildev:
+    # описаываем какой Dockerfile используем и путь к нему
     build:
       context: .
       dockerfile: maildev.Dockerfile
+      container_name: mailService
     ports:
       - ${MAIL_CLIENT_PORT}:1080
       - ${MAIL_PORT}:1025
@@ -37,10 +39,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      container_name: backendApi
     ports:
       - ${APP_PORT}:${APP_PORT}
-    env_file:
-      - .env
 
 volumes:
   boilerplate-db:
