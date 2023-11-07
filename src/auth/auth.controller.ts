@@ -46,6 +46,7 @@ export class AuthController {
   @Post('email/register')
   @HttpCode(HttpStatus.OK)
   // @HttpCode(HttpStatus.NO_CONTENT)
+  // just for testing
   async register(
     @Body() createUserDto: AuthRegisterLoginDto,
   ): Promise<void | { hash: string }> {

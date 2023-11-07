@@ -281,13 +281,12 @@ export class AuthService {
       hash: null,
       statusId: StatusEnum.ACTIVE,
     });
-    // test
+
     return this.devResponseService.sendResponseIfDev({ email_confirmed: true });
   }
 
   async forgotPassword(email: string): Promise<void> {
     const user = await this.usersService.findOneByEmail({ where: { email } });
-
     if (!user) {
       throw new HttpException(
         {
