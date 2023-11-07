@@ -281,7 +281,7 @@ export class AuthService {
       hash: null,
       statusId: StatusEnum.ACTIVE,
     });
-
+    // test
     return this.devResponseService.sendResponseIfDev({ email_confirmed: true });
   }
 
