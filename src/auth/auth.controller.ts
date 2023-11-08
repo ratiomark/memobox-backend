@@ -23,12 +23,6 @@ import { AuthRegisterLoginDto } from './dto/auth-register-login.dto';
 import { LoginResponseType } from './types/login-response.type';
 import { User } from '@prisma/client';
 import { NullableType } from '../utils/types/nullable.type';
-// test
-// test
-// test
-// test
-// test
-// test
 
 @ApiTags('Auth')
 @Controller({
@@ -52,7 +46,6 @@ export class AuthController {
   @Post('email/register')
   @HttpCode(HttpStatus.OK)
   // @HttpCode(HttpStatus.NO_CONTENT)
-  // just for testing
   async register(
     @Body() createUserDto: AuthRegisterLoginDto,
   ): Promise<void | { hash: string }> {
