@@ -26,6 +26,7 @@ import { User } from '@prisma/client';
 import { NullableType } from '../utils/types/nullable.type';
 import { GetBatchResult } from '@prisma/client/runtime/library';
 import { JwtGuard, JwtRefreshGuard } from 'src/common/guargs';
+import { GetCurrentUser } from 'src/common/decorators';
 
 @ApiTags('Auth')
 @Controller({
@@ -94,11 +95,12 @@ export class AuthController {
   @UseGuards(JwtGuard)
   @HttpCode(HttpStatus.OK)
   public me(
-    @Request() request,
+    @GetCurrentUser('id') userId: number,
     // @Headers() headers,
   ): Promise<NullableType<User>> {
     // console.log('headers   ', headers);
-    return this.authService.me(request.user);
+    return this.authService.me(userId);
+    // return this.authService.me(request.user);
   }
 
   @ApiBearerAuth()
@@ -125,34 +127,35 @@ export class AuthController {
   @UseGuards(JwtGuard)
   // @HttpCode(HttpStatus.NO_CONTENT)
   @HttpCode(HttpStatus.OK)
-  public async logout(@Request() request): Promise<void | GetBatchResult> {
-    return await this.authService.logout({
-      sessionId: request.user.sessionId,
-    });
+  public async logout(
+    @GetCurrentUser('sessionId') sessionId: number,
+  ): Promise<void | GetBatchResult> {
+    // public async logout(@Request() request): Promise<void | GetBatchResult> {
+    return await this.authService.logout(sessionId);
   }
 
-  @ApiBearerAuth()
-  @SerializeOptions({
-    groups: ['ME'],
-  })
-  @Patch('me')
-  @UseGuards(JwtGuard)
-  @HttpCode(HttpStatus.OK)
-  public update(
-    @Request() request,
-    @Body() userDto: AuthUpdateDto,
-  ): Promise<NullableType<User>> {
-    console.log('request.user', request.user);
-    console.log('userDto', userDto);
+  // @ApiBearerAuth()
+  // @SerializeOptions({
+  //   groups: ['ME'],
+  // })
+  // @Patch('me')
+  // @UseGuards(JwtGuard)
+  // @HttpCode(HttpStatus.OK)
+  // public update(
+  //   @Request() request,
+  //   @Body() userDto: AuthUpdateDto,
+  // ): Promise<NullableType<User>> {
+  //   console.log('request.user', request.user);
+  //   console.log('userDto', userDto);
 
-    return this.authService.update(request.user, userDto);
-  }
+  //   return this.authService.update(request.user, userDto);
+  // }
 
-  @ApiBearerAuth()
-  @Delete('me')
-  @UseGuards(JwtGuard)
-  @HttpCode(HttpStatus.NO_CONTENT)
-  public async delete(@Request() request): Promise<void> {
-    return this.authService.softDelete(request.user);
-  }
+  // @ApiBearerAuth()
+  // @Delete('me')
+  // @UseGuards(JwtGuard)
+  // @HttpCode(HttpStatus.NO_CONTENT)
+  // public async delete(@Request() request): Promise<void> {
+  //   return this.authService.softDelete(request.user);
+  // }
 }

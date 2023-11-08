@@ -28,7 +28,7 @@ import { JwtPayloadType } from './strategies/types/jwt-payload.type';
 import { JwtRefreshPayloadType } from './strategies/types/jwt-refresh-payload.type';
 import { LoginResponseType } from './types/login-response.type';
 import { DevResponseService } from 'src/dev-response/dev-response.service';
-import { TeapotException } from 'src/exceptions/teapot-exception';
+import { TeapotException } from 'src/common/exceptions/teapot-exception';
 
 @Injectable()
 export class AuthService {
@@ -355,10 +355,11 @@ export class AuthService {
     await this.forgotService.softDelete(forgot.id);
   }
 
-  async me(userJwtPayload: JwtPayloadType): Promise<User | null> {
+  async me(userId: number): Promise<User | null> {
+    // async me(userJwtPayload: JwtPayloadType): Promise<User | null> {
     return this.usersService.findOne({
       where: {
-        id: userJwtPayload.id,
+        id: userId,
       },
       include: {
         file: true,
@@ -443,6 +444,8 @@ export class AuthService {
       id: data.sessionId,
     });
 
+    console.log('session', session);
+
     if (!session || !session.user) {
       throw new TeapotException();
       // throw new UnauthorizedException();
@@ -465,9 +468,10 @@ export class AuthService {
     await this.usersService.softDelete(user.id);
   }
 
-  async logout(data: Pick<JwtRefreshPayloadType, 'sessionId'>) {
+  async logout(sessionId: number) {
+    // async logout(data: Pick<JwtRefreshPayloadType, 'sessionId'>) {
     return this.sessionService.softDelete({
-      id: data.sessionId,
+      id: sessionId,
     });
   }
 
