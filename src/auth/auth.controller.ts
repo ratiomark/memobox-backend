@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Headers,
   Get,
   HttpCode,
   HttpStatus,
@@ -12,7 +13,7 @@ import {
   SerializeOptions,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthEmailLoginDto } from './dto/auth-email-login.dto';
 import { AuthForgotPasswordDto } from './dto/auth-forgot-password.dto';
 import { AuthConfirmEmailDto } from './dto/auth-confirm-email.dto';
@@ -79,17 +80,31 @@ export class AuthController {
   }
 
   @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get current user',
+    description:
+      'This endpoint requires a Bearer token to be passed in the header.',
+  })
   @SerializeOptions({
     groups: ['ME'],
   })
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
   @HttpCode(HttpStatus.OK)
-  public me(@Request() request): Promise<NullableType<User>> {
+  public me(
+    @Request() request,
+    // @Headers() headers,
+  ): Promise<NullableType<User>> {
+    // console.log('headers   ', headers);
     return this.authService.me(request.user);
   }
 
   @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get token, refresh token and token expiration date',
+    description:
+      'This endpoint requires a Bearer token(refresh token) to be passed in the header.',
+  })
   @SerializeOptions({
     groups: ['ME'],
   })
@@ -99,6 +114,7 @@ export class AuthController {
   public refresh(@Request() request): Promise<Omit<LoginResponseType, 'user'>> {
     return this.authService.refreshToken({
       sessionId: request.user.sessionId,
+      // sessionId: request.user.sessionId,
     });
   }
 
