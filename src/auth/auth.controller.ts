@@ -1,7 +1,7 @@
 import {
   Body,
   Controller,
-  Headers,
+  // Headers,
   Get,
   HttpCode,
   HttpStatus,
@@ -19,11 +19,13 @@ import { AuthForgotPasswordDto } from './dto/auth-forgot-password.dto';
 import { AuthConfirmEmailDto } from './dto/auth-confirm-email.dto';
 import { AuthResetPasswordDto } from './dto/auth-reset-password.dto';
 import { AuthUpdateDto } from './dto/auth-update.dto';
-import { AuthGuard } from '@nestjs/passport';
+// import { AuthGuard } from '@nestjs/passport';
 import { AuthRegisterLoginDto } from './dto/auth-register-login.dto';
 import { LoginResponseType } from './types/login-response.type';
 import { User } from '@prisma/client';
 import { NullableType } from '../utils/types/nullable.type';
+import { GetBatchResult } from '@prisma/client/runtime/library';
+import { JwtGuard, JwtRefreshGuard } from 'src/common/guargs';
 
 @ApiTags('Auth')
 @Controller({
@@ -45,7 +47,7 @@ export class AuthController {
   }
 
   @Post('email/register')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.CREATED)
   // @HttpCode(HttpStatus.NO_CONTENT)
   async register(
     @Body() createUserDto: AuthRegisterLoginDto,
@@ -89,7 +91,7 @@ export class AuthController {
     groups: ['ME'],
   })
   @Get('me')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtGuard)
   @HttpCode(HttpStatus.OK)
   public me(
     @Request() request,
@@ -109,7 +111,7 @@ export class AuthController {
     groups: ['ME'],
   })
   @Post('refresh')
-  @UseGuards(AuthGuard('jwt-refresh'))
+  @UseGuards(JwtRefreshGuard)
   @HttpCode(HttpStatus.OK)
   public refresh(@Request() request): Promise<Omit<LoginResponseType, 'user'>> {
     return this.authService.refreshToken({
@@ -120,10 +122,11 @@ export class AuthController {
 
   @ApiBearerAuth()
   @Post('logout')
-  @UseGuards(AuthGuard('jwt'))
-  @HttpCode(HttpStatus.NO_CONTENT)
-  public async logout(@Request() request): Promise<void> {
-    await this.authService.logout({
+  @UseGuards(JwtGuard)
+  // @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
+  public async logout(@Request() request): Promise<void | GetBatchResult> {
+    return await this.authService.logout({
       sessionId: request.user.sessionId,
     });
   }
@@ -133,7 +136,7 @@ export class AuthController {
     groups: ['ME'],
   })
   @Patch('me')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtGuard)
   @HttpCode(HttpStatus.OK)
   public update(
     @Request() request,
@@ -147,7 +150,7 @@ export class AuthController {
 
   @ApiBearerAuth()
   @Delete('me')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   public async delete(@Request() request): Promise<void> {
     return this.authService.softDelete(request.user);

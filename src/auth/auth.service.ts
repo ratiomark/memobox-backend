@@ -2,7 +2,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
-  UnauthorizedException,
+  // UnauthorizedException,х
 } from '@nestjs/common';
 import { randomStringGenerator } from '@nestjs/common/utils/random-string-generator.util';
 import { ConfigService } from '@nestjs/config';
@@ -28,6 +28,7 @@ import { JwtPayloadType } from './strategies/types/jwt-payload.type';
 import { JwtRefreshPayloadType } from './strategies/types/jwt-refresh-payload.type';
 import { LoginResponseType } from './types/login-response.type';
 import { DevResponseService } from 'src/dev-response/dev-response.service';
+import { TeapotException } from 'src/exceptions/teapot-exception';
 
 @Injectable()
 export class AuthService {
@@ -443,7 +444,8 @@ export class AuthService {
     });
 
     if (!session || !session.user) {
-      throw new UnauthorizedException();
+      throw new TeapotException();
+      // throw new UnauthorizedException();
     }
 
     const { token, refreshToken, tokenExpires } = await this.getTokensData({
