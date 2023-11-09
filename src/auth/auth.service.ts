@@ -459,14 +459,4 @@ export class AuthService {
       id: sessionId,
     });
   }
-
-  // sendObjectIfDev(object: any) {
-  //   if (
-  //     this.configService.getOrThrow('app.nodeEnv', {
-  //       infer: true,
-  //     }) === 'development'
-  //   ) {
-  //     return object;
-  //   }
-  // }
 }
