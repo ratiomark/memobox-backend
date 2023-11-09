@@ -135,7 +135,6 @@ export class AuthController {
   @SerializeOptions({
     groups: ['ME'],
   })
-  @UseGuards(JwtGuard)
   public update(
     @Request() request,
     @Body() userDto: AuthUpdateDto,
@@ -149,7 +148,6 @@ export class AuthController {
   @Delete('me')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
-  @UseGuards(JwtGuard)
   public async delete(@Request() request): Promise<void> {
     return this.authService.softDelete(request.user);
   }

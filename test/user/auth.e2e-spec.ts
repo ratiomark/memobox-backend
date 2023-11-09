@@ -112,7 +112,13 @@ describe('Auth user (e2e)', () => {
       .send({
         hash,
       })
-      .expect(404);
+      .expect(404)
+      .expect(({ body }) => {
+        expect(body.message).toBeDefined();
+        expect(body.message).toBe(
+          '[P2025]: An operation failed because it depends on one or more records that were required but not found. Record to update not found.',
+        );
+      });
   });
 
   it('Login confirmed user: /api/v1/auth/email/login (POST)', () => {
@@ -183,7 +189,7 @@ describe('Auth user (e2e)', () => {
         firstName: newUserNewName,
         password: newUserNewPassword,
       })
-      .expect(200);
+      .expect(422);
 
     await request(app)
       .patch('/api/v1/auth/me')
