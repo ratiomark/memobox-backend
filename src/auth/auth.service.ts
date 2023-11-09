@@ -258,7 +258,6 @@ export class AuthService {
 
     return this.devResponseService.sendResponseIfDev({ hash });
   }
-  // Есть какой-то особый смысл в том, чтобы использовать HttpStatus.NO_CONTENT? Я все меняю на HttpStatus.OK и мне кажется, что так понятнее, но я не особо уверен в этом моменте
 
   async confirmEmail(
     hash: string,
