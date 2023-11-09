@@ -262,9 +262,12 @@ export class AuthService {
   async confirmEmail(
     hash: string,
   ): Promise<void | { email_confirmed: boolean }> {
-    const user = await this.usersService.findMany({
-      where: { hash },
+    const user = await this.usersService.findOne({
+      where: { email: hash },
     });
+    // const user = await this.usersService.findMany({
+    //   where: { hash },
+    // });
 
     const foundUser = user[0];
 
@@ -438,13 +441,11 @@ export class AuthService {
   }
 
   async refreshToken(
-    data: Pick<JwtRefreshPayloadType, 'sessionId'>,
+    sessionId: number,
   ): Promise<Omit<LoginResponseType, 'user'>> {
     const session = await this.sessionService.findOneWithUser({
-      id: data.sessionId,
+      id: sessionId,
     });
-
-    console.log('session', session);
 
     if (!session || !session.user) {
       throw new TeapotException();

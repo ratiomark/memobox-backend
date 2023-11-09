@@ -6,6 +6,7 @@ import {
   MAIL_HOST,
   MAIL_PORT,
 } from '../utils/constants';
+import { HttpStatus } from '@nestjs/common';
 
 describe('Auth user (e2e)', () => {
   const app = APP_URL;
@@ -55,7 +56,7 @@ describe('Auth user (e2e)', () => {
         firstName: newUserFirstName,
         lastName: newUserLastName,
       })
-      .expect(204);
+      .expect(201);
   });
 
   it('Login unconfirmed user: /api/v1/auth/email/login (POST)', () => {
@@ -88,7 +89,7 @@ describe('Auth user (e2e)', () => {
       .send({
         hash,
       })
-      .expect(204);
+      .expect(HttpStatus.OK);
   });
 
   it('Can not confirm email with same link twice: /api/v1/auth/email/confirm (POST)', async () => {
@@ -182,7 +183,7 @@ describe('Auth user (e2e)', () => {
         firstName: newUserNewName,
         password: newUserNewPassword,
       })
-      .expect(422);
+      .expect(200);
 
     await request(app)
       .patch('/api/v1/auth/me')

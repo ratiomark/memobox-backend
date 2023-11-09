@@ -31,6 +31,8 @@ import { AllConfigType } from './config/config.type';
 import { SessionModule } from './session/session.module';
 import { MailerModule } from './mailer/mailer.module';
 import { DevResponseModule } from './dev-response/dev-response.module';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtGuard } from './common/guargs';
 
 @Module({
   imports: [
@@ -104,6 +106,10 @@ import { DevResponseModule } from './dev-response/dev-response.module';
     DevResponseModule,
   ],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtGuard,
+    },
     /**
      * PrismaClientExceptionFilter for handling Prisma DB exceptions.
      * @see {@link https://nestjs-prisma.dev/docs/exception-filter}

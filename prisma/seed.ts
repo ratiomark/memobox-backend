@@ -1,5 +1,6 @@
 import { PrismaClient, Role, Status } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { ADMIN_EMAIL, ADMIN_PASSWORD } from '../test/utils/constants';
 
 const prisma = new PrismaClient();
 
@@ -37,12 +38,12 @@ async function seedStatuses() {
 
 async function seedUsers() {
   const salt = await bcrypt.genSalt();
-  const hashedPassword = await bcrypt.hash('secret', salt);
+  const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, salt);
   const users = [
     {
       firstName: 'Super',
       lastName: 'Admin',
-      email: 'admin@example.com',
+      email: ADMIN_EMAIL,
       password: hashedPassword,
       roleId: 1,
       statusId: 1,

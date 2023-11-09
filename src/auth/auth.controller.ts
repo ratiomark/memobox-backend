@@ -26,7 +26,7 @@ import { User } from '@prisma/client';
 import { NullableType } from '../utils/types/nullable.type';
 import { GetBatchResult } from '@prisma/client/runtime/library';
 import { JwtGuard, JwtRefreshGuard } from 'src/common/guargs';
-import { GetCurrentUser } from 'src/common/decorators';
+import { GetCurrentUser, IsPublic } from 'src/common/decorators';
 
 @ApiTags('Auth')
 @Controller({
@@ -36,11 +36,12 @@ import { GetCurrentUser } from 'src/common/decorators';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Post('email/login')
+  @HttpCode(HttpStatus.OK)
   @SerializeOptions({
     groups: ['ME'],
   })
-  @Post('email/login')
-  @HttpCode(HttpStatus.OK)
+  @IsPublic()
   public login(
     @Body() loginDto: AuthEmailLoginDto,
   ): Promise<LoginResponseType> {
@@ -49,7 +50,7 @@ export class AuthController {
 
   @Post('email/register')
   @HttpCode(HttpStatus.CREATED)
-  // @HttpCode(HttpStatus.NO_CONTENT)
+  @IsPublic()
   async register(
     @Body() createUserDto: AuthRegisterLoginDto,
   ): Promise<void | { hash: string }> {
@@ -58,7 +59,7 @@ export class AuthController {
 
   @Post('email/confirm')
   @HttpCode(HttpStatus.OK)
-  // @HttpCode(HttpStatus.NO_CONTENT)
+  @IsPublic()
   async confirmEmail(
     @Body() confirmEmailDto: AuthConfirmEmailDto,
   ): Promise<void | { email_confirmed: boolean }> {
@@ -66,7 +67,8 @@ export class AuthController {
   }
 
   @Post('forgot/password')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
+  @IsPublic()
   async forgotPassword(
     @Body() forgotPasswordDto: AuthForgotPasswordDto,
   ): Promise<void> {
@@ -74,7 +76,8 @@ export class AuthController {
   }
 
   @Post('reset/password')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
+  @IsPublic()
   resetPassword(@Body() resetPasswordDto: AuthResetPasswordDto): Promise<void> {
     return this.authService.resetPassword(
       resetPasswordDto.hash,
@@ -82,80 +85,72 @@ export class AuthController {
     );
   }
 
+  @Get('me')
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get current user',
     description:
       'This endpoint requires a Bearer token to be passed in the header.',
   })
+  @HttpCode(HttpStatus.OK)
   @SerializeOptions({
     groups: ['ME'],
   })
-  @Get('me')
-  @UseGuards(JwtGuard)
-  @HttpCode(HttpStatus.OK)
-  public me(
-    @GetCurrentUser('id') userId: number,
-    // @Headers() headers,
-  ): Promise<NullableType<User>> {
-    // console.log('headers   ', headers);
+  public me(@GetCurrentUser('id') userId: number): Promise<NullableType<User>> {
     return this.authService.me(userId);
-    // return this.authService.me(request.user);
   }
 
+  @Post('refresh')
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Get token, refresh token and token expiration date',
+    summary: 'Get access token, refresh token and token expiration date',
     description:
       'This endpoint requires a Bearer token(refresh token) to be passed in the header.',
   })
+  @HttpCode(HttpStatus.OK)
   @SerializeOptions({
     groups: ['ME'],
   })
-  @Post('refresh')
+  @IsPublic()
   @UseGuards(JwtRefreshGuard)
-  @HttpCode(HttpStatus.OK)
-  public refresh(@Request() request): Promise<Omit<LoginResponseType, 'user'>> {
-    return this.authService.refreshToken({
-      sessionId: request.user.sessionId,
-      // sessionId: request.user.sessionId,
-    });
+  public refresh(
+    @GetCurrentUser('sessionId') sessionId: number,
+  ): Promise<Omit<LoginResponseType, 'user'>> {
+    return this.authService.refreshToken(sessionId);
   }
 
-  @ApiBearerAuth()
   @Post('logout')
-  @UseGuards(JwtGuard)
-  // @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  // @UseGuards(JwtGuard)
   @HttpCode(HttpStatus.OK)
   public async logout(
     @GetCurrentUser('sessionId') sessionId: number,
   ): Promise<void | GetBatchResult> {
-    // public async logout(@Request() request): Promise<void | GetBatchResult> {
     return await this.authService.logout(sessionId);
   }
 
-  // @ApiBearerAuth()
-  // @SerializeOptions({
-  //   groups: ['ME'],
-  // })
-  // @Patch('me')
-  // @UseGuards(JwtGuard)
-  // @HttpCode(HttpStatus.OK)
-  // public update(
-  //   @Request() request,
-  //   @Body() userDto: AuthUpdateDto,
-  // ): Promise<NullableType<User>> {
-  //   console.log('request.user', request.user);
-  //   console.log('userDto', userDto);
+  @Patch('me')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @SerializeOptions({
+    groups: ['ME'],
+  })
+  @UseGuards(JwtGuard)
+  public update(
+    @Request() request,
+    @Body() userDto: AuthUpdateDto,
+  ): Promise<NullableType<User>> {
+    console.log('request.user', request.user);
+    console.log('userDto', userDto);
 
-  //   return this.authService.update(request.user, userDto);
-  // }
+    return this.authService.update(request.user, userDto);
+  }
 
-  // @ApiBearerAuth()
-  // @Delete('me')
-  // @UseGuards(JwtGuard)
-  // @HttpCode(HttpStatus.NO_CONTENT)
-  // public async delete(@Request() request): Promise<void> {
-  //   return this.authService.softDelete(request.user);
-  // }
+  @Delete('me')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard)
+  public async delete(@Request() request): Promise<void> {
+    return this.authService.softDelete(request.user);
+  }
 }

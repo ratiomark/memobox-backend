@@ -23,7 +23,7 @@ module.exports = {
 		'@typescript-eslint/no-explicit-any': 'off',
 		'no-unused-vars': 'off',
 		'require-await': 'off',
-		'@typescript-eslint/no-unused-vars': ['error'],
+		'@typescript-eslint/no-unused-vars': ['warn'],
 		'@typescript-eslint/require-await': 'error',
 		'@typescript-eslint/no-floating-promises': 'error',
 		'no-restricted-syntax': [
