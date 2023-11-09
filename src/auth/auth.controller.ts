@@ -121,7 +121,6 @@ export class AuthController {
 
   @Post('logout')
   @ApiBearerAuth()
-  // @UseGuards(JwtGuard)
   @HttpCode(HttpStatus.OK)
   public async logout(
     @GetCurrentUser('sessionId') sessionId: number,
