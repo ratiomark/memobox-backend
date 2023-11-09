@@ -263,25 +263,25 @@ export class AuthService {
     hash: string,
   ): Promise<void | { email_confirmed: boolean }> {
     const user = await this.usersService.findOne({
-      where: { email: hash },
+      where: { hash },
     });
     // const user = await this.usersService.findMany({
     //   where: { hash },
     // });
 
-    const foundUser = user[0];
+    // const foundUser = user[0];
 
-    if (!foundUser) {
-      throw new HttpException(
-        {
-          status: HttpStatus.NOT_FOUND,
-          error: 'notFound',
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
+    // if (!foundUser) {
+    //   throw new HttpException(
+    //     {
+    //       status: HttpStatus.NOT_FOUND,
+    //       error: 'notFound',
+    //     },
+    //     HttpStatus.NOT_FOUND,
+    //   );
+    // }
 
-    await this.usersService.update(foundUser.id, {
+    await this.usersService.update(user.id, {
       hash: null,
       statusId: StatusEnum.ACTIVE,
     });
