@@ -95,7 +95,7 @@ export class UsersController {
     @Param('id') id: number,
     @Body() updateProfileDto: UpdateUserDto,
   ): Promise<User> {
-    return this.usersService.update(id, updateProfileDto);
+    return this.usersService.updateByUserId(id, updateProfileDto);
   }
 
   @Delete(':id')

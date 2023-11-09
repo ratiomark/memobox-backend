@@ -195,7 +195,7 @@ export class AuthService {
       if (socialEmail && !user.email) {
         user.email = socialEmail;
       }
-      await this.usersService.update(user.id, user);
+      await this.usersService.updateByUserId(user.id, user);
     } else {
       user = await this.usersService.create({
         email: socialEmail ?? null,
@@ -258,33 +258,18 @@ export class AuthService {
 
     return this.devResponseService.sendResponseIfDev({ hash });
   }
+  // Есть какой-то особый смысл в том, чтобы использовать HttpStatus.NO_CONTENT? Я все меняю на HttpStatus.OK и мне кажется, что так понятнее, но я не особо уверен в этом моменте
 
   async confirmEmail(
     hash: string,
   ): Promise<void | { email_confirmed: boolean }> {
-    const user = await this.usersService.findOne({
-      where: { hash },
-    });
-    // const user = await this.usersService.findMany({
-    //   where: { hash },
-    // });
-
-    // const foundUser = user[0];
-
-    // if (!foundUser) {
-    //   throw new HttpException(
-    //     {
-    //       status: HttpStatus.NOT_FOUND,
-    //       error: 'notFound',
-    //     },
-    //     HttpStatus.NOT_FOUND,
-    //   );
-    // }
-
-    await this.usersService.update(user.id, {
-      hash: null,
-      statusId: StatusEnum.ACTIVE,
-    });
+    await this.usersService.updateByWhere(
+      { hash },
+      {
+        hash: null,
+        statusId: StatusEnum.ACTIVE,
+      },
+    );
 
     return this.devResponseService.sendResponseIfDev({ email_confirmed: true });
   }
@@ -353,7 +338,7 @@ export class AuthService {
       },
     });
 
-    await this.usersService.update(user.id, { password: newPassword });
+    await this.usersService.updateByUserId(user.id, { password: newPassword });
 
     await this.forgotService.softDelete(forgot.id);
   }
@@ -425,7 +410,7 @@ export class AuthService {
       const { oldPassword, ...updateData } = userDto;
       console.log(
         new UserEntity(
-          await this.usersService.update(userJwtPayload.id, updateData),
+          await this.usersService.updateByUserId(userJwtPayload.id, updateData),
         ),
       );
     } catch (error) {
@@ -436,7 +421,7 @@ export class AuthService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { oldPassword, ...updateData } = userDto;
     return new UserEntity(
-      await this.usersService.update(userJwtPayload.id, updateData),
+      await this.usersService.updateByUserId(userJwtPayload.id, updateData),
     );
   }
 

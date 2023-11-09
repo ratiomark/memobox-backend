@@ -113,13 +113,30 @@ export class UsersService {
     });
   }
 
-  async update(id: User['id'], payload: UpdateUserDto): Promise<User> {
+  async updateByUserId(id: User['id'], payload: UpdateUserDto): Promise<User> {
     if (payload.password) {
       payload.password = await this.hashPassword(payload.password);
     }
 
     return this.prisma.user.update({
       where: { id },
+      data: payload,
+      include: {
+        file: true,
+      },
+    });
+  }
+
+  async updateByWhere(
+    where: Prisma.UserWhereUniqueInput,
+    payload: UpdateUserDto,
+  ): Promise<User> {
+    if (payload.password) {
+      payload.password = await this.hashPassword(payload.password);
+    }
+
+    return this.prisma.user.update({
+      where,
       data: payload,
       include: {
         file: true,
