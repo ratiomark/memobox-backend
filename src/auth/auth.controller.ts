@@ -138,9 +138,6 @@ export class AuthController {
     @Request() request,
     @Body() userDto: AuthUpdateDto,
   ): Promise<NullableType<User>> {
-    console.log('request.user', request.user);
-    console.log('userDto', userDto);
-
     return this.authService.update(request.user, userDto);
   }
 
