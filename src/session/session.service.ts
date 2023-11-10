@@ -41,7 +41,7 @@ export class SessionService {
     });
   }
 
-  async create(data: { userId: number }) {
+  async create(data: { userId: User['id'] }) {
     return await this.prisma.session.create({
       data: {
         user: {

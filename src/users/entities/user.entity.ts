@@ -8,7 +8,7 @@ export class UserEntity implements User {
   }
 
   @ApiProperty({ example: 1 })
-  id: number;
+  id: User['id'];
 
   @ApiProperty({ example: 'user@example.com', required: false, nullable: true })
   @Expose({ groups: ['ME', 'ADMIN'] })

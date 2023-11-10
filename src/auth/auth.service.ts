@@ -342,7 +342,7 @@ export class AuthService {
     await this.forgotService.softDelete(forgot.id);
   }
 
-  async me(userId: number): Promise<User | null> {
+  async me(userId: User['id']): Promise<User | null> {
     // async me(userJwtPayload: JwtPayloadType): Promise<User | null> {
     return this.usersService.findOne({
       where: {

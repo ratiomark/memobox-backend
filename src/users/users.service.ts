@@ -144,7 +144,7 @@ export class UsersService {
     });
   }
 
-  async softDelete(id: number): Promise<void> {
+  async softDelete(id: User['id']): Promise<void> {
     await this.prisma.user.update({
       where: { id },
       data: {

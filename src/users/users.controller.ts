@@ -78,10 +78,10 @@ export class UsersController {
   })
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  findOne(@Param('id') id: string): Promise<NullableType<User>> {
+  findOne(@Param('id') id: User['id']): Promise<NullableType<User>> {
     return this.usersService.findOne({
       where: {
-        id: +id,
+        id,
       },
     });
   }
@@ -92,7 +92,7 @@ export class UsersController {
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
   update(
-    @Param('id') id: number,
+    @Param('id') id: User['id'],
     @Body() updateProfileDto: UpdateUserDto,
   ): Promise<User> {
     return this.usersService.updateByUserId(id, updateProfileDto);
@@ -100,7 +100,7 @@ export class UsersController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: number): Promise<void> {
+  remove(@Param('id') id: User['id']): Promise<void> {
     return this.usersService.softDelete(id);
   }
 }

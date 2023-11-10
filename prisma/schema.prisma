@@ -18,7 +18,7 @@ model Forgot {
   hash      String
   createdAt DateTime  @default(now())
   deletedAt DateTime?
-  userId    Int?
+  userId    String?
   user      User?     @relation(fields: [userId], references: [id])
 
   @@index([hash])
@@ -40,7 +40,7 @@ model Session {
   id        Int       @id @default(autoincrement())
   createdAt DateTime  @default(now())
   deletedAt DateTime?
-  userId    Int?
+  userId    String?
   user      User?     @relation(fields: [userId], references: [id])
 
   @@index([userId])
@@ -53,7 +53,7 @@ model Status {
 }
 
 model User {
-  id        Int           @id @default(autoincrement())
+  id        String        @id @default(uuid())
   email     String?       @unique
   password  String        @default(uuid())
   provider  AuthProviders @default(EMAIL)
@@ -66,17 +66,77 @@ model User {
   deletedAt DateTime?
   forgot    Forgot[]
   session   Session[]
-  
-  photoId   String?
-  file      File?         @relation(fields: [photoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  
-  roleId    Int?
-  role      Role?         @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  
-  statusId  Int?
-  status    Status?       @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@index([firstName, socialId, hash, lastName])
+  photoId  String?
+  file     File?   @relation(fields: [photoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  // 
+  roleId   Int?
+  role     Role?   @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  // 
+  statusId Int?
+  status   Status? @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  // 
+  shelf    Shelf[]
+  box      Box[]
+  Card     Card[]
+  // @@index([firstName, socialId, hash, lastName])
+
+  @@index([id])
+  @@index([email])
+}
+
+model Shelf {
+  id          String   @id @default(uuid())
+  title       String
+  index       Int
+  isCollapsed Boolean  @default(false)
+  // 
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  // 
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  boxId       Box[]
+
+  // @@unique([id, index])
+  Card Card[]
+}
+
+model Box {
+  id      String  @id @default(uuid())
+  index   Int
+  timing  String  @default("{'minutes': 0,'hours': 0,'days': 0,'weeks': 0,'months': 0}")
+  // 
+  userId  String?
+  user    User?   @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  // 
+  shelfId String?
+  shelf   Shelf?  @relation(fields: [shelfId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Card    Card[]
+}
+
+model Card {
+  id           String    @id @default(uuid())
+  question     String
+  answer       String
+  lastTraining DateTime?
+  nextTraining DateTime?
+  // 
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  //
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  // 
+  shelfId      String
+  shelf        Shelf     @relation(fields: [shelfId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  // 
+  boxId        String
+  box          Box       @relation(fields: [boxId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([userId])
+  @@index([shelfId])
+  @@index([boxId])
 }
 
 enum AuthProviders {

@@ -116,6 +116,9 @@ dependencies:
   typeorm:
     specifier: 0.3.17
     version: 0.3.17(pg@8.11.3)(ts-node@10.9.1)
+  uuid:
+    specifier: ^9.0.1
+    version: 9.0.1
 
 devDependencies:
   '@nestjs/cli':

@@ -1,4 +1,4 @@
-import { Session } from '@prisma/client';
+import { Session, User } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class SessionEntity implements Session {
@@ -20,5 +20,5 @@ export class SessionEntity implements Session {
     nullable: true,
     example: 1,
   })
-  userId: number | null;
+  userId: User['id'] | null;
 }

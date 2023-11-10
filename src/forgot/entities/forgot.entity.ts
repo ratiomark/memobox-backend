@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Forgot } from '@prisma/client';
+import { Forgot, User } from '@prisma/client';
 import { UserEntity } from '../../users/entities/user.entity';
 
 export class ForgotEntity implements Forgot {
@@ -10,7 +10,7 @@ export class ForgotEntity implements Forgot {
   hash: string;
 
   @ApiProperty({ type: UserEntity })
-  userId: number | null;
+  userId: User['id'] | null;
 
   @ApiProperty({ example: '2022-10-21T14:48:00.000Z' })
   createdAt: Date;

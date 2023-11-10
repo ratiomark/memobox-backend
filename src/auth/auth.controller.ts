@@ -96,7 +96,9 @@ export class AuthController {
   @SerializeOptions({
     groups: ['ME'],
   })
-  public me(@GetCurrentUser('id') userId: number): Promise<NullableType<User>> {
+  public me(
+    @GetCurrentUser('id') userId: User['id'],
+  ): Promise<NullableType<User>> {
     return this.authService.me(userId);
   }
 
