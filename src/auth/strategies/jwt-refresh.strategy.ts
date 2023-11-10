@@ -27,7 +27,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
 
     if (!payload.sessionId) {
       console.log('No sessionId in payload, throwing UnauthorizedException.');
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('No sessionId in payload.');
     }
 
     console.log('Validation successful, returning payload.');
