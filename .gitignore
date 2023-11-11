@@ -19,6 +19,7 @@ lerna-debug.log*
 /.nyc_output
 test/reports/
 seed.log.ts
+*.log.ts
 
 # IDEs and editors
 /.idea

@@ -103,15 +103,15 @@ model Shelf {
 }
 
 model Box {
-  id      String  @id @default(uuid())
+  id      String @id @default(uuid())
   index   Int
-  timing  String  @default("{'minutes': 0,'hours': 0,'days': 0,'weeks': 0,'months': 0}")
+  timing  String @default("{'minutes': 0,'hours': 0,'days': 0,'weeks': 0,'months': 0}")
   // 
-  userId  String?
-  user    User?   @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   // 
-  shelfId String?
-  shelf   Shelf?  @relation(fields: [shelfId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  shelfId String
+  shelf   Shelf  @relation(fields: [shelfId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   Card    Card[]
 }
 

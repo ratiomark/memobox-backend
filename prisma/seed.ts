@@ -1,7 +1,10 @@
-import { Box, Prisma, PrismaClient, Role, Shelf, Status } from '@prisma/client';
+import { Prisma, PrismaClient, Role, Status } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { ADMIN_EMAIL, ADMIN_PASSWORD } from '../test/utils/constants';
 import { v4 as v4uuid } from 'uuid';
+import { getRandomBetween } from '../src/utils/common/getRandomBetween';
+import { PartialShelf, PartialBox, CardBase } from './types/entities';
+import { newCards, defaultCard } from './mock-data/cards';
 
 const snakeCase = (str) =>
   str &&
@@ -9,8 +12,7 @@ const snakeCase = (str) =>
     .match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)
     .map((x) => x.toLowerCase())
     .join('_');
-type PartialShelf = Omit<Shelf, 'createdAt' | 'updatedAt'>;
-type PartialBox = Omit<Box, 'createdAt' | 'updatedAt'>;
+
 const prisma = new PrismaClient();
 const uuid = v4uuid as () => string;
 interface DataBlock {
@@ -112,26 +114,6 @@ async function createSeedsInDB() {
     return createdStatuses['newRecords'];
   }
 
-  // async function seedStatuses() {
-  //   const statuses: Status[] = [
-  //     { id: 1, name: 'ACTIVE' },
-  //     { id: 2, name: 'INACTIVE' },
-  //   ];
-
-  //   // for (const status of statuses) {
-  //   //   await prisma.status.upsert({
-  //   //     where: { id: status.id },
-  //   //     update: {},
-  //   //     create: status,
-  //   //   });
-  //   // }
-  //   const createdStatuses = await prisma.status.createMany({ data: statuses });
-  //   console.log('✔️ statuses');
-  //   return createdStatuses;
-  //   // return await prisma.status.findMany();
-  //   // console.log({ statuses });
-  // }
-
   async function seedUsers() {
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, salt);
@@ -205,7 +187,7 @@ async function createSeedsInDB() {
     const boxCounts = {}; // Для хранения количества коробок на каждой полке
     // const allBoxes: PartialBox[] = []; // Для хранения всех созданных коробок
     for (const shelfId of shelfIds) {
-      const boxCount = Math.floor(Math.random() * 4) + 5; // Случайное число от 5 до 8
+      const boxCount = getRandomBetween(4, 8);
       boxCounts[shelfId] = boxCount;
       for (let i = 0; i < boxCount; i++) {
         const box: PartialBox = {
@@ -217,68 +199,115 @@ async function createSeedsInDB() {
         };
 
         userBoxes.push(box);
-
-        // Здесь добавьте код для сохранения коробки в базу данных, если это необходимо
-        // Например: await prisma.box.create({ data: box });
       }
     }
 
-    // Вывод информации о количестве коробок на каждой полке
-    // console.log(JSON.stringify(boxCounts)); // Пример: {"shelfA": 5, "shelfB": 6, "shelfC": 7}
-    // const boxes = await prisma.box.findMany();
-    // Возвращаем созданные коробки и информацию о количестве коробок на полках
-    // return { userBoxes: boxes, boxCounts };
     const createdBoxes = await prismaExtended.box.createManyAndReturn({
       data: userBoxes,
     });
     console.log('✔️ boxes');
-    return createdBoxes['newRecords'];
+    return { createBoxes: createdBoxes['newRecords'], boxCounts };
   }
-  // const seedData = {
-  //   seedRoles: await seedRoles(),
-  //   seedStatuses: await seedStatuses(),
-  //   seedUsers: await seedUsers(),
-  //   seedShelves: await seedShelves(),
-  // };
-  // // const seed = await Promise.all([
-  // //   seedRoles,
-  // //   seedStatuses,
-  // //   seedUsers,
-  // //   seedShelves,
-  // // seedBoxes,
-  // // ]);
-  // return seedData;
+
+  function createCardsForBoxes(
+    boxData: PartialBox[],
+    newCards: CardBase[],
+    defaultCard: CardBase,
+  ) {
+    // Функция для создания копии defaultCard с добавлением нужных полей
+    const createDefaultCards = (box: PartialBox, count: number) => {
+      return Array.from({ length: count }, () => ({
+        ...defaultCard,
+        shelfId: box.shelfId,
+        userId: box.userId,
+        boxId: box.id,
+      }));
+    };
+
+    // Итерация по каждой коробке и создание карточек
+    const allCards = boxData.flatMap((box) => {
+      if (box.index === 0) {
+        // Для коробок с индексом 0 используем newCards
+        return newCards.map((card) => ({
+          ...card,
+          shelfId: box.shelfId,
+          userId: box.userId,
+          boxId: box.id,
+        }));
+      } else {
+        const randomCount = getRandomBetween(4, 8);
+        return createDefaultCards(box, randomCount);
+      }
+    });
+    // console.log(allCards);
+    return allCards;
+  }
+
+  async function seedCards(boxData: PartialBox[]) {
+    const box = boxData[0];
+    const card = {
+      answer: 'answer',
+      question: 'question',
+      boxId: box.id,
+      userId: box.userId,
+      shelfId: box.shelfId,
+    };
+    const cards = createCardsForBoxes(boxData, newCards, defaultCard);
+    console.log('-----------------------------------------------------');
+    console.log('-----------------------------------------------------');
+    console.log('-----------------------------------------------------');
+    console.log(cards);
+    // const createdCards = await prismaExtended.card.create({ data: card });
+    const createdCards = await prismaExtended.card.createManyAndReturn({
+      data: cards,
+    });
+    console.log('✔️ cards');
+    console.log(createdCards);
+    // return createdCards;
+    return createdCards['newRecords'];
+  }
+  // const cards = createCardsForBoxes(boxData, newCards, defaultCard);
+  // async function seedCards() {
+  //   const shelfIds = [shelfA, shelfB, shelfC];
+  //   const userBoxes: PartialBox[] = [];
+  //   const boxCounts = {}; // Для хранения количества коробок на каждой полке
+  //   // const allBoxes: PartialBox[] = []; // Для хранения всех созданных коробок
+  //   for (const shelfId of shelfIds) {
+  //     const boxCount = getRandomBetween(4, 8);
+  //     boxCounts[shelfId] = boxCount;
+  //     for (let i = 0; i < boxCount; i++) {
+  //       const box: PartialBox = {
+  //         id: uuid(),
+  //         shelfId: shelfId,
+  //         userId: userId,
+  //         index: i,
+  //         timing: "{'minutes': 0,'hours': 0,'days': 0,'weeks': 0,'months': 0}",
+  //       };
+
+  //       userBoxes.push(box);
+  //     }
+  //   }
+
+  //   const createdBoxes = await prismaExtended.box.createManyAndReturn({
+  //     data: userBoxes,
+  //   });
+  //   console.log('✔️ cards');
+  //   return { createBoxes: createdBoxes['newRecords'], boxCounts };
+  // }
+
   const seedData = {
     seedRoles: await seedRoles(),
     seedStatuses: await seedStatuses(),
     seedUsers: await seedUsers(),
     seedShelves: await seedShelves(),
-    seedBoxes: await seedBoxes(),
   };
-  // const [shelvesRes, boxesRes] = await Promise.all([
-  //   // seedRoles(),
-  //   // seedStatuses(),
-  //   seedShelves(),
-  //   seedBoxes(),
-  // ]);
-  // // const [usersRes, shelvesRes, boxesRes] = await Promise.all([
-  // //   // seedRoles(),
-  // //   // seedStatuses(),
-  // //   seedUsers(),
-  // //   seedShelves(),
-  // //   seedBoxes(),
-  // // ]);
-
-  // seedData = {
-  //   ...seedData,
-  //   // seedRoles: rolesRes,
-  //   // seedStatuses: statusesRes,
-  //   // seedUsers: usersRes,
-  //   seedShelves: shelvesRes,
-  //   seedBoxes: boxesRes,
-  // };
-  // console.log(seedData);
-
+  const seedBoxesResult = await seedBoxes();
+  const boxesFromDb = seedBoxesResult.createBoxes;
+  const boxCounts = seedBoxesResult.boxCounts;
+  seedData['seedBoxes'] = boxesFromDb;
+  seedData['boxCounts'] = boxCounts;
+  console.log(boxesFromDb);
+  const cardsFromDb = await seedCards(boxesFromDb);
   console.log('Seeding completed.');
   return seedData;
 }
@@ -286,108 +315,16 @@ async function createSeedsInDB() {
 async function main() {
   try {
     const createdDB = await createSeedsInDB();
-
+    await prisma.$disconnect();
     return createdDB;
-    // await seedRoles();
-    // await seedStatuses();
-    // await seedUsers();
-    // await seedShelf();
   } catch (e) {
     console.error(e);
     console.log('Seeding failed.');
+    await prisma.$disconnect();
   }
 }
+main().catch((e) => {
+  console.error(e);
+});
+
 export default main;
-// main()
-//   .catch((e) => {
-//     console.error(e);
-//   })
-//   .finally(async () => {
-//     await prisma.$disconnect();
-//   });
-// import { PrismaClient, Role, Status } from '@prisma/client';
-// import bcrypt from 'bcryptjs';
-// import { ADMIN_EMAIL, ADMIN_PASSWORD } from '../test/utils/constants';
-// import { v4 as uuid } from 'uuid';
-
-// const prisma = new PrismaClient();
-
-// async function seedRoles() {
-//   const roles: Role[] = [
-//     { id: 1, name: 'ADMIN' },
-//     { id: 2, name: 'USER' },
-//   ];
-
-//   for (const role of roles) {
-//     await prisma.role.upsert({
-//       where: { id: role.id },
-//       update: {},
-//       create: role,
-//     });
-//   }
-//   console.log({ roles });
-// }
-
-// async function seedStatuses() {
-//   const statuses: Status[] = [
-//     { id: 1, name: 'ACTIVE' },
-//     { id: 2, name: 'INACTIVE' },
-//   ];
-
-//   for (const status of statuses) {
-//     await prisma.status.upsert({
-//       where: { id: status.id },
-//       update: {},
-//       create: status,
-//     });
-//   }
-//   console.log({ statuses });
-// }
-
-// async function seedUsers() {
-//   const salt = await bcrypt.genSalt();
-//   const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, salt);
-//   const users = [
-//     {
-//       firstName: 'Super',
-//       lastName: 'Admin',
-//       email: ADMIN_EMAIL,
-//       password: hashedPassword,
-//       roleId: 1,
-//       statusId: 1,
-//     },
-//     {
-//       firstName: 'John',
-//       lastName: 'Doe',
-//       email: 'john.doe@example.com',
-//       password: hashedPassword,
-//       roleId: 2,
-//       statusId: 1,
-//     },
-//   ];
-
-//   for (const user of users) {
-//     await prisma.user.upsert({
-//       where: { email: user.email },
-//       update: {},
-//       create: user,
-//     });
-//   }
-//   console.log({ users });
-// }
-
-// async function main() {
-//   console.log('Seeding...');
-//   await seedRoles();
-//   await seedStatuses();
-//   await seedUsers();
-//   console.log('Seeding completed.');
-// }
-
-// main()
-//   .catch((e) => {
-//     console.error(e);
-//   })
-//   .finally(async () => {
-//     await prisma.$disconnect();
-//   });
