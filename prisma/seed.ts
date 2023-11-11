@@ -248,12 +248,12 @@ async function createSeedsInDB() {
   // // seedBoxes,
   // // ]);
   // return seedData;
-  let seedData = {
+  const seedData = {
     seedRoles: await seedRoles(),
     seedStatuses: await seedStatuses(),
     seedUsers: await seedUsers(),
-  seedShelves:await seedShelves(),
-  seedBoxes:await seedBoxes(),
+    seedShelves: await seedShelves(),
+    seedBoxes: await seedBoxes(),
   };
   // const [shelvesRes, boxesRes] = await Promise.all([
   //   // seedRoles(),
@@ -276,7 +276,7 @@ async function createSeedsInDB() {
   //   // seedUsers: usersRes,
   //   seedShelves: shelvesRes,
   //   seedBoxes: boxesRes,
-  };
+  // };
   // console.log(seedData);
 
   console.log('Seeding completed.');
@@ -297,13 +297,6 @@ async function main() {
     console.log('Seeding failed.');
   }
 }
-main()
-  .catch((e) => {
-    console.error(e);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
 export default main;
 // main()
 //   .catch((e) => {
