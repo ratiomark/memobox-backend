@@ -42,3 +42,7 @@ seed.log.ts
 .env
 .env.production
 /ormconfig.json
+
+# 
+GPT.*
+gpt.*

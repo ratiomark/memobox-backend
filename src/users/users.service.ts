@@ -7,7 +7,6 @@ import { AuthProviders, Prisma, User } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { UserEntity } from './entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { async } from 'rxjs';
 
 @Injectable()
 export class UsersService {
@@ -28,13 +27,10 @@ export class UsersService {
 
     const createdUser = await this.prisma.user.create({
       data: {
-        ...createUserDto,
-        // ...restUserData,
+        ...restUserData,
         password: hashedPassword,
-        // role: roleId ? { connect: { id: roleId } }
-        // status: statusId ? { connect: { id: statusId } } : undefined,
-        // role: { connect: { id: roleId ? roleId : undefined } },
-        // status: { connect: { id: statusId ? statusId : undefined } },
+        role: { connect: { id: roleId } },
+        status: { connect: { id: statusId } },
       },
     });
 
