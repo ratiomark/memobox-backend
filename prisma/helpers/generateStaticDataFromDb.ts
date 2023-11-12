@@ -63,11 +63,9 @@ async function getSeedDataFromDb() {
 
 async function main() {
   try {
-    // const createdDB = await createSeedsInDB();
     const data = await getSeedDataFromDb();
     await createFileWithData(data, defaultFileName, 'prisma/mock-data');
     await prisma.$disconnect();
-    // return createdDB;
   } catch (e) {
     await prisma.$disconnect();
     return e;
