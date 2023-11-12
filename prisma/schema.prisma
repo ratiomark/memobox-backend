@@ -97,16 +97,17 @@ model Shelf {
   // 
   userId      String?
   user        User?    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  boxId       Box[]
-
   // @@unique([id, index])
-  card Card[]
+  box         Box[]
+  card        Card[]
 }
 
 model Box {
   id      String @id @default(uuid())
   index   Int
-  timing  String @default("{'minutes': 0,'hours': 0,'days': 0,'weeks': 0,'months': 0}")
+  // timing  JSON @default("{'minutes': 0,'hours': 0,'days': 0,'weeks': 0,'months': 0}")
+  // timing  String @default("{'minutes': 0,'hours': 0,'days': 0,'weeks': 0,'months': 0}")
+  timing  Json @default("{\"minutes\": 0, \"hours\": 0,\"days\": 0,\"weeks\": 0,\"months\": 0}")
   // 
   userId  String
   user    User   @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
