@@ -78,7 +78,7 @@ model User {
   // 
   shelf    Shelf[]
   box      Box[]
-  Card     Card[]
+  card     Card[]
   // @@index([firstName, socialId, hash, lastName])
 
   @@index([id])
@@ -99,7 +99,7 @@ model Shelf {
   boxId       Box[]
 
   // @@unique([id, index])
-  Card Card[]
+  card Card[]
 }
 
 model Box {
@@ -112,7 +112,7 @@ model Box {
   // 
   shelfId String
   shelf   Shelf  @relation(fields: [shelfId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  Card    Card[]
+  card    Card[]
 }
 
 model Card {

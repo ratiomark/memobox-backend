@@ -235,7 +235,7 @@ async function createSeedsInDB() {
           boxId: box.id,
         }));
       } else {
-        const randomCount = getRandomBetween(4, 8);
+        const randomCount = getRandomBetween(2, 4);
         return createDefaultCards(box, randomCount);
       }
     });
@@ -245,55 +245,20 @@ async function createSeedsInDB() {
 
   async function seedCards(boxData: PartialBox[]) {
     const box = boxData[0];
-    const card = {
-      answer: 'answer',
-      question: 'question',
-      boxId: box.id,
-      userId: box.userId,
-      shelfId: box.shelfId,
-    };
     const cards = createCardsForBoxes(boxData, newCards, defaultCard);
-    console.log('-----------------------------------------------------');
-    console.log('-----------------------------------------------------');
-    console.log('-----------------------------------------------------');
-    console.log(cards);
-    // const createdCards = await prismaExtended.card.create({ data: card });
-    const createdCards = await prismaExtended.card.createManyAndReturn({
+
+    const createdCards = await prismaExtended.card.createMany({
       data: cards,
     });
-    console.log('✔️ cards');
-    console.log(createdCards);
+    // console.log(createdCards.count);
+    // const createdCards = await prismaExtended.card.createManyAndReturn({
+    //   data: cards,
+    // });
+    console.log('✔️ cards' + ' | created ', createdCards.count);
+    return await prisma.card.findMany();
     // return createdCards;
-    return createdCards['newRecords'];
+    // return createdCards['newRecords'];
   }
-  // const cards = createCardsForBoxes(boxData, newCards, defaultCard);
-  // async function seedCards() {
-  //   const shelfIds = [shelfA, shelfB, shelfC];
-  //   const userBoxes: PartialBox[] = [];
-  //   const boxCounts = {}; // Для хранения количества коробок на каждой полке
-  //   // const allBoxes: PartialBox[] = []; // Для хранения всех созданных коробок
-  //   for (const shelfId of shelfIds) {
-  //     const boxCount = getRandomBetween(4, 8);
-  //     boxCounts[shelfId] = boxCount;
-  //     for (let i = 0; i < boxCount; i++) {
-  //       const box: PartialBox = {
-  //         id: uuid(),
-  //         shelfId: shelfId,
-  //         userId: userId,
-  //         index: i,
-  //         timing: "{'minutes': 0,'hours': 0,'days': 0,'weeks': 0,'months': 0}",
-  //       };
-
-  //       userBoxes.push(box);
-  //     }
-  //   }
-
-  //   const createdBoxes = await prismaExtended.box.createManyAndReturn({
-  //     data: userBoxes,
-  //   });
-  //   console.log('✔️ cards');
-  //   return { createBoxes: createdBoxes['newRecords'], boxCounts };
-  // }
 
   const seedData = {
     seedRoles: await seedRoles(),
@@ -306,8 +271,9 @@ async function createSeedsInDB() {
   const boxCounts = seedBoxesResult.boxCounts;
   seedData['seedBoxes'] = boxesFromDb;
   seedData['boxCounts'] = boxCounts;
-  console.log(boxesFromDb);
+  // console.log(boxesFromDb);
   const cardsFromDb = await seedCards(boxesFromDb);
+  seedData['seedCards'] = cardsFromDb;
   console.log('Seeding completed.');
   return seedData;
 }

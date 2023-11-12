@@ -18,7 +18,7 @@
     "db:push": "npx prisma db push",
     "db:seed:create": "hygen seeds create",
     "db:reset:force": "prisma migrate reset --skip-seed --force",
-    "db:create": "npm run db:reset:force && npm run -T db:seed",
+    "db:create": "npm run db:reset:force && npm run db:seed",
     "db:migrate:dev": "prisma migrate dev --preview-feature",
     "db:migrate:dev:create": "prisma migrate dev --create-only --preview-feature",
     "db:migrate:deploy": "npx prisma migrate deploy --preview-feature",
