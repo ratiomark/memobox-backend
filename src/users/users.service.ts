@@ -23,14 +23,14 @@ export class UsersService {
       hashedPassword = await this.hashPassword(hashedPassword);
     }
 
-    const { roleId, statusId, ...restUserData } = createUserDto;
-
+    const { roleId, statusId, photoId, ...restUserData } = createUserDto;
     const createdUser = await this.prisma.user.create({
       data: {
         ...restUserData,
         password: hashedPassword,
-        role: { connect: { id: roleId } },
-        status: { connect: { id: statusId } },
+        file: { connect: { id: photoId ?? undefined } },
+        role: { connect: { id: roleId ?? undefined } },
+        status: { connect: { id: statusId ?? undefined } },
       },
     });
 
