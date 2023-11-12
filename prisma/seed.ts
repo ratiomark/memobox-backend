@@ -15,12 +15,6 @@ const snakeCase = (str) =>
 
 const prisma = new PrismaClient();
 const uuid = v4uuid as () => string;
-interface DataBlock {
-  wait: number;
-  all: number;
-  train: number;
-}
-// const basePrismaClient = new PrismaClient();
 
 export const prismaExtended = prisma.$extends({
   name: 'createManyAndReturn',
