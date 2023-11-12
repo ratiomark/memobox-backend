@@ -62,23 +62,24 @@ model User {
   lastName  String?
   hash      String?       @unique
   createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  updatedAt DateTime      @default(now())
+  // updatedAt будет отвечать за изменение карточки юзером   @updatedAt
   deletedAt DateTime?
   forgot    Forgot[]
   session   Session[]
-
-  photoId  String?
-  file     File?   @relation(fields: [photoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   // 
-  roleId   Int?
-  role     Role?   @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  photoId   String?
+  file      File?         @relation(fields: [photoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   // 
-  statusId Int?
-  status   Status? @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  roleId    Int?
+  role      Role?         @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   // 
-  shelf    Shelf[]
-  box      Box[]
-  card     Card[]
+  statusId  Int?
+  status    Status?       @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  // 
+  shelf     Shelf[]
+  box       Box[]
+  card      Card[]
   // @@index([firstName, socialId, hash, lastName])
 
   @@index([id])

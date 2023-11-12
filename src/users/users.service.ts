@@ -7,6 +7,7 @@ import { AuthProviders, Prisma, User } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { UserEntity } from './entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { async } from 'rxjs';
 
 @Injectable()
 export class UsersService {
@@ -18,17 +19,22 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    // console.log('createUserDto', createUserDto);
-    // console.log(typeof createUserDto.password);
-    if (typeof createUserDto.password !== 'string') {
-      throw new Error('Password must be a string');
+    let hashedPassword = createUserDto.password;
+    if (hashedPassword) {
+      hashedPassword = await this.hashPassword(hashedPassword);
     }
 
-    const hashedPassword = await this.hashPassword(createUserDto.password);
+    const { roleId, statusId, ...restUserData } = createUserDto;
+
     const createdUser = await this.prisma.user.create({
       data: {
         ...createUserDto,
+        // ...restUserData,
         password: hashedPassword,
+        // role: roleId ? { connect: { id: roleId } }
+        // status: statusId ? { connect: { id: statusId } } : undefined,
+        // role: { connect: { id: roleId ? roleId : undefined } },
+        // status: { connect: { id: statusId ? statusId : undefined } },
       },
     });
 
@@ -93,12 +99,15 @@ export class UsersService {
   async findOneByEmail(params: {
     where: Prisma.UserWhereUniqueInput;
     include?: Prisma.UserInclude;
-  }): Promise<User> {
+  }): Promise<User | null> {
     const user = await this.prisma.user.findUnique(params);
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    return new UserEntity(user);
+    return user;
+    // if (!user) return null;
+    // return new UserEntity(user);
+    // if (!user) {
+    //   throw new NotFoundException('User not found');
+    // }
+    // return new UserEntity(user);
   }
 
   async findOneBySocialIdAndProvider(

@@ -168,37 +168,23 @@ export class AuthService {
     authProvider: AuthProviders,
     socialData: SocialInterface,
   ): Promise<LoginResponseType> {
-    const socialEmail = socialData.email?.toLowerCase();
-
     let user = await this.usersService.findOneBySocialIdAndProvider(
       socialData.id,
       authProvider,
     );
 
+    const socialEmail = socialData.email?.toLowerCase() ?? null;
     if (!user && socialEmail) {
       user = await this.usersService.findOneByEmail({
         where: { email: socialEmail },
       });
-
-      if (!user) {
-        throw new HttpException(
-          {
-            status: HttpStatus.UNPROCESSABLE_ENTITY,
-            errors: { email: 'emailNotFound' },
-          },
-          HttpStatus.UNPROCESSABLE_ENTITY,
-        );
-      }
     }
 
-    if (user) {
-      if (socialEmail && !user.email) {
-        user.email = socialEmail;
-      }
-      await this.usersService.updateByUserId(user.id, user);
-    } else {
+    if (!user) {
       user = await this.usersService.create({
-        email: socialEmail ?? null,
+        email: socialEmail,
+        // username: toKebabCase(socialData.name),
+        // fullname: socialData.name ?? null,
         // firstName: socialData.firstName ?? null,
         // lastName: socialData.lastName ?? null,
         socialId: socialData.id,
@@ -206,16 +192,10 @@ export class AuthService {
         roleId: RoleEnum.USER,
         statusId: StatusEnum.ACTIVE,
       });
-    }
-
-    if (!user) {
-      throw new HttpException(
-        {
-          status: HttpStatus.UNPROCESSABLE_ENTITY,
-          errors: { user: 'userNotFound' },
-        },
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
+    } else {
+      await this.usersService.updateByUserId(user.id, {
+        email: user.email ?? socialEmail,
+      });
     }
 
     const session = await this.sessionService.create({ userId: user.id });
