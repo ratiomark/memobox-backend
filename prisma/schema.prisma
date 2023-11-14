@@ -1,10 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgcrypto]
 }
 
 model File {
@@ -18,7 +20,7 @@ model Forgot {
   hash      String
   createdAt DateTime  @default(now())
   deletedAt DateTime?
-  userId    String?
+  userId    String?   @db.Uuid
   user      User?     @relation(fields: [userId], references: [id])
 
   @@index([hash])
@@ -40,7 +42,7 @@ model Session {
   id        Int       @id @default(autoincrement())
   createdAt DateTime  @default(now())
   deletedAt DateTime?
-  userId    String?
+  userId    String?   @db.Uuid
   user      User?     @relation(fields: [userId], references: [id])
 
   @@index([userId])
@@ -53,7 +55,8 @@ model Status {
 }
 
 model User {
-  id        String        @id @default(uuid())
+  id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // id        String        @id @default(uuid()) @db.Uuid
   email     String?       @unique
   password  String        @default(uuid())
   provider  AuthProviders @default(EMAIL)
@@ -69,13 +72,13 @@ model User {
   session   Session[]
   // 
   photoId   String?
-  file      File?         @relation(fields: [photoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  file      File?         @relation(fields: [photoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   // 
   roleId    Int?
-  role      Role?         @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  role      Role?         @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   // 
   statusId  Int?
-  status    Status?       @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  status    Status?       @relation(fields: [statusId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   // 
   shelf     Shelf[]
   box       Box[]
@@ -87,7 +90,8 @@ model User {
 }
 
 model Shelf {
-  id          String   @id @default(uuid())
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // id          String   @id @default(uuid()) @db.Uuid
   title       String
   index       Int
   isCollapsed Boolean  @default(false)
@@ -95,30 +99,33 @@ model Shelf {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
   // 
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  // @@unique([id, index])
+  userId      String?  @db.Uuid
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   box         Box[]
   card        Card[]
+
+  @@unique([userId, title])
 }
 
 model Box {
-  id      String @id @default(uuid())
+  id      String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // id      String @id @default(uuid()) @db.Uuid
   index   Int
   // timing  JSON @default("{'minutes': 0,'hours': 0,'days': 0,'weeks': 0,'months': 0}")
   // timing  String @default("{'minutes': 0,'hours': 0,'days': 0,'weeks': 0,'months': 0}")
   timing  Json   @default("{\"minutes\": 5, \"hours\": 0,\"days\": 0,\"weeks\": 0,\"months\": 0}")
   // 
-  userId  String
-  user    User   @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId  String @db.Uuid
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   // 
-  shelfId String
-  shelf   Shelf  @relation(fields: [shelfId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  shelfId String @db.Uuid
+  shelf   Shelf  @relation(fields: [shelfId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   card    Card[]
 }
 
 model Card {
-  id           String    @id @default(uuid())
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // id           String    @id @default(uuid()) @db.Uuid
   question     String
   answer       String
   lastTraining DateTime?
@@ -127,14 +134,14 @@ model Card {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   //
-  userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId       String    @db.Uuid
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   // 
-  shelfId      String
-  shelf        Shelf     @relation(fields: [shelfId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  shelfId      String    @db.Uuid
+  shelf        Shelf     @relation(fields: [shelfId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   // 
-  boxId        String
-  box          Box       @relation(fields: [boxId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  boxId        String    @db.Uuid
+  box          Box       @relation(fields: [boxId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([userId])
   @@index([shelfId])
