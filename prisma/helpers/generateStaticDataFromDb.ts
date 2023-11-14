@@ -6,7 +6,9 @@ interface DataEntry {
   constName: string;
   data: any[];
 }
+
 const defaultFileName = 'staticDataFromDb.ts';
+const saveFilePath = 'prisma/mock-data';
 
 async function createFileWithData(
   dataEntries: DataEntry[],
@@ -64,7 +66,7 @@ async function getSeedDataFromDb() {
 async function main() {
   try {
     const data = await getSeedDataFromDb();
-    await createFileWithData(data, defaultFileName, 'prisma/mock-data');
+    await createFileWithData(data, defaultFileName, saveFilePath);
     await prisma.$disconnect();
   } catch (e) {
     await prisma.$disconnect();
