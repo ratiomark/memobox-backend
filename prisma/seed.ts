@@ -149,6 +149,7 @@ async function createSeedsInDB() {
         title: 'Shelf A',
         userId: userId,
         isCollapsed: true,
+        missedTrainingValue: 'none',
         index: 0,
       },
       {
@@ -156,6 +157,7 @@ async function createSeedsInDB() {
         title: 'Shelf B',
         userId: userId,
         isCollapsed: true,
+        missedTrainingValue: 'none',
         index: 1,
       },
       {
@@ -163,6 +165,7 @@ async function createSeedsInDB() {
         title: 'Shelf C',
         userId: userId,
         isCollapsed: true,
+        missedTrainingValue: 'none',
         index: 2,
       },
     ];

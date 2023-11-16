@@ -4,6 +4,9 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- CreateEnum
 CREATE TYPE "AuthProviders" AS ENUM ('EMAIL', 'FACEBOOK', 'GOOGLE', 'TWITTER', 'APPLE');
 
+-- CreateEnum
+CREATE TYPE "MissedTrainingValue" AS ENUM ('none', 'backwards', 'additional');
+
 -- CreateTable
 CREATE TABLE "File" (
     "id" TEXT NOT NULL,
@@ -62,7 +65,7 @@ CREATE TABLE "Status" (
 CREATE TABLE "User" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "email" TEXT,
-    "password" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "password" TEXT NOT NULL,
     "provider" "AuthProviders" NOT NULL DEFAULT 'EMAIL',
     "socialId" TEXT,
     "firstName" TEXT,
@@ -79,16 +82,17 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
-CREATE TABLE "Shelf" (
+CREATE TABLE "shelf" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "title" TEXT NOT NULL,
     "index" INTEGER NOT NULL,
     "isCollapsed" BOOLEAN NOT NULL DEFAULT false,
+    "missedTrainingValue" "MissedTrainingValue" DEFAULT 'none',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "userId" UUID,
 
-    CONSTRAINT "Shelf_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "shelf_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -137,6 +141,9 @@ CREATE INDEX "User_id_idx" ON "User"("id");
 CREATE INDEX "User_email_idx" ON "User"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "shelf_userId_title_key" ON "shelf"("userId", "title");
+
+-- CreateIndex
 CREATE INDEX "Card_userId_idx" ON "Card"("userId");
 
 -- CreateIndex
@@ -161,20 +168,19 @@ ALTER TABLE "User" ADD CONSTRAINT "User_roleId_fkey" FOREIGN KEY ("roleId") REFE
 ALTER TABLE "User" ADD CONSTRAINT "User_statusId_fkey" FOREIGN KEY ("statusId") REFERENCES "Status"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Shelf" ADD CONSTRAINT "Shelf_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "shelf" ADD CONSTRAINT "shelf_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Box" ADD CONSTRAINT "Box_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Box" ADD CONSTRAINT "Box_shelfId_fkey" FOREIGN KEY ("shelfId") REFERENCES "Shelf"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Box" ADD CONSTRAINT "Box_shelfId_fkey" FOREIGN KEY ("shelfId") REFERENCES "shelf"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Card" ADD CONSTRAINT "Card_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Card" ADD CONSTRAINT "Card_shelfId_fkey" FOREIGN KEY ("shelfId") REFERENCES "Shelf"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Card" ADD CONSTRAINT "Card_shelfId_fkey" FOREIGN KEY ("shelfId") REFERENCES "shelf"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Card" ADD CONSTRAINT "Card_boxId_fkey" FOREIGN KEY ("boxId") REFERENCES "Box"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-

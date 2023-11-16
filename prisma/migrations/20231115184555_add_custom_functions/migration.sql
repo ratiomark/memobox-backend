@@ -1,33 +1,33 @@
 CREATE OR REPLACE FUNCTION add_shelf_and_update_indexes(_userId UUID, _title TEXT)
-RETURNS TABLE(id UUID, title TEXT, index INT, isCollapsed BOOLEAN, createdAt TIMESTAMP, updatedAt TIMESTAMP, userId UUID) AS '
+RETURNS SETOF shelf AS '
 DECLARE
     new_shelf RECORD;
 BEGIN
     -- Обновить индексы
-    UPDATE "Shelf"
-    SET "index"  = "Shelf"."index" + 1
-    WHERE "userId" = _userId AND "Shelf"."index" >= 0;
+    UPDATE shelf
+    SET "index"  = shelf.index + 1
+    WHERE "userId" = _userId AND shelf.index >= 0;
 
     -- Добавить новую полку и вернуть ее данные
- 		RETURN QUERY
-    INSERT INTO "Shelf" ("userId", "title", "index")
+ 	RETURN QUERY
+    INSERT INTO shelf ("userId", title, index)
     VALUES (_userId, _title, 0)
-RETURNING *;
--- 	RETURNING "Shelf".id, "Shelf"."title", "Shelf"."index", "Shelf"."isCollapsed", "Shelf"."createdAt", "Shelf"."updatedAt", "Shelf"."userId";
+    RETURNING *;
+
 END;
 ' LANGUAGE plpgsql;
 
 
 CREATE OR REPLACE FUNCTION remove_shelf_and_update_indexes(_userId UUID, _shelfId UUID, _index INT)
-RETURNS TABLE(id UUID, title TEXT, index INT, isCollapsed BOOLEAN, createdAt TIMESTAMP, updatedAt TIMESTAMP, userId UUID) AS '
+RETURNS SETOF shelf AS '
 BEGIN
-    DELETE FROM "Shelf"
-    WHERE "Shelf"."id" = _shelfId AND "Shelf"."userId" = _userId;
+    DELETE FROM shelf
+    WHERE shelf.id = _shelfId AND shelf."userId" = _userId;
 
     -- Обновляем индексы для оставшихся полок
-    UPDATE "Shelf"
-    SET "index" = "Shelf"."index" - 1
-    WHERE "userId" = _userId AND "Shelf"."index" > _index;
+    UPDATE shelf
+    SET "index" = shelf."index" - 1
+    WHERE "userId" = _userId AND shelf.index > _index;
 
     -- Возвращаем обновленный список полок
     RETURN QUERY
@@ -44,7 +44,7 @@ DECLARE
 BEGIN
     FOR item IN SELECT * FROM jsonb_to_recordset(shelf_data) AS x(id uuid, index int)
     LOOP
-        UPDATE "Shelf" SET "index" = item.index WHERE id = item.id;
+        UPDATE shelf SET "index" = item.index WHERE id = item.id;
     END LOOP;
 END;
 ' LANGUAGE plpgsql;
