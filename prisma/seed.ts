@@ -5,6 +5,7 @@ import { v4 as v4uuid } from 'uuid';
 import { getRandomBetween } from '../src/utils/common/getRandomBetween';
 import { PartialShelf, PartialBox, CardBase } from './types/entities';
 import { newCards, defaultCard } from './mock-data/cards';
+import { getSpecialType } from './helpers/getSpecialType';
 
 const snakeCase = (str) =>
   str &&
@@ -187,11 +188,21 @@ async function createSeedsInDB() {
       const boxCount = getRandomBetween(4, 8);
       boxCounts[shelfId] = boxCount;
       for (let i = 0; i < boxCount; i++) {
+        // let specialType: ;
+        // switch (i) {
+        // 	case 0:
+
+        // 		break;
+
+        // 	default:
+        // 		break;
+        // }
         const box: PartialBox = {
           id: uuid(),
           shelfId: shelfId,
           userId: userId,
           index: i,
+          specialType: getSpecialType(i, boxCount),
           // timing: "{'minutes': 0,'hours': 0,'days': 0,'weeks': 0,'months': 0}",
         };
 

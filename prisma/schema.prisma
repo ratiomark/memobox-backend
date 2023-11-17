@@ -110,26 +110,27 @@ model Shelf {
 }
 
 model Box {
-  id      String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   // id      String @id @default(uuid()) @db.Uuid
-  index   Int
+  index       Int
   // timing  JSON @default("{'minutes': 0,'hours': 0,'days': 0,'weeks': 0,'months': 0}")
   // timing  String @default("{'minutes': 0,'hours': 0,'days': 0,'weeks': 0,'months': 0}")
-  timing  Json   @default("{\"minutes\": 5, \"hours\": 0,\"days\": 0,\"weeks\": 0,\"months\": 0}")
+  timing      Json           @default("{\"minutes\": 5, \"hours\": 0,\"days\": 0,\"weeks\": 0,\"months\": 0}")
+  specialType BoxSpecialType @default(none)
   // 
-  userId  String @db.Uuid
-  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId      String         @db.Uuid
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   // 
-  shelfId String @db.Uuid
-  shelf   Shelf  @relation(fields: [shelfId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  card    Card[]
+  shelfId     String         @db.Uuid
+  shelf       Shelf          @relation(fields: [shelfId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  card        Card[]
 }
 
 model Card {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   // id           String    @id @default(uuid()) @db.Uuid
-  question     String
-  answer       String
+  question     String?
+  answer       String?
   lastTraining DateTime?
   nextTraining DateTime?
   // 
@@ -162,4 +163,10 @@ enum MissedTrainingValue {
   none
   backwards
   additional
+}
+
+enum BoxSpecialType {
+  new
+  none
+  learnt
 }

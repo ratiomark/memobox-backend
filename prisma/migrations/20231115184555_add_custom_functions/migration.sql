@@ -31,7 +31,7 @@ BEGIN
 
     -- Возвращаем обновленный список полок
     RETURN QUERY
-    SELECT * FROM "Shelf"
+    SELECT * FROM shelf
     WHERE "userId" = _userId
     ORDER BY "index";
 END;
