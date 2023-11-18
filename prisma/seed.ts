@@ -6,6 +6,7 @@ import { getRandomBetween } from '../src/utils/common/getRandomBetween';
 import { PartialShelf, PartialBox, CardBase } from './types/entities';
 import { newCards, defaultCard } from './mock-data/cards';
 import { getSpecialType } from './helpers/getSpecialType';
+import { shelfTemplateDefaultMock } from './mock-data/user-settings-templates';
 
 const snakeCase = (str) =>
   str &&
@@ -268,6 +269,25 @@ async function createSeedsInDB() {
     // return createdCards['newRecords'];
   }
 
+  async function seedShelfTemplateDefaultSettings() {
+    await prisma.shelfTemplate.create({
+      data: { template: shelfTemplateDefaultMock },
+    });
+    console.log('✔️ settings: shelf template');
+  }
+  // async function seedNotificationDefaultSettings() {
+  //   await prisma.shelfTemplate.create({
+  //     data: { template: shelfTemplateDefaultMock },
+  //   });
+  //   console.log('✔️ settings: notifications');
+  // }
+  // async function seedTimeSleepDefaultSettings() {
+  //   await prisma.shelfTemplate.create({
+  //     data: { template: shelfTemplateDefaultMock },
+  //   });
+  //   console.log('✔️ settings: shelf template');
+  // }
+
   const seedData = {
     seedRoles: await seedRoles(),
     seedStatuses: await seedStatuses(),
@@ -282,6 +302,7 @@ async function createSeedsInDB() {
   // console.log(boxesFromDb);
   const cardsFromDb = await seedCards(boxesFromDb);
   seedData['seedCards'] = cardsFromDb;
+  await seedShelfTemplateDefaultSettings();
   console.log('Seeding completed.');
   return seedData;
 }

@@ -10,8 +10,8 @@ BEGIN
 
     -- Добавить новую полку и вернуть ее данные
  	RETURN QUERY
-    INSERT INTO shelf ("userId", title, index)
-    VALUES (_userId, _title, 0)
+    INSERT INTO shelf ("userId", title, index, "isCollapsed")
+    VALUES (_userId, _title, 0, true)
     RETURNING *;
 
 END;
