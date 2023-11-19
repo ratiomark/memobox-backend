@@ -2,18 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { CreateBoxDto } from './dto/create-box.dto';
 import { UpdateBoxDto } from './dto/update-box.dto';
 import { PrismaService } from 'nestjs-prisma';
-import {
-  Shelf,
-  Prisma,
-  ShelfTemplate,
-  User,
-  BoxSpecialType,
-  Box,
-} from '@prisma/client';
-import { TimingBlock } from 'src/aggregate/entities/settings-types';
+import { Shelf, Prisma, User, BoxSpecialType, Box } from '@prisma/client';
 import { emptyDataTemplate } from 'src/common/const/commonShelfTemplate';
 import { uuid } from 'src/utils/helpers/sql';
-import { BoxSchema } from './entities/box.entity';
+import { CardsService } from 'src/cards/cards.service';
 
 type GenerateBoxesFromTemplateArg = {
   shelfTemplate: Prisma.JsonArray;
@@ -23,7 +15,10 @@ type GenerateBoxesFromTemplateArg = {
 
 @Injectable()
 export class BoxesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cardsService: CardsService,
+  ) {}
   create(createBoxDto: CreateBoxDto) {
     return 'This action adds a new box';
   }
@@ -91,6 +86,24 @@ export class BoxesService {
       data: updateBoxDto,
     });
     return boxUpdated;
+  }
+
+  deleteSoftByShelfId(shelfId: Shelf['id']) {
+    return this.prisma.box.updateMany({
+      where: { shelfId },
+      data: { isDeleted: true },
+    });
+  }
+
+  async deleteSoftByBoxId(id: Box['id']) {
+    const [box, cards] = await Promise.all([
+      this.prisma.box.update({
+        where: { id },
+        data: { isDeleted: true },
+      }),
+      this.cardsService.deleteSoftByBoxId(id),
+    ]);
+    return { box, cards };
   }
 
   remove(id: number) {
