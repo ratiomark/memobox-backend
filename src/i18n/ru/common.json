@@ -1,0 +1,18 @@
+{
+  "confirmEmail": "Confirm email",
+  "resetPassword": "Reset password",
+  "test": "ЭТО тест мазафака",
+  "time": {
+    "day": "{count} день",
+    "day_plural": "{count} дн.",
+    "month": "{count} месяц",
+    "month_plural": "{count} мес.",
+    "year": "{count} год",
+    "year_plural": "{count} г.",
+    "hour": "{count} час",
+    "hour_plural": "{count} ч.",
+    "minute": "{count} минута",
+    "minute_plural": "{count} мин.",
+    "less_than_minute": "< минуты"
+  }
+}

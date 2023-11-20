@@ -1,4 +1,17 @@
 {
   "confirmEmail": "Confirm email",
-  "resetPassword": "Reset password"
+  "resetPassword": "Reset password",
+  "time": {
+    "day": "{count} day",
+    "day_plural": "{count} days",
+    "month": "{count} month",
+    "month_plural": "{count} months",
+    "year": "{count} year",
+    "year_plural": "{count} years",
+    "hour": "{count} hour",
+    "hour_plural": "{count} hours",
+    "minute": "{count} minute",
+    "minute_plural": "{count} minutes",
+    "less_than_minute": "< a minute"
+  }
 }
