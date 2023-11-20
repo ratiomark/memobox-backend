@@ -10,7 +10,7 @@ export type TrainingCardsCondition = {
   OR: (
     | {
         nextTraining: {
-          gt: Date;
+          lt: Date;
         };
       }
     | {

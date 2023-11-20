@@ -45,7 +45,7 @@ export class CardsService {
       OR: [
         {
           nextTraining: {
-            gt: new Date(), // Получить карточки, у которых nextTraining больше текущего времени
+            lt: new Date(), // Получить карточки, у которых nextTraining больше текущего времени
           },
         },
         {
