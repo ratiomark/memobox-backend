@@ -55,39 +55,40 @@ model Status {
 }
 
 model User {
-  id                   String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   // id        String        @id @default(uuid()) @db.Uuid
-  email                String?               @unique
-  password             String                @default(uuid())
-  provider             AuthProviders         @default(EMAIL)
-  socialId             String?
-  firstName            String?
-  lastName             String?
-  hash                 String?               @unique
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @default(now())
+  email          String?         @unique
+  password       String          @default(uuid())
+  provider       AuthProviders   @default(EMAIL)
+  socialId       String?
+  firstName      String?
+  lastName       String?
+  hash           String?         @unique
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @default(now())
   // updatedAt будет отвечать за изменение карточки юзером   @updatedAt
-  deletedAt            DateTime?
-  forgot               Forgot[]
-  session              Session[]
+  deletedAt      DateTime?
+  forgot         Forgot[]
+  session        Session[]
   // 
-  photoId              String?
-  file                 File?                 @relation(fields: [photoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  photoId        String?
+  file           File?           @relation(fields: [photoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   // 
-  roleId               Int?
-  role                 Role?                 @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  roleId         Int?
+  role           Role?           @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   // 
-  statusId             Int?
-  status               Status?               @relation(fields: [statusId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  statusId       Int?
+  status         Status?         @relation(fields: [statusId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   // 
-  shelf                Shelf[]
-  box                  Box[]
-  card                 Card[]
+  shelf          Shelf[]
+  box            Box[]
+  card           Card[]
   // @@index([firstName, socialId, hash, lastName])
   // ShelfTemplate ShelfTemplate[]
-  shelfTemplate        ShelfTemplate?
-  TimeSleep            TimeSleep?
-  NotificationSettings NotificationSettings?
+  shelfTemplate  ShelfTemplate?
+  timeSleep      TimeSleep?
+  notification   Notification?
+  MissedTraining MissedTraining?
 
   @@index([id])
   @@index([email])
