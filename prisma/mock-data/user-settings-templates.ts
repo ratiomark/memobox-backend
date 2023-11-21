@@ -9,82 +9,82 @@ export const timeSleepMock: TimeSleepSettings = {
   isDayByDayOptionEnabled: false,
   generalTimeSleepData: {
     up: {
-      hours: 8,
+      hours: 7,
       minutes: 0,
     },
     down: {
-      hours: 22,
+      hours: 23,
       minutes: 0,
     },
   },
   dayByDayTimeSleepData: {
     monday: {
       up: {
-        hours: 8,
+        hours: 7,
         minutes: 0,
       },
       down: {
-        hours: 22,
+        hours: 23,
         minutes: 0,
       },
     },
     tuesday: {
       up: {
-        hours: 8,
+        hours: 7,
         minutes: 0,
       },
       down: {
-        hours: 22,
+        hours: 23,
         minutes: 0,
       },
     },
     wednesday: {
       up: {
-        hours: 8,
+        hours: 7,
         minutes: 0,
       },
       down: {
-        hours: 22,
+        hours: 23,
         minutes: 0,
       },
     },
     thursday: {
       up: {
-        hours: 8,
+        hours: 7,
         minutes: 0,
       },
       down: {
-        hours: 22,
+        hours: 23,
         minutes: 0,
       },
     },
     friday: {
       up: {
-        hours: 8,
+        hours: 7,
         minutes: 0,
       },
       down: {
-        hours: 22,
+        hours: 23,
         minutes: 0,
       },
     },
     saturday: {
       up: {
-        hours: 8,
+        hours: 7,
         minutes: 0,
       },
       down: {
-        hours: 22,
+        hours: 23,
         minutes: 0,
       },
     },
     sunday: {
       up: {
-        hours: 8,
+        hours: 7,
         minutes: 0,
       },
       down: {
-        hours: 22,
+        hours: 23,
         minutes: 0,
       },
     },
@@ -92,7 +92,7 @@ export const timeSleepMock: TimeSleepSettings = {
 };
 
 export const notificationsMock: NotificationSettings = {
-  mobilePushEnabled: true,
+  mobilePushEnabled: false,
   emailNotificationsEnabled: true,
   minimumCardsForPush: 15,
   minimumCardsForEmailNotification: 10,
@@ -100,10 +100,6 @@ export const notificationsMock: NotificationSettings = {
     {
       email: 'someEmail@mail.com',
       verified: true,
-    },
-    {
-      email: 'someNotVerifiedEmail@mail.com',
-      verified: false,
     },
   ],
 };

@@ -55,37 +55,39 @@ model Status {
 }
 
 model User {
-  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                   String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   // id        String        @id @default(uuid()) @db.Uuid
-  email         String?         @unique
-  password      String          @default(uuid())
-  provider      AuthProviders   @default(EMAIL)
-  socialId      String?
-  firstName     String?
-  lastName      String?
-  hash          String?         @unique
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @default(now())
+  email                String?               @unique
+  password             String                @default(uuid())
+  provider             AuthProviders         @default(EMAIL)
+  socialId             String?
+  firstName            String?
+  lastName             String?
+  hash                 String?               @unique
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @default(now())
   // updatedAt будет отвечать за изменение карточки юзером   @updatedAt
-  deletedAt     DateTime?
-  forgot        Forgot[]
-  session       Session[]
+  deletedAt            DateTime?
+  forgot               Forgot[]
+  session              Session[]
   // 
-  photoId       String?
-  file          File?           @relation(fields: [photoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  photoId              String?
+  file                 File?                 @relation(fields: [photoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   // 
-  roleId        Int?
-  role          Role?           @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  roleId               Int?
+  role                 Role?                 @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   // 
-  statusId      Int?
-  status        Status?         @relation(fields: [statusId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  statusId             Int?
+  status               Status?               @relation(fields: [statusId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   // 
-  shelf         Shelf[]
-  box           Box[]
-  card          Card[]
+  shelf                Shelf[]
+  box                  Box[]
+  card                 Card[]
   // @@index([firstName, socialId, hash, lastName])
   // ShelfTemplate ShelfTemplate[]
-  ShelfTemplate ShelfTemplate[]
+  shelfTemplate        ShelfTemplate?
+  TimeSleep            TimeSleep?
+  NotificationSettings NotificationSettings?
 
   @@index([id])
   @@index([email])
@@ -98,12 +100,13 @@ model Shelf {
   index               Int
   isCollapsed         Boolean              @default(true)
   missedTrainingValue MissedTrainingValue? @default(none)
+  isDeleted           Boolean?             @default(false)
   // 
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @default(now()) @updatedAt
   // 
-  userId              String?              @db.Uuid
-  user                User?                @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId              String               @db.Uuid
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   box                 Box[]
   card                Card[]
 
@@ -112,20 +115,22 @@ model Shelf {
 }
 
 model Box {
-  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   // id      String @id @default(uuid()) @db.Uuid
-  index       Int
+  index               Int
   // timing  JSON @default("{'minutes': 0,'hours': 0,'days': 0,'weeks': 0,'months': 0}")
   // timing  String @default("{'minutes': 0,'hours': 0,'days': 0,'weeks': 0,'months': 0}")
-  timing      Json           @default("{\"minutes\": 5, \"hours\": 0,\"days\": 0,\"weeks\": 0,\"months\": 0}")
-  specialType BoxSpecialType @default(none)
+  timing              Json?                @default("{\"minutes\": 5, \"hours\": 0,\"days\": 0,\"weeks\": 0,\"months\": 0}")
+  specialType         BoxSpecialType       @default(none)
+  missedTrainingValue MissedTrainingValue? @default(none)
+  isDeleted           Boolean?             @default(false)
   // 
-  userId      String         @db.Uuid
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId              String               @db.Uuid
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   // 
-  shelfId     String         @db.Uuid
-  shelf       Shelf          @relation(fields: [shelfId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  card        Card[]
+  shelfId             String               @db.Uuid
+  shelf               Shelf                @relation(fields: [shelfId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  card                Card[]
 }
 
 model Card {
@@ -135,6 +140,7 @@ model Card {
   answer       String?
   lastTraining DateTime?
   nextTraining DateTime?
+  isDeleted    Boolean?  @default(false)
   // 
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -154,15 +160,55 @@ model Card {
 }
 
 model ShelfTemplate {
-  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id       Int     @id @default(autoincrement())
+  // id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   // 
   template Json    @default("[{\"minutes\":5,\"hours\":0,\"days\":0,\"weeks\":0,\"months\":0},{\"minutes\":0,\"hours\":8,\"days\":0,\"weeks\":0,\"months\":0},{\"minutes\":0,\"hours\":0,\"days\":1,\"weeks\":0,\"months\":0},{\"minutes\":0,\"hours\":0,\"days\":3,\"weeks\":0,\"months\":0},{\"minutes\":0,\"hours\":0,\"days\":14,\"weeks\":0,\"months\":0},{\"minutes\":0,\"hours\":0,\"days\":28,\"weeks\":0,\"months\":0},{\"minutes\":0,\"hours\":0,\"days\":0,\"weeks\":3,\"months\":0},{\"minutes\":0,\"hours\":0,\"days\":2,\"weeks\":3,\"months\":1},{\"minutes\":0,\"hours\":0,\"days\":0,\"weeks\":0,\"months\":2},{\"minutes\":0,\"hours\":0,\"days\":0,\"weeks\":4,\"months\":2}]")
   // template Json    @default("{\"title\": \"New shelf\",\"index\": 0,\"isCollapsed\": false,\"missedTrainingValue\": \"none\"}")
   // 
-  userId   String? @db.Uuid
+  userId   String? @unique @db.Uuid
   user     User?   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("shelf_template")
+}
+
+model TimeSleep {
+  id       Int     @id @default(autoincrement())
+  // id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // 
+  settings Json    @default("{\"isTimeSleepEnabled\":true,\"isDayByDayOptionEnabled\":false,\"generalTimeSleepData\":{\"up\":{\"hours\":7,\"minutes\":0},\"down\":{\"hours\":23,\"minutes\":0}}}")
+  // template Json    @default("{\"title\": \"New shelf\",\"index\": 0,\"isCollapsed\": false,\"missedTrainingValue\": \"none\"}")
+  // 
+  userId   String? @unique @db.Uuid
+  user     User?   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("time_sleep")
+}
+
+model Notification {
+  id       Int     @id @default(autoincrement())
+  // id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // 
+  settings Json    @default("{\"mobilePushEnabled\":false,\"emailNotificationsEnabled\":false,\"minimumCardsForPush\":15,\"minimumCardsForEmailNotification\":10,\"notificationEmails\":[]}")
+  // template Json    @default("{\"title\": \"New shelf\",\"index\": 0,\"isCollapsed\": false,\"missedTrainingValue\": \"none\"}")
+  // 
+  userId   String? @unique @db.Uuid
+  user     User?   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("notification")
+}
+
+model MissedTraining {
+  id       Int                 @id @default(autoincrement())
+  // id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // 
+  settings MissedTrainingValue @default(none)
+  // template Json    @default("{\"title\": \"New shelf\",\"index\": 0,\"isCollapsed\": false,\"missedTrainingValue\": \"none\"}")
+  // 
+  userId   String?             @unique @db.Uuid
+  user     User?               @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("missed_training")
 }
 
 enum AuthProviders {
@@ -180,7 +226,7 @@ enum MissedTrainingValue {
 }
 
 enum BoxSpecialType {
-  new
   none
+  new
   learnt
 }

@@ -21,8 +21,11 @@ END;
 CREATE OR REPLACE FUNCTION remove_shelf_and_update_indexes(_userId UUID, _shelfId UUID, _index INT)
 RETURNS SETOF shelf AS '
 BEGIN
-    DELETE FROM shelf
-    WHERE shelf.id = _shelfId AND shelf."userId" = _userId;
+--    DELETE FROM shelf
+--    WHERE shelf.id = _shelfId AND shelf."userId" = _userId;
+	  UPDATE shelf
+	  SET "isDeleted" = true
+	  WHERE shelf.id = _shelfId;
 
     -- Обновляем индексы для оставшихся полок
     UPDATE shelf

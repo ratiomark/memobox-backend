@@ -1,12 +1,21 @@
-import { Prisma, PrismaClient, Role, Status } from '@prisma/client';
+import {
+  BoxSpecialType,
+  Card,
+  Prisma,
+  PrismaClient,
+  Role,
+  Status,
+} from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { ADMIN_EMAIL, ADMIN_PASSWORD } from '../test/utils/constants';
 import { v4 as v4uuid } from 'uuid';
-import { getRandomBetween } from '../src/utils/common/getRandomBetween';
 import { PartialShelf, PartialBox, CardBase } from './types/entities';
 import { newCards, defaultCard } from './mock-data/cards';
 import { getSpecialType } from './helpers/getSpecialType';
 import { shelfTemplateDefaultMock } from './mock-data/user-settings-templates';
+import { calculateNextTraining } from '../src/utils/common/calculateNextTraining';
+import { ADMIN_EMAIL, ADMIN_PASSWORD } from '../test/utils/constants';
+import { TimingBlock } from '../src/aggregate/entities/settings-types';
+import { getRandomBetween } from '../src/utils/common/getRandomBetween';
 
 const snakeCase = (str) =>
   str &&
@@ -153,6 +162,7 @@ async function createSeedsInDB() {
         isCollapsed: true,
         missedTrainingValue: 'none',
         index: 0,
+        isDeleted: false,
       },
       {
         id: shelfB,
@@ -161,6 +171,7 @@ async function createSeedsInDB() {
         isCollapsed: true,
         missedTrainingValue: 'none',
         index: 1,
+        isDeleted: false,
       },
       {
         id: shelfC,
@@ -169,6 +180,7 @@ async function createSeedsInDB() {
         isCollapsed: true,
         missedTrainingValue: 'none',
         index: 2,
+        isDeleted: false,
       },
     ];
     // await prisma.shelf.createMany({ data: userShelves });
@@ -185,30 +197,51 @@ async function createSeedsInDB() {
     const userBoxes: PartialBox[] = [];
     const boxCounts = {}; // Для хранения количества коробок на каждой полке
     // const allBoxes: PartialBox[] = []; // Для хранения всех созданных коробок
+    const maxBoxCount = 5;
     for (const shelfId of shelfIds) {
-      const boxCount = getRandomBetween(4, 8);
-      boxCounts[shelfId] = boxCount;
-      for (let i = 0; i < boxCount; i++) {
-        // let specialType: ;
-        // switch (i) {
-        // 	case 0:
-
-        // 		break;
-
-        // 	default:
-        // 		break;
-        // }
+      // const boxCount = getRandomBetween(4, 8);
+      boxCounts[shelfId] = maxBoxCount;
+      shelfTemplateDefaultMock.slice(0, maxBoxCount).forEach((template, i) => {
         const box: PartialBox = {
           id: uuid(),
           shelfId: shelfId,
           userId: userId,
-          index: i,
-          specialType: getSpecialType(i, boxCount),
+          index: i + 1,
+          specialType: getSpecialType(i + 1, maxBoxCount),
+          missedTrainingValue: null,
+          isDeleted: false,
+          timing: template,
           // timing: "{'minutes': 0,'hours': 0,'days': 0,'weeks': 0,'months': 0}",
         };
 
         userBoxes.push(box);
-      }
+      });
+      const boxNewCards = {
+        id: uuid(),
+        shelfId: shelfId,
+        userId: userId,
+        index: 0,
+        specialType: BoxSpecialType.new,
+        missedTrainingValue: null,
+        isDeleted: false,
+      };
+      userBoxes.unshift(boxNewCards);
+      // const boxCount = getRandomBetween(4, 8);
+      // boxCounts[shelfId] = 5;
+      // boxCounts[shelfId] = boxCount;
+      // for (let i = 0; i < boxCount; i++) {
+      //   const box: PartialBox = {
+      //     id: uuid(),
+      //     shelfId: shelfId,
+      //     userId: userId,
+      //     index: i,
+      //     specialType: getSpecialType(i, boxCount),
+      //     missedTrainingValue: null,
+      //     isDeleted: false,
+      //     // timing: "{'minutes': 0,'hours': 0,'days': 0,'weeks': 0,'months': 0}",
+      //   };
+
+      //   userBoxes.push(box);
     }
 
     const createdBoxes = await prismaExtended.box.createManyAndReturn({
@@ -224,12 +257,20 @@ async function createSeedsInDB() {
     defaultCard: CardBase,
   ) {
     // Функция для создания копии defaultCard с добавлением нужных полей
-    const createDefaultCards = (box: PartialBox, count: number) => {
+    const createDefaultCards = (
+      box: PartialBox,
+      count: number,
+    ): Partial<Card>[] => {
       return Array.from({ length: count }, () => ({
         ...defaultCard,
         shelfId: box.shelfId,
         userId: box.userId,
         boxId: box.id,
+        isDeleted: false,
+        createdAt: new Date(),
+        nextTraining: calculateNextTraining(
+          box.timing as unknown as TimingBlock,
+        ),
       }));
     };
 
@@ -242,9 +283,11 @@ async function createSeedsInDB() {
           shelfId: box.shelfId,
           userId: box.userId,
           boxId: box.id,
+          isDeleted: false,
         }));
       } else {
-        const randomCount = getRandomBetween(2, 4);
+        // const randomCount = getRandomBetween(2, 4);
+        const randomCount = 5;
         return createDefaultCards(box, randomCount);
       }
     });
