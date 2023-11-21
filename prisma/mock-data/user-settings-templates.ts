@@ -3,6 +3,7 @@ import {
   NotificationSettings,
   TimingBlock,
 } from 'src/aggregate/entities/settings-types';
+import { TESTER_EMAIL } from 'test/utils/constants';
 
 export const timeSleepMock: TimeSleepSettings = {
   isTimeSleepEnabled: true,
@@ -93,13 +94,13 @@ export const timeSleepMock: TimeSleepSettings = {
 
 export const notificationsMock: NotificationSettings = {
   mobilePushEnabled: false,
-  emailNotificationsEnabled: true,
+  emailNotificationsEnabled: false,
   minimumCardsForPush: 15,
   minimumCardsForEmailNotification: 10,
   notificationEmails: [
     {
-      email: 'someEmail@mail.com',
-      verified: true,
+      email: TESTER_EMAIL,
+      verified: false,
     },
   ],
 };

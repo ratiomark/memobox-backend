@@ -13,7 +13,11 @@ import { newCards, defaultCard } from './mock-data/cards';
 import { getSpecialType } from './helpers/getSpecialType';
 import { shelfTemplateDefaultMock } from './mock-data/user-settings-templates';
 import { calculateNextTraining } from '../src/utils/common/calculateNextTraining';
-import { ADMIN_EMAIL, ADMIN_PASSWORD } from '../test/utils/constants';
+import {
+  ADMIN_EMAIL,
+  ADMIN_PASSWORD,
+  TESTER_EMAIL,
+} from '../test/utils/constants';
 import { TimingBlock } from '../src/aggregate/entities/settings-types';
 import { getRandomBetween } from '../src/utils/common/getRandomBetween';
 
@@ -136,7 +140,7 @@ async function createSeedsInDB() {
         id: userId,
         firstName: 'John',
         lastName: 'Doe',
-        email: 'john.doe@example.com',
+        email: TESTER_EMAIL,
         password: hashedPassword,
         roleId: 2,
         statusId: 1,
