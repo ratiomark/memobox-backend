@@ -3,7 +3,7 @@ import {
   NotificationSettings,
   TimingBlock,
 } from 'src/aggregate/entities/settings-types';
-import { TESTER_EMAIL } from 'test/utils/constants';
+import { TESTER_EMAIL } from '../../test/utils/constants';
 
 export const timeSleepMock: TimeSleepSettings = {
   isTimeSleepEnabled: true,
@@ -18,76 +18,76 @@ export const timeSleepMock: TimeSleepSettings = {
       minutes: 0,
     },
   },
-  dayByDayTimeSleepData: {
-    monday: {
-      up: {
-        hours: 7,
-        minutes: 0,
-      },
-      down: {
-        hours: 23,
-        minutes: 0,
-      },
+};
+const timeSleepMockExtended = {
+  monday: {
+    up: {
+      hours: 7,
+      minutes: 0,
     },
-    tuesday: {
-      up: {
-        hours: 7,
-        minutes: 0,
-      },
-      down: {
-        hours: 23,
-        minutes: 0,
-      },
+    down: {
+      hours: 23,
+      minutes: 0,
     },
-    wednesday: {
-      up: {
-        hours: 7,
-        minutes: 0,
-      },
-      down: {
-        hours: 23,
-        minutes: 0,
-      },
+  },
+  tuesday: {
+    up: {
+      hours: 7,
+      minutes: 0,
     },
-    thursday: {
-      up: {
-        hours: 7,
-        minutes: 0,
-      },
-      down: {
-        hours: 23,
-        minutes: 0,
-      },
+    down: {
+      hours: 23,
+      minutes: 0,
     },
-    friday: {
-      up: {
-        hours: 7,
-        minutes: 0,
-      },
-      down: {
-        hours: 23,
-        minutes: 0,
-      },
+  },
+  wednesday: {
+    up: {
+      hours: 7,
+      minutes: 0,
     },
-    saturday: {
-      up: {
-        hours: 7,
-        minutes: 0,
-      },
-      down: {
-        hours: 23,
-        minutes: 0,
-      },
+    down: {
+      hours: 23,
+      minutes: 0,
     },
-    sunday: {
-      up: {
-        hours: 7,
-        minutes: 0,
-      },
-      down: {
-        hours: 23,
-        minutes: 0,
-      },
+  },
+  thursday: {
+    up: {
+      hours: 7,
+      minutes: 0,
+    },
+    down: {
+      hours: 23,
+      minutes: 0,
+    },
+  },
+  friday: {
+    up: {
+      hours: 7,
+      minutes: 0,
+    },
+    down: {
+      hours: 23,
+      minutes: 0,
+    },
+  },
+  saturday: {
+    up: {
+      hours: 7,
+      minutes: 0,
+    },
+    down: {
+      hours: 23,
+      minutes: 0,
+    },
+  },
+  sunday: {
+    up: {
+      hours: 7,
+      minutes: 0,
+    },
+    down: {
+      hours: 23,
+      minutes: 0,
     },
   },
 };

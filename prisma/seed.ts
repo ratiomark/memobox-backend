@@ -1,6 +1,7 @@
 import {
   BoxSpecialType,
   Card,
+  MissedTrainingValue,
   Prisma,
   PrismaClient,
   Role,
@@ -11,7 +12,10 @@ import { v4 as v4uuid } from 'uuid';
 import { PartialShelf, PartialBox, CardBase } from './types/entities';
 import { newCards, defaultCard } from './mock-data/cards';
 import { getSpecialType } from './helpers/getSpecialType';
-import { shelfTemplateDefaultMock } from './mock-data/user-settings-templates';
+import {
+  shelfTemplateDefaultMock,
+  timeSleepMock,
+} from './mock-data/user-settings-templates';
 import { calculateNextTraining } from '../src/utils/common/calculateNextTraining';
 import {
   ADMIN_EMAIL,
@@ -229,7 +233,7 @@ async function createSeedsInDB() {
         missedTrainingValue: null,
         isDeleted: false,
       };
-      userBoxes.unshift(boxNewCards);
+      userBoxes.unshift(boxNewCards as PartialBox);
       // const boxCount = getRandomBetween(4, 8);
       // boxCounts[shelfId] = 5;
       // boxCounts[shelfId] = boxCount;
@@ -249,7 +253,7 @@ async function createSeedsInDB() {
     }
 
     const createdBoxes = await prismaExtended.box.createManyAndReturn({
-      data: userBoxes,
+      data: userBoxes as Prisma.BoxCreateManyInput[],
     });
     console.log('✔️ boxes');
     return { createBoxes: createdBoxes['newRecords'], boxCounts };
@@ -257,8 +261,8 @@ async function createSeedsInDB() {
 
   function createCardsForBoxes(
     boxData: PartialBox[],
-    newCards: CardBase[],
-    defaultCard: CardBase,
+    newCards: Partial<Card>[],
+    defaultCard: Partial<Card>,
   ) {
     // Функция для создания копии defaultCard с добавлением нужных полей
     const createDefaultCards = (
@@ -304,7 +308,7 @@ async function createSeedsInDB() {
     const cards = createCardsForBoxes(boxData, newCards, defaultCard);
 
     const createdCards = await prismaExtended.card.createMany({
-      data: cards,
+      data: cards as Prisma.CardCreateManyInput[],
     });
     // console.log(createdCards.count);
     // const createdCards = await prismaExtended.card.createManyAndReturn({
@@ -321,6 +325,25 @@ async function createSeedsInDB() {
       data: { template: shelfTemplateDefaultMock },
     });
     console.log('✔️ settings: shelf template');
+  }
+  async function seedTimeSleepDefaultSettings() {
+    await prisma.timeSleep.create({
+      data: { settings: timeSleepMock as unknown as Prisma.InputJsonValue },
+    });
+    console.log('✔️ settings: time sleep');
+  }
+
+  async function seedMissedTrainingDefaultSettings() {
+    await prisma.missedTraining.create({
+      data: { settings: MissedTrainingValue.none },
+    });
+    console.log('✔️ settings: missed training');
+  }
+  async function seedNotificationDefaultSettings() {
+    await prisma.notification.create({
+      data: { userId: null },
+    });
+    console.log('✔️ settings: notification');
   }
   // async function seedNotificationDefaultSettings() {
   //   await prisma.shelfTemplate.create({
@@ -350,6 +373,9 @@ async function createSeedsInDB() {
   const cardsFromDb = await seedCards(boxesFromDb);
   seedData['seedCards'] = cardsFromDb;
   await seedShelfTemplateDefaultSettings();
+  await seedTimeSleepDefaultSettings();
+  await seedMissedTrainingDefaultSettings();
+  await seedNotificationDefaultSettings();
   console.log('Seeding completed.');
   return seedData;
 }
