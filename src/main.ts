@@ -9,14 +9,17 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { PrismaClientExceptionFilter } from 'nestjs-prisma';
 import { useContainer } from 'class-validator';
 import { AppModule } from './app.module';
-import validationOptions from './utils/validation-options';
+import { validationOptions } from '@/utils/validation-options';
 import { AllConfigType } from './config/config.type';
-
+// "builder": "swc",
+// "typeCheck": true,
 const DOCS_ROUTE = 'docs';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: true });
+
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
+
   const configService = app.get(ConfigService<AllConfigType>);
   const { httpAdapter } = app.get(HttpAdapterHost);
 
