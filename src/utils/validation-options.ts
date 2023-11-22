@@ -18,7 +18,7 @@ function generateErrors(errors: ValidationError[]) {
   );
 }
 
-const validationOptions: ValidationPipeOptions = {
+export const validationOptions: ValidationPipeOptions = {
   transform: true,
   whitelist: true,
   errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
@@ -33,4 +33,4 @@ const validationOptions: ValidationPipeOptions = {
   },
 };
 
-export default validationOptions;
+// export default validationOptions;
