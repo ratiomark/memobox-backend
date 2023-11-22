@@ -12,8 +12,9 @@ import {
 // import { UpdateAggregateDto } from './dto/update-aggregate.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { User } from '@prisma/client';
-import { GetCurrentUser } from 'src/common/decorators';
-import { UserDataStorageService } from 'src/user-data-storage/user-data-storage.service';
+import { I18n, I18nContext } from 'nestjs-i18n';
+import { GetCurrentUser, Lang } from '@/common/decorators';
+import { UserDataStorageService } from '@/user-data-storage/user-data-storage.service';
 
 @ApiTags('Aggregate')
 @Controller({
@@ -26,14 +27,29 @@ export class AggregateController {
   ) {}
 
   @Get('view')
-  getViewPageData(@GetCurrentUser('id') userId: User['id']) {
-    return this.userDataStorageService.getViewPageData(userId);
+  async getViewPageData(
+    @GetCurrentUser('id') userId: User['id'],
+    @Lang() lang: string,
+  ) {
+    // console.log(lang);
+    const viewPageData = await this.userDataStorageService.getViewPageData(
+      userId,
+      lang,
+    );
+    // console.log(answer);
+    return viewPageData;
+    // return this.userDataStorageService.getViewPageData(userId, lang);
   }
 
   @Get('cupboard')
   getCupboardPageData(@GetCurrentUser('id') userId: User['id']) {
     return this.userDataStorageService.getCupboardPageData(userId);
   }
+
+  // @Get('test')
+  // async getTest(@I18n() i18n: I18nContext) {
+  //   return await i18n.translate('common.test');
+  // }
 
   // @Get(':id')
   // findOne(@Param('id') id: string) {

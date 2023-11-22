@@ -1,8 +1,8 @@
 // import { Injectable } from '@nestjs/common';
 // import { CreateAggregateDto } from './dto/create-aggregate.dto';
 // import { UpdateAggregateDto } from './dto/update-aggregate.dto';
-// import { CardsService } from 'src/cards/cards.service';
-// import { ShelvesService } from 'src/shelves/shelves.service';
+// import { CardsService } from '@/cards/cards.service';
+// import { ShelvesService } from '@/shelves/shelves.service';
 // import { User } from '@prisma/client';
 
 // @Injectable()

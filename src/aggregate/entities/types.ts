@@ -1,4 +1,5 @@
 import { Box, Card, Shelf } from '@prisma/client';
+import { DataBlock } from '@/common/types/frontend/types';
 
 export interface BoxWithCards extends Box {
   card: Card[];
@@ -29,3 +30,13 @@ export interface ShelfWithBoxesData {
 export interface ShelvesDataViewPage {
   [shelfId: Shelf['id']]: ShelfWithBoxesData;
 }
+
+export interface CommonShelfFrontedResponse {
+  isCollapsed?: boolean;
+  new: { all: number };
+  learning: DataBlock;
+  learnt: DataBlock;
+  data: DataBlock;
+}
+
+// BoxSchemaFrontend[]
