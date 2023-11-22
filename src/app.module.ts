@@ -32,7 +32,14 @@ import { SessionModule } from './session/session.module';
 import { MailerModule } from './mailer/mailer.module';
 import { DevResponseModule } from './dev-response/dev-response.module';
 import { APP_GUARD } from '@nestjs/core';
-import { JwtGuard } from './common/guargs';
+import { JwtGuard } from './common/guards';
+import { CupboardModule } from './cupboard/cupboard.module';
+import { ShelvesModule } from './shelves/shelves.module';
+import { BoxesModule } from './boxes/boxes.module';
+import { CardsModule } from './cards/cards.module';
+import { AggregateModule } from './aggregate/aggregate.module';
+import { UserDataStorageModule } from './user-data-storage/user-data-storage.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -70,6 +77,7 @@ import { JwtGuard } from './common/guargs';
         fallbackLanguage: configService.getOrThrow('app.fallbackLanguage', {
           infer: true,
         }),
+        supportedLanguages: ['en', 'ru'],
         loaderOptions: {
           path: path.join(__dirname, 'i18n'),
           watch: true,
@@ -104,6 +112,13 @@ import { JwtGuard } from './common/guargs';
     MailerModule,
     HomeModule,
     DevResponseModule,
+    CupboardModule,
+    ShelvesModule,
+    BoxesModule,
+    CardsModule,
+    AggregateModule,
+    UserDataStorageModule,
+    SettingsModule,
   ],
   providers: [
     {
