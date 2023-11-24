@@ -4,6 +4,7 @@ import { CreateSettingDto } from './dto/create-setting.dto';
 import {
   UpdateSettingDto,
   UpdateSettingMissedTrainingDto,
+  UpdateSettingTimeSleepDto,
 } from './dto/update-setting.dto';
 import { PrismaService } from 'nestjs-prisma';
 import {
@@ -71,10 +72,6 @@ export class SettingsService {
     };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} setting`;
-  }
-
   async updateMissedTrainingValue(
     userId: User['id'],
     missedTraining: MissedTrainingValue,
@@ -91,6 +88,7 @@ export class SettingsService {
     });
     return { missedTraining: settingsRow.settings };
   }
+
   async updateShelfTemplate(
     userId: User['id'],
     updateShelfTemplate: Prisma.InputJsonArray,
@@ -103,22 +101,38 @@ export class SettingsService {
     return { shelfTemplate: shelfTemplateRow.template };
   }
 
+  async updateTimeSleep(
+    userId: User['id'],
+    timeSleep: UpdateSettingTimeSleepDto,
+  ) {
+    const timeSleepRow = await this.prisma.timeSleep.upsert({
+      where: { userId },
+      update: { settings: timeSleep as Prisma.InputJsonObject },
+      create: { userId, settings: timeSleep as Prisma.InputJsonObject },
+    });
+    return timeSleepRow.settings;
+  }
+
   remove(id: number) {
     return `This action removes a #${id} setting`;
   }
 
   fromDbArrayResponseToObj(array: Prisma.JsonArray, fieldRequired: string) {
-    let requiredData;
+    let requiredData: Prisma.JsonObject | Prisma.JsonArray;
     if (array.length === 2) {
       requiredData = (array[1] as Prisma.JsonObject).userId
         ? // @ts-ignore
-          (array[1][fieldRequired] as Prisma.JsonArray)
+          (array[1][fieldRequired] as Prisma.JsonObject)
         : // @ts-ignore
-          (array[0][fieldRequired] as Prisma.JsonArray);
+          (array[0][fieldRequired] as Prisma.JsonObject);
     } else {
       // @ts-ignore
-      requiredData = array[0][fieldRequired] as Prisma.JsonArray;
+      requiredData = array[0][fieldRequired] as Prisma.JsonObject;
     }
     return requiredData;
+  }
+
+  findOne(id: number) {
+    return `This action returns a #${id} setting`;
   }
 }

@@ -13,10 +13,12 @@ import {
   UpdateSettingDto,
   UpdateSettingMissedTrainingDto,
   UpdateSettingShelfTemplateDto,
+  UpdateSettingTimeSleepDto,
 } from './dto/update-setting.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { GetCurrentUser } from '@/common/decorators';
 import { MissedTrainingValue, Prisma, User } from '@prisma/client';
+import { plainToClass } from 'class-transformer';
 
 @ApiTags('Settings')
 @Controller({
@@ -35,6 +37,7 @@ export class SettingsController {
   getAllSettings(@GetCurrentUser('id') userId: User['id']) {
     return this.settingsService.getAllSettings(userId);
   }
+
   @Patch('missed-training')
   updateMissedTraining(
     @GetCurrentUser('id') userId: User['id'],
@@ -57,6 +60,16 @@ export class SettingsController {
       userId,
       shelfTemplate.shelfTemplate as unknown as Prisma.InputJsonArray,
     );
+  }
+  @Patch('time-sleep')
+  updateTimeSleep(
+    @GetCurrentUser('id') userId: User['id'],
+    @Body() timeSleep: UpdateSettingTimeSleepDto,
+  ) {
+    console.log('timeSleep', timeSleep);
+    const timeSleepObj = plainToClass(UpdateSettingTimeSleepDto, timeSleep);
+    console.log('timeSleep', timeSleepObj);
+    return this.settingsService.updateTimeSleep(userId, timeSleep);
   }
 
   @Get(':id')

@@ -3,6 +3,7 @@ import {
   CreateSettingDto,
   CreateSettingMissedTrainingDto,
   CreateSettingShelfTemplateDto,
+  CreateSettingTimeSleepDto,
 } from './create-setting.dto';
 
 export class UpdateSettingDto extends PartialType(CreateSettingDto) {}
@@ -13,4 +14,8 @@ export class UpdateSettingMissedTrainingDto extends PartialType(
 
 export class UpdateSettingShelfTemplateDto extends PartialType(
   CreateSettingShelfTemplateDto,
+) {}
+
+export class UpdateSettingTimeSleepDto extends PartialType(
+  CreateSettingTimeSleepDto,
 ) {}
