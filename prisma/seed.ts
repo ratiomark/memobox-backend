@@ -215,7 +215,7 @@ async function createSeedsInDB() {
           shelfId: shelfId,
           userId: userId,
           index: i + 1,
-          specialType: getSpecialType(i + 1, maxBoxCount),
+          specialType: getSpecialType(i + 1, maxBoxCount + 1),
           missedTrainingValue: null,
           isDeleted: false,
           timing: template,
