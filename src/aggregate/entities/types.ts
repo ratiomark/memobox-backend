@@ -1,16 +1,21 @@
 import { Box, Card, Shelf } from '@prisma/client';
 import { DataBlock } from '@/common/types/frontend/types';
 
-export interface BoxWithCards extends Box {
+export interface BoxIncCards extends Box {
   card: Card[];
 }
 
-export interface ShelfWithBoxes extends Shelf {
+export interface ShelfIncBoxes extends Shelf {
   box: Box[];
 }
 
-export interface ShelfWithBoxCards extends Shelf {
-  box: BoxWithCards[];
+export interface ShelfIncBoxesIncCards extends Shelf {
+  box: Box[];
+  card: Card[];
+}
+
+export interface ShelfIncBoxesWithCards extends Shelf {
+  box: BoxIncCards[];
 }
 
 export type ShelfIdAndIndex = {
