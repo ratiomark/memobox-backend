@@ -24,6 +24,10 @@ import {
 } from '../test/utils/constants';
 import { TimingBlock } from '../src/aggregate/entities/settings-types';
 import { getRandomBetween } from '../src/utils/common/getRandomBetween';
+import {
+  jsonSavedDataDefault,
+  jsonSettingsDefault,
+} from './mock-data/json-data-and-settings';
 
 const snakeCase = (str) =>
   str &&
@@ -326,6 +330,7 @@ async function createSeedsInDB() {
     });
     console.log('✔️ settings: shelf template');
   }
+
   async function seedTimeSleepDefaultSettings() {
     await prisma.timeSleep.create({
       data: { settings: timeSleepMock as unknown as Prisma.InputJsonValue },
@@ -339,18 +344,27 @@ async function createSeedsInDB() {
     });
     console.log('✔️ settings: missed training');
   }
+
   async function seedNotificationDefaultSettings() {
     await prisma.notification.create({
       data: { userId: null },
     });
     console.log('✔️ settings: notification');
   }
-  // async function seedNotificationDefaultSettings() {
-  //   await prisma.shelfTemplate.create({
-  //     data: { template: shelfTemplateDefaultMock },
-  //   });
-  //   console.log('✔️ settings: notifications');
-  // }
+  async function seedJsonDataAndSettingsDefault() {
+    await prisma.jsonDataAndSettings.create({
+      data: {
+        userId,
+        jsonSavedData: jsonSavedDataDefault,
+        jsonSettings: jsonSettingsDefault,
+      },
+    });
+    console.log('✔️ json saved data and settings');
+  }
+
+  // jsonSettingsDefault;
+  // jsonSavedDataDefault;
+
   // async function seedTimeSleepDefaultSettings() {
   //   await prisma.shelfTemplate.create({
   //     data: { template: shelfTemplateDefaultMock },
@@ -376,6 +390,7 @@ async function createSeedsInDB() {
   await seedTimeSleepDefaultSettings();
   await seedMissedTrainingDefaultSettings();
   await seedNotificationDefaultSettings();
+  await seedJsonDataAndSettingsDefault();
   console.log('Seeding completed.');
   return seedData;
 }
