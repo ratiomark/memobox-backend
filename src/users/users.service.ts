@@ -226,13 +226,6 @@ export class UsersService {
       },
     });
     return user.dataAndSettingsJson?.jsonSavedData;
-    // return this.prisma.user.update({
-    //   where: { id },
-    //   data: payload,
-    //   include: {
-    //     file: true,
-    //   },
-    // });
   }
 
   async updateByWhere(
