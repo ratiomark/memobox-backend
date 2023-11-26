@@ -14,13 +14,13 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateJsonSavedDataDto, UpdateUserDto } from './dto/update-user.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { Roles } from 'src/roles/roles.decorator';
-import { RoleEnum } from 'src/roles/roles.enum';
+import { Roles } from '@/roles/roles.decorator';
+import { RoleEnum } from '@/roles/roles.enum';
 import { AuthGuard } from '@nestjs/passport';
-import { RolesGuard } from 'src/roles/roles.guard';
-import { infinityPagination } from 'src/utils/infinity-pagination';
+import { RolesGuard } from '@/roles/roles.guard';
+import { infinityPagination } from '@/utils/infinity-pagination';
 import { User } from '@prisma/client';
 import { InfinityPaginationResultType } from '../utils/types/infinity-pagination-result.type';
 import { NullableType } from '../utils/types/nullable.type';
@@ -28,7 +28,7 @@ import { QueryUserDto } from './dto/query-user.dto';
 
 @ApiBearerAuth()
 @Roles(RoleEnum.ADMIN)
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+// @UseGuards(AuthGuard('jwt'), RolesGuard)
 @ApiTags('Users')
 @Controller({
   path: 'users',
@@ -92,10 +92,25 @@ export class UsersController {
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
   update(
-    @Param('id') id: User['id'],
+    @Param('id') userId: User['id'],
     @Body() updateProfileDto: UpdateUserDto,
   ): Promise<User> {
-    return this.usersService.updateByUserId(id, updateProfileDto);
+    return this.usersService.updateByUserId(userId, updateProfileDto);
+  }
+
+  @SerializeOptions({
+    groups: ['ADMIN'],
+  })
+  @Patch(':id/json-saved-data')
+  @HttpCode(HttpStatus.OK)
+  updateJsonSavedData(
+    @Param('id') userId: User['id'],
+    @Body() updateJsonSavedDataDto: UpdateJsonSavedDataDto,
+  ) {
+    return this.usersService.updateJsonSavedData(
+      userId,
+      updateJsonSavedDataDto,
+    );
   }
 
   @Delete(':id')
