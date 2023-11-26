@@ -10,9 +10,9 @@ import {
 import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
-import { IsNotExist } from 'src/utils/validators/is-not-exists.validator';
-import { IsExist } from 'src/utils/validators/is-exists.validator';
-import { lowerCaseTransformer } from 'src/utils/transformers/lower-case.transformer';
+import { IsNotExist } from '@/utils/validators/is-not-exists.validator';
+import { IsExist } from '@/utils/validators/is-exists.validator';
+import { lowerCaseTransformer } from '@/utils/transformers/lower-case.transformer';
 
 import { FileEntity } from '../../files/entities/file.entity';
 import { RoleEntity } from '../../roles/entities/role.entity';

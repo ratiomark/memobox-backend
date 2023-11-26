@@ -66,4 +66,12 @@ export class UserEntity implements User {
     nullable: true,
   })
   deletedAt: Date | null;
+
+  // @ApiProperty({
+  //   example: '2022-10-21T14:48:00.000Z',
+  //   required: false,
+  //   nullable: true,
+  // })
+  jsonSavedData: any;
+  jsonSettings: any;
 }
