@@ -172,53 +172,29 @@ describe('Auth user (e2e)', () => {
       });
   });
 
-  // it('New user update profile: /api/v1/auth/me (PATCH)', async () => {
-  //   const newUserNewName = Date.now().toString();
-  //   const newUserNewPassword = 'new-secret';
-  //   const newUserApiToken = await request(app)
-  //     .post('/api/v1/auth/email/login')
-  //     .send({ email: newUserEmail, password: newUserPassword })
-  //     .then(({ body }) => body.token);
+  it('Refresh Init: /api/v1/auth/refresh-init (POST)', async () => {
+    const responseBody = await request(app)
+      .post('/api/v1/auth/email/login')
+      .send({ email: newUserEmail, password: newUserPassword })
+      .then(({ body }) => body);
 
-  //   await request(app)
-  //     .patch('/api/v1/auth/me')
-  //     .auth(newUserApiToken, {
-  //       type: 'bearer',
-  //     })
-  //     .send({
-  //       firstName: newUserNewName,
-  //       password: newUserNewPassword,
-  //     })
-  //     .expect(422);
+    const newUserRefreshToken = responseBody.refreshToken;
+    const newUserId = responseBody.user.id;
 
-  //   await request(app)
-  //     .patch('/api/v1/auth/me')
-  //     .auth(newUserApiToken, {
-  //       type: 'bearer',
-  //     })
-  //     .send({
-  //       firstName: newUserNewName,
-  //       password: newUserNewPassword,
-  //       oldPassword: newUserPassword,
-  //     })
-  //     .expect(200);
-
-  //   await request(app)
-  //     .post('/api/v1/auth/email/login')
-  //     .send({ email: newUserEmail, password: newUserNewPassword })
-  //     .expect(200)
-  //     .expect(({ body }) => {
-  //       expect(body.token).toBeDefined();
-  //     });
-
-  //   await request(app)
-  //     .patch('/api/v1/auth/me')
-  //     .auth(newUserApiToken, {
-  //       type: 'bearer',
-  //     })
-  //     .send({ password: newUserPassword, oldPassword: newUserNewPassword })
-  //     .expect(200);
-  // });
+    await request(app)
+      .post('/api/v1/auth/refresh-init')
+      .auth(newUserRefreshToken, {
+        type: 'bearer',
+      })
+      .send({ userId: newUserId })
+      .expect(({ body }) => {
+        expect(body.token).toBeDefined();
+        expect(body.refreshToken).toBeDefined();
+        expect(body.tokenExpires).toBeDefined();
+        expect(body.user.jsonSavedData).toBeDefined();
+        expect(body.user.jsonSettings).toBeDefined();
+      });
+  });
 
   describe('Profile update:', () => {
     // This beforeAll is specific to the nested describe block
