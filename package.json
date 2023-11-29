@@ -9,6 +9,7 @@
     "prebuild": "rimraf dist",
     "dev": "cross-env NODE_ENV=development nest start -b swc --watch ",
     "build": "nest build",
+    "build:prod": "npm install && npx @nestjs/cli build",
     "start": "cross-env NODE_ENV=development nest start",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
