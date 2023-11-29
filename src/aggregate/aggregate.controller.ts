@@ -15,6 +15,7 @@ import { User } from '@prisma/client';
 import { I18n, I18nContext } from 'nestjs-i18n';
 import { GetCurrentUser, Lang } from '@/common/decorators';
 import { UserDataStorageService } from '@/user-data-storage/user-data-storage.service';
+import { sleep } from '@/utils/common/sleep';
 
 @ApiTags('Aggregate')
 @Controller({
@@ -27,22 +28,12 @@ export class AggregateController {
   ) {}
 
   @Get('view')
-  async getViewPageData(
-    @GetCurrentUser('id') userId: User['id'],
-    @Lang() lang: string,
-  ) {
-    // console.log(lang);
-    const viewPageData = await this.userDataStorageService.getViewPageData(
-      userId,
-      lang,
-    );
-    // console.log(answer);
-    return viewPageData;
-    // return this.userDataStorageService.getViewPageData(userId, lang);
+  async getViewPageData(@GetCurrentUser('id') userId: User['id']) {
+    return this.userDataStorageService.getViewPageData(userId);
   }
 
   @Get('cupboard')
-  getCupboardPageData(@GetCurrentUser('id') userId: User['id']) {
+  async getCupboardPageData(@GetCurrentUser('id') userId: User['id']) {
     return this.userDataStorageService.getCupboardPageData(userId);
   }
 
