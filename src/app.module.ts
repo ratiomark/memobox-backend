@@ -79,7 +79,7 @@ import { SettingsModule } from './settings/settings.module';
         }),
         supportedLanguages: ['en', 'ru'],
         loaderOptions: {
-          path: path.join(__dirname, 'i18n'),
+          path: path.join(__dirname,'..',  'i18n'),
           watch: true,
         },
       }),
