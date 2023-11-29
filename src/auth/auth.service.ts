@@ -471,13 +471,10 @@ export class AuthService {
       role: session.user.roleId,
       sessionId: session.id,
     });
-    console.log('-0-00000000------------------------------------');
-    console.log(user.dataAndSettingsJson);
     return {
       token,
       refreshToken,
       tokenExpires,
-      // user,
       user: {
         jsonSavedData: user.dataAndSettingsJson?.jsonSavedData,
         jsonSettings: user.dataAndSettingsJson?.jsonSettings,
