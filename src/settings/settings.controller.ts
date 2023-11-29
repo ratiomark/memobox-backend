@@ -61,6 +61,12 @@ export class SettingsController {
       shelfTemplate.shelfTemplate as unknown as Prisma.InputJsonArray,
     );
   }
+
+  @Delete('shelf-template')
+  setDefaultShelfTemplate(@GetCurrentUser('id') userId: User['id']) {
+    return this.settingsService.setDefaultShelfTemplate(userId);
+  }
+
   @Patch('time-sleep')
   updateTimeSleep(
     @GetCurrentUser('id') userId: User['id'],

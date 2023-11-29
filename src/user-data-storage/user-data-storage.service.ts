@@ -24,6 +24,7 @@ import { timeLeft } from '@/cards/helpers/timeLeft';
 import { UpdateCardDto } from '@/cards/dto/update-card.dto';
 import { plainToClass } from 'class-transformer';
 // import { zonedTimeToUtc } from 'date-fns-tz';
+
 @Injectable()
 export class UserDataStorageService {
   constructor(
@@ -39,7 +40,7 @@ export class UserDataStorageService {
       JSON.stringify(commonShelfTemplate),
     );
 
-    const formattedShelves = shelvesData.map((shelf) => {
+    const formattedShelves = shelvesData.map((shelf, index) => {
       let allCardsInShelf = 0;
       let trainCardsInShelf = 0;
       const boxesData: BoxSchemaFrontend[] = shelf.box.map((box) => {
@@ -89,10 +90,12 @@ export class UserDataStorageService {
 
       return {
         id: shelf.id,
-        index: shelf.index,
+        index: index,
         isCollapsed: shelf.isCollapsed,
         title: shelf.title,
         missedTrainingValue: shelf.missedTrainingValue,
+        isDeleting: false,
+        isDeleted: false,
         boxesData: boxesData,
         data: {
           all: allCardsInShelf,
@@ -151,14 +154,6 @@ function getTrashPageDataFromDbData(shelves: ShelfIncBoxesIncCards[]) {
       shelves: [shelf],
     };
   }
-  // if (shelves.length === 3) {
-  //   const shelf = shelves[2];
-  //   return {
-  //     cards: shelf.card,
-  //     boxes: shelf.box,
-  //     shelves: [shelf],
-  //   };
-  // }
   const boxes = shelves.reduce((acc, shelf) => {
     const newBoxesObject = {
       ...shelf.box,
@@ -171,6 +166,7 @@ function getTrashPageDataFromDbData(shelves: ShelfIncBoxesIncCards[]) {
   const cards = shelves.reduce((acc, shelf) => {
     return [...shelf.card, ...acc];
   }, []);
+
   return {
     shelves: shelves,
     boxes,

@@ -1,13 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { CreateCardDto } from './dto/create-card.dto';
-import { UpdateCardDto } from './dto/update-card.dto';
+import { MoveCardsDto, UpdateCardDto } from './dto/update-card.dto';
 import { PrismaService } from 'nestjs-prisma';
 import { Box, BoxSpecialType, Card, Shelf, User } from '@prisma/client';
-import { TrainingCardsCondition } from './entities/card.entity';
+import { TrainingCardsCondition, CardIncBox } from './entities/card.entity';
+import { NEW_CARDS_COUNTS_AS_TRAIN } from '@/common/const/flags';
+import { plainToClass } from 'class-transformer';
+import { I18nService } from 'nestjs-i18n';
 
 @Injectable()
 export class CardsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly i18n: I18nService,
+  ) {}
 
   async create(
     userId: User['id'],
@@ -45,7 +51,7 @@ export class CardsService {
       OR: [
         {
           nextTraining: {
-            lt: new Date(), // Получить карточки, у которых nextTraining больше текущего времени
+            lt: new Date(), // Получить карточки, у которых nextTraining меньше текущего времени
           },
         },
         {
@@ -273,24 +279,64 @@ export class CardsService {
     (Card & { box: { index: number; specialType: BoxSpecialType } })[]
   > {
     return this.prisma.card.findMany({
-      where: { userId },
+      where: { userId, isDeleted: false },
       include: { box: { select: { index: true, specialType: true } } },
     });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} card`;
-  }
+  // findOne(id: number) {
+  //   return `This action returns a #${id} card`;
+  // }
 
-  update(id: Card['id'], updateCardDto: UpdateCardDto): Promise<Card> {
-    const cardUpdated = this.prisma.card.update({
+  async update(id: Card['id'], updateCardDto: UpdateCardDto) {
+    const cardUpdated = await this.prisma.card.update({
       where: { id },
       data: updateCardDto,
+      include: { box: { select: { index: true, specialType: true } } },
     });
-    return cardUpdated;
+
+    return this.enhanceCard(cardUpdated);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} card`;
+  async moveCards(moveCardsDto: MoveCardsDto) {
+    const [_, cardsUpdated] = await this.prisma.$transaction([
+      this.prisma.card.updateMany({
+        where: { id: { in: moveCardsDto.cardIds } },
+        data: { shelfId: moveCardsDto.shelfId, boxId: moveCardsDto.boxId },
+      }),
+      this.prisma.card.findMany({
+        where: { id: { in: moveCardsDto.cardIds } },
+        include: { box: { select: { index: true, specialType: true } } },
+      }),
+    ]);
+
+    return this.enhanceCardList(cardsUpdated);
+  }
+
+  async deleteSoftByCardIdList(cardIds: Card['id'][]) {
+    const deletedCards = this.prisma.card.updateMany({
+      where: { id: { in: cardIds } },
+      data: { isDeleted: true },
+    });
+
+    return deletedCards;
+  }
+
+  deleteSoftByCardId(cardId: Card['id']) {
+    return this.prisma.card.update({
+      where: { id: cardId },
+      data: { isDeleted: true },
+    });
+  }
+
+  enhanceCardList(cards: CardIncBox[]) {
+    return cards.map((card) => this.enhanceCard(card));
+  }
+
+  enhanceCard(card: CardIncBox) {
+    const enhancedCard = plainToClass(UpdateCardDto, card);
+    enhancedCard.calculateState();
+    enhancedCard.updateNextTraining(this.i18n);
+    return enhancedCard;
   }
 }

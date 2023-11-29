@@ -1,7 +1,7 @@
 import { Box, Card, Prisma } from '@prisma/client';
-import { TimingBlock } from 'src/aggregate/entities/settings-types';
-import { DataBlock } from 'src/common/types/frontend/types';
-// import { DataBlock, TimingBlock } from 'src/shelves/entities/shelf.entity';
+import { TimingBlock } from '@/aggregate/entities/settings-types';
+import { DataBlock } from '@/common/types/frontend/types';
+// import { DataBlock, TimingBlock } from '@/shelves/entities/shelf.entity';
 
 // export class BoxExtended extends Box {}
 // export interface BoxWithCards extends Box {

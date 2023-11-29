@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { CreateSettingDto } from './dto/create-setting.dto';
 import {
   UpdateSettingDto,
@@ -15,10 +15,35 @@ import {
 } from '@prisma/client';
 import { sleep } from '@/utils/common/sleep';
 import { TimingBlock } from '@/aggregate/entities/settings-types';
+import {
+  DefaultSettings,
+  notificationsMock,
+  shelfTemplateDefaultMock,
+  timeSleepMock,
+} from './mock/settings-mock';
 // const findSettingsCondition = { OR: [{ userId }, { userId: null }] }
 @Injectable()
-export class SettingsService {
+export class SettingsService implements OnModuleInit {
+  private defaultSettings: DefaultSettings;
   constructor(private readonly prisma: PrismaService) {}
+
+  async onModuleInit() {
+    const [timeSleep, missedTraining, notification, shelfTemplate] =
+      await Promise.all([
+        this.prisma.timeSleep.findFirst({ where: { userId: null } }),
+        this.prisma.missedTraining.findFirst({ where: { userId: null } }),
+        this.prisma.notification.findFirst({ where: { userId: null } }),
+        this.prisma.shelfTemplate.findFirst({ where: { userId: null } }),
+      ]);
+
+    this.defaultSettings = {
+      timeSleep: timeSleep?.settings ?? timeSleepMock,
+      missedTraining: missedTraining?.settings ?? MissedTrainingValue.none,
+      notification: notification?.settings ?? notificationsMock,
+      shelfTemplate: shelfTemplate?.template ?? shelfTemplateDefaultMock,
+    };
+  }
+
   create(createSettingDto: CreateSettingDto) {
     return 'This action adds a new setting';
   }
@@ -42,35 +67,70 @@ export class SettingsService {
   findAll() {
     return `This action returns all settings`;
   }
-
+  // timeSleep = timeSleepDefault,
+  // missedTraining = missedTrainingDefault,
+  // shelfTemplate = shelfTemplateDefault,
+  // notification = notificationDefault,
   async getAllSettings(userId: User['id']) {
+    const {
+      timeSleep: timeSleepDefault,
+      missedTraining: missedTrainingDefault,
+      shelfTemplate: shelfTemplateDefault,
+      notification: notificationDefault,
+    } = this.getDefaultSettings();
+
     const [timeSleep, missedTraining, shelfTemplate, notification] =
       await Promise.all([
-        this.prisma.timeSleep.findMany({
-          where: { OR: [{ userId }, { userId: null }] },
-        }),
-        this.prisma.missedTraining.findMany({
-          where: { OR: [{ userId }, { userId: null }] },
-        }),
-        this.getShelfTemplate(userId),
-        this.prisma.notification.findMany({
-          where: { OR: [{ userId }, { userId: null }] },
-        }),
+        this.prisma.timeSleep.findUnique({ where: { userId } }),
+        this.prisma.missedTraining.findUnique({ where: { userId } }),
+        this.prisma.shelfTemplate.findUnique({ where: { userId } }),
+        this.prisma.notification.findUnique({ where: { userId } }),
       ]);
-    const [timeSleepRes, missedTrainingRes, notificationRes] = [
-      timeSleep,
-      missedTraining,
-      notification,
-    ].map((settings) => this.fromDbArrayResponseToObj(settings, 'settings'));
+
+    const response = {
+      timeSleep: timeSleep?.settings ?? timeSleepDefault,
+      missedTraining: missedTraining?.settings ?? missedTrainingDefault,
+      shelfTemplate: shelfTemplate?.template ?? shelfTemplateDefault,
+      notification: notification?.settings ?? notificationDefault,
+    };
     // console.log('timeSleepRes', timeSleepRes);
     // await sleep(15);
-    return {
-      timeSleep: timeSleepRes,
-      missedTraining: missedTrainingRes,
-      shelfTemplate,
-      notification: notificationRes,
-    };
+    return response;
+    // return {
+    //   timeSleep: timeSleepRes,
+    //   missedTraining: missedTrainingRes,
+    //   shelfTemplate,
+    //   notification: notificationRes,
+    // };
   }
+  // async getAllSettings(userId: User['id']) {
+  //   const [timeSleep, missedTraining, shelfTemplate, notification] =
+  //     await Promise.all([
+  //       this.prisma.timeSleep.findMany({
+  //         where: { OR: [{ userId }, { userId: null }] },
+  //       }),
+  //       this.prisma.missedTraining.findMany({
+  //         where: { OR: [{ userId }, { userId: null }] },
+  //       }),
+  //       this.getShelfTemplate(userId),
+  //       this.prisma.notification.findMany({
+  //         where: { OR: [{ userId }, { userId: null }] },
+  //       }),
+  //     ]);
+  //   const [timeSleepRes, missedTrainingRes, notificationRes] = [
+  //     timeSleep,
+  //     missedTraining,
+  //     notification,
+  //   ].map((settings) => this.fromDbArrayResponseToObj(settings, 'settings'));
+  //   // console.log('timeSleepRes', timeSleepRes);
+  //   // await sleep(15);
+  //   return {
+  //     timeSleep: timeSleepRes,
+  //     missedTraining: missedTrainingRes,
+  //     shelfTemplate,
+  //     notification: notificationRes,
+  //   };
+  // }
 
   async updateMissedTrainingValue(
     userId: User['id'],
@@ -99,6 +159,11 @@ export class SettingsService {
       create: { userId, template: updateShelfTemplate },
     });
     return { shelfTemplate: shelfTemplateRow.template };
+  }
+
+  async setDefaultShelfTemplate(userId: User['id']) {
+    await this.prisma.shelfTemplate.deleteMany({ where: { userId } });
+    return { shelfTemplate: this.getDefaultSettings().shelfTemplate };
   }
 
   async updateTimeSleep(
@@ -130,6 +195,10 @@ export class SettingsService {
       requiredData = array[0][fieldRequired] as Prisma.JsonObject;
     }
     return requiredData;
+  }
+
+  getDefaultSettings() {
+    return this.defaultSettings;
   }
 
   findOne(id: number) {

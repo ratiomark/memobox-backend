@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { User } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
-import { commonShelfTemplate } from 'src/common/const/commonShelfTemplate';
-import { NEW_CARDS_COUNTS_AS_TRAIN } from 'src/common/const/flags';
+import { commonShelfTemplate } from '@/common/const/commonShelfTemplate';
+import { NEW_CARDS_COUNTS_AS_TRAIN } from '@/common/const/flags';
 
 @Injectable()
 export class CupboardService {

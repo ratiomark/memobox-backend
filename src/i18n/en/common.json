@@ -2,6 +2,7 @@
   "confirmEmail": "Confirm email",
   "resetPassword": "Reset password",
   "time": {
+    "now": "now",
     "day": "{count} day",
     "day_plural": "{count} days",
     "month": "{count} month",

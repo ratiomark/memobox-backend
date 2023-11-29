@@ -6,3 +6,13 @@ export type LoginResponseType = Readonly<{
   tokenExpires: number;
   user: User;
 }>;
+
+export type RefreshInitResponseType = Readonly<{
+  token: string;
+  refreshToken: string;
+  tokenExpires: number;
+  user: {
+    jsonSavedData: any;
+    jsonSettings: any;
+  };
+}>;

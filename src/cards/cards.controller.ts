@@ -9,10 +9,15 @@ import {
 } from '@nestjs/common';
 import { CardsService } from './cards.service';
 import { CreateCardDto } from './dto/create-card.dto';
-import { UpdateCardDto } from './dto/update-card.dto';
+import {
+  MoveCardsDto,
+  RemoveMultipleCardsDto,
+  UpdateCardDto,
+} from './dto/update-card.dto';
 import { ApiTags } from '@nestjs/swagger';
-import { GetCurrentUser } from 'src/common/decorators';
+import { GetCurrentUser, Lang } from '@/common/decorators';
 import { Box, Card, Shelf, User } from '@prisma/client';
+import { id } from 'date-fns/locale';
 
 @ApiTags('Cards')
 @Controller({
@@ -48,9 +53,15 @@ export class CardsController {
     );
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.cardsService.findOne(+id);
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.cardsService.findOne(+id);
+  // }
+
+  @Patch('move-cards')
+  moveCards(@Body() moveCardsDto: MoveCardsDto) {
+    console.log(moveCardsDto);
+    return this.cardsService.moveCards(moveCardsDto);
   }
 
   @Patch(':id')
@@ -58,9 +69,14 @@ export class CardsController {
     return this.cardsService.update(id, updateCardDto);
   }
 
+  @Delete('remove-cards')
+  deleteSoftByCardIdList(@Body() removeCardsDto: RemoveMultipleCardsDto) {
+    return this.cardsService.deleteSoftByCardIdList(removeCardsDto.cardIds);
+  }
+
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.cardsService.remove(+id);
+  deleteSoftByCardId(@Param('id') id: Card['id']) {
+    return this.cardsService.deleteSoftByCardId(id);
   }
 }
 // @Controller({

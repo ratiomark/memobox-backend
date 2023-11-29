@@ -11,9 +11,9 @@ import { AuthProviders, Session, User } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import ms from 'ms';
-import { AllConfigType } from 'src/config/config.type';
-import { SessionService } from 'src/session/session.service';
-import { UsersService } from 'src/users/users.service';
+import { AllConfigType } from '@/config/config.type';
+import { SessionService } from '@/session/session.service';
+import { UsersService } from '@/users/users.service';
 import { ForgotService } from '../forgot/forgot.service';
 import { MailService } from '../mail/mail.service';
 import { RoleEnum } from '../roles/roles.enum';
@@ -26,9 +26,12 @@ import { AuthRegisterLoginDto } from './dto/auth-register-login.dto';
 import { AuthUpdateDto } from './dto/auth-update.dto';
 import { JwtPayloadType } from './strategies/types/jwt-payload.type';
 import { JwtRefreshPayloadType } from './strategies/types/jwt-refresh-payload.type';
-import { LoginResponseType } from './types/login-response.type';
-import { DevResponseService } from 'src/dev-response/dev-response.service';
-import { TeapotException } from 'src/common/exceptions/teapot-exception';
+import {
+  LoginResponseType,
+  RefreshInitResponseType,
+} from './types/login-response.type';
+import { DevResponseService } from '@/dev-response/dev-response.service';
+import { TeapotException } from '@/common/exceptions/teapot-exception';
 
 @Injectable()
 export class AuthService {
@@ -43,9 +46,13 @@ export class AuthService {
   ) {}
 
   async validateLogin(loginDto: AuthEmailLoginDto): Promise<LoginResponseType> {
-    const user = await this.usersService.findOneByEmail({
+    const user = await this.usersService.findOneByEmailWithJsonData({
       where: { email: loginDto.email },
     });
+    // const user = await this.usersService.findOneByEmail({
+    //   where: { email: loginDto.email },
+    //   include: { dataAndSettingsJson: true },
+    // });
 
     if (!user) {
       throw new HttpException(
@@ -105,6 +112,7 @@ export class AuthService {
     }
 
     const session = await this.sessionService.create({ userId: user.id });
+    // const dataAndSettingsJson = await this.
 
     const { token, refreshToken, tokenExpires } = await this.getTokensData({
       id: user.id,
@@ -128,7 +136,14 @@ export class AuthService {
     const tokenExpiresIn = this.configService.getOrThrow('auth.expires', {
       infer: true,
     });
+    const refreshTokenExpiresIn = this.configService.getOrThrow(
+      'auth.refreshExpires',
+      {
+        infer: true,
+      },
+    );
     const tokenExpires = Date.now() + ms(tokenExpiresIn);
+    const refreshTokenExpires = Date.now() + ms(refreshTokenExpiresIn);
 
     const [token, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
@@ -150,9 +165,8 @@ export class AuthService {
           secret: this.configService.getOrThrow('auth.refreshSecret', {
             infer: true,
           }),
-          expiresIn: this.configService.getOrThrow('auth.refreshExpires', {
-            infer: true,
-          }),
+          expiresIn: '8d',
+          // expiresIn: refreshTokenExpires,
         },
       ),
     ]);
@@ -426,6 +440,48 @@ export class AuthService {
       token,
       refreshToken,
       tokenExpires,
+    };
+  }
+
+  async refreshTokenInit(
+    sessionId: number,
+    userId: User['id'],
+  ): Promise<RefreshInitResponseType> {
+    // ): Promise<Omit<LoginResponseType, 'user'>> {
+    const [session, user] = await Promise.all([
+      this.sessionService.findOneWithUser({
+        id: sessionId,
+      }),
+      this.usersService.findOneWithJsonData({
+        where: { id: userId },
+      }),
+    ]);
+    // const session = await this.sessionService.findOneWithUser({
+    //   id: sessionId,
+    // });
+
+    if (!session || !session.user) {
+      throw new TeapotException();
+      // throw new UnauthorizedException();
+    }
+    // console.log('ssssssssssssssssssssssss');
+    // console.log(user.jsonDataAndSettings);
+    const { token, refreshToken, tokenExpires } = await this.getTokensData({
+      id: session.user.id,
+      role: session.user.roleId,
+      sessionId: session.id,
+    });
+    console.log('-0-00000000------------------------------------');
+    console.log(user.dataAndSettingsJson);
+    return {
+      token,
+      refreshToken,
+      tokenExpires,
+      // user,
+      user: {
+        jsonSavedData: user.dataAndSettingsJson?.jsonSavedData,
+        jsonSettings: user.dataAndSettingsJson?.jsonSettings,
+      },
     };
   }
 

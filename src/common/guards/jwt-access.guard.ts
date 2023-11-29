@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
-import { jwtStrategyName } from 'src/auth/strategies/strategy-names';
+import { jwtStrategyName } from '@/auth/strategies/strategy-names';
 import { META_KEY_IS_PUBLIC } from '../const/metadata';
 import { Observable } from 'rxjs';
 

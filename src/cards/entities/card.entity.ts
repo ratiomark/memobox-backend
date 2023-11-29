@@ -1,4 +1,4 @@
-import { BoxSpecialType, Shelf, Box } from '@prisma/client';
+import { BoxSpecialType, Shelf, Box, $Enums, Card } from '@prisma/client';
 
 // export class Card {}
 export type TrainingCardsCondition = {
@@ -17,4 +17,11 @@ export type TrainingCardsCondition = {
         nextTraining: null;
       }
   )[];
+};
+
+export type CardIncBox = Card & {
+  box: {
+    index: number;
+    specialType: $Enums.BoxSpecialType;
+  };
 };

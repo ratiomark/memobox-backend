@@ -2,80 +2,66 @@ import { Injectable } from '@nestjs/common';
 import { CreateShelfDto } from './dto/create-shelf.dto';
 import { UpdateShelfDto } from './dto/update-shelf.dto';
 import { PrismaService } from 'nestjs-prisma';
-import { uuid } from 'src/utils/helpers/sql';
-import { Shelf, User } from '@prisma/client';
+import { uuid } from '@/utils/helpers/sql';
+import { Prisma, Shelf, User } from '@prisma/client';
 import { ShelfOrderRequest } from './entities/types';
-import { DataBlock, ShelfExtended } from './entities/shelf.entity';
-import { BoxSchema } from 'src/boxes/entities/box.entity';
+import { ShelfWithBoxCards, ShelvesDataViewPage } from '@/aggregate';
+import { emptyDataTemplate } from '@/common/const/commonShelfTemplate';
+import { CreateBoxDto } from '@/boxes/dto/create-box.dto';
+import { SettingsService } from '@/settings/settings.service';
+import { BoxesService } from '@/boxes/boxes.service';
+import { CardsService } from '@/cards/cards.service';
+import { ShelfIncBoxesIncCards } from '@/aggregate/entities/types';
 
 @Injectable()
 export class ShelvesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settingsService: SettingsService,
+    private readonly boxesService: BoxesService,
+    private readonly cardsService: CardsService,
+  ) {}
 
   async create(userId: User['id'], createShelfDto: CreateShelfDto) {
-    const response = await this.prisma.$queryRawUnsafe<Shelf[]>(
-      // `SELECT * FROM add_shelf_and_update_indexes($1, $2);`,
-      // userId,
-      // createShelfDto.title,
-      `SELECT * FROM add_shelf_and_update_indexes('${userId}', '${createShelfDto.title}') ;`,
-    );
-    const shelf = response[0];
+    const [shelfFromDb, shelfTemplate] = await Promise.all([
+      // return array with created shelf, so response[0] === createdShelf
+      this.prisma.$queryRawUnsafe<Shelf[]>(
+        `SELECT * FROM add_shelf_and_update_indexes('${userId}', '${createShelfDto.title}') ;`,
+      ),
+      this.settingsService.getShelfTemplate(userId),
+    ]);
+    // const response = await this.prisma.$queryRawUnsafe<Shelf[]>(
+    //   // `SELECT * FROM add_shelf_and_update_indexes($1, $2);`,
+    //   // userId,
+    //   // createShelfDto.title,
+    //   `SELECT * FROM add_shelf_and_update_indexes('${userId}', '${createShelfDto.title}') ;`,
+    // );
+    // console.log(shelfTemplateSettings);
+    // let templateToUse: ShelfTemplate['template'];
+    // if (shelfTemplateSettings.length == 2) {
+    //   templateToUse = shelfTemplateSettings[1].userId
+    //     ? (shelfTemplateSettings[1].template as Prisma.JsonArray)
+    //     : (shelfTemplateSettings[0].template as Prisma.JsonArray);
+    // } else {
+    //   templateToUse = shelfTemplateSettings[0].template as Prisma.JsonArray;
+    // }
+
+    const shelf = shelfFromDb[0];
     const shelfResponse = {
-      boxesData: [] as BoxSchema[],
-      data: {} as DataBlock,
+      boxesData: [] as CreateBoxDto[],
+      // boxesData: [] as BoxSchema[],
+      data: emptyDataTemplate,
       ...shelf,
       isCollapsed: true,
     };
-    shelfResponse.boxesData = [
-      {
-        id: 'abd154a6-5bd1-48d2-a649-46b2fd1dab85',
-        index: 0,
-        specialType: 'new',
-        data: {
-          all: 0,
-        },
-      },
-      {
-        id: '313940d3-dbde-4bbe-af0c-cc59779fd5a3',
-        index: 1,
-        specialType: 'none',
-        timing: {
-          days: 0,
-          hours: 0,
-          weeks: 0,
-          months: 0,
-          minutes: 5,
-        },
-        data: {
-          all: 0,
-          train: 0,
-          wait: 0,
-        },
-      },
-      {
-        id: '3468d9e0-b9cb-426a-a362-f7fb4a4b0d5a',
-        index: 2,
-        specialType: 'learnt',
-        timing: {
-          days: 0,
-          hours: 0,
-          weeks: 0,
-          months: 0,
-          minutes: 5,
-        },
-        data: {
-          all: 0,
-          train: 0,
-          wait: 0,
-        },
-      },
-    ];
-    shelfResponse.data = {
-      all: 0,
-      train: 0,
-      wait: 0,
-    };
-    console.log(shelfResponse);
+    const shelfId = shelf.id;
+    const boxesData = await this.boxesService.createBoxesFromTemplate({
+      shelfId,
+      userId,
+      shelfTemplate,
+    });
+    // console.log(boxesData);
+    shelfResponse.boxesData = boxesData;
     return shelfResponse;
   }
 
@@ -85,50 +71,158 @@ export class ShelvesService {
     );
   }
 
-  // async orderShelves(userId: User['id'], shelfOrder: ShelfOrderRequest) {
-  //   // let update: string[] = [];
-  //   // let updateString = '';
-  //   // for (const item of shelfOrder) {
-  //   //   // for (const { id, index } of shelfOrder) {
-  //   //   // update.push(`{ "id": "${id}", "index": ${index} }`);
-  //   //   updateString += `${JSON.stringify(item)} ,`;
-  //   //   // updateString += `{ "id": "${id}", "index": ${index} } ,`;
-  //   // }
-  //   // console.log(update);
-  //   // console.log(update.join(', '));
-  //   // { "id": "c78455b1-25c8-4f72-a60a-e00ff29c6e53", "index": 0 },
-  //   await this.prisma.$executeRawUnsafe(
-  //     `SELECT update_shelf_order('${JSON.stringify(shelfOrder)}')`,
-  //   );
-  //   // await this.prisma.$executeRawUnsafe(
-  //   //   `SELECT update_shelf_order('[${updateString.slice(
-  //   //     0,
-  //   //     updateString.length - 2,
-  //   //   )}]')`,
-  //   // );
-  // }
+  findAll(params: Prisma.ShelfFindManyArgs): Promise<Shelf[]> {
+    return this.prisma.shelf.findMany(params);
+  }
 
-  findAll() {
-    return `This action returns all shelves`;
+  async findAllWithBoxCard(userId: User['id']): Promise<ShelfWithBoxCards[]> {
+    return await this.prisma.shelf.findMany({
+      where: {
+        userId,
+        isDeleted: false,
+      },
+      include: {
+        box: {
+          where: {
+            isDeleted: false, // Фильтрация коробок
+          },
+          include: {
+            card: {
+              where: {
+                isDeleted: false, // Фильтрация карточек
+              },
+            },
+          },
+        },
+        // user: true,
+      },
+      orderBy: { index: 'asc' },
+    });
   }
 
   findOne(id: number) {
     return `This action returns a #${id} shelf`;
   }
 
-  update(id: number, updateShelfDto: UpdateShelfDto) {
-    return `This action updates a #${id} shelf`;
+  async update(
+    id: Shelf['id'],
+    updateShelfDto: UpdateShelfDto,
+  ): Promise<Shelf> {
+    const shelfUpdated = await this.prisma.shelf.update({
+      where: { id },
+      data: updateShelfDto,
+    });
+    return shelfUpdated;
   }
 
-  async remove(userId: User['id'], shelfId: Shelf['id'], shelfIndex: number) {
+  async deleteSoft(
+    userId: User['id'],
+    shelfId: Shelf['id'],
+    shelfIndex: number,
+  ) {
     // console.log(userId, shelfId, shelfIndex);
-    const response = await this.prisma.$queryRawUnsafe<Shelf[]>(
-      // `SELECT * FROM add_shelf_and_update_indexes($1, $2);`,
-      // userId,
-      // createShelfDto.title,
-      `SELECT * FROM remove_shelf_and_update_indexes('${userId}', '${shelfId}', '${shelfIndex}') ;`,
-    );
-
+    const [response] = await Promise.all([
+      this.prisma.$queryRawUnsafe<Shelf[]>(
+        `SELECT * FROM remove_shelf_and_update_indexes('${userId}', '${shelfId}', '${shelfIndex}') ;`,
+      ),
+      this.boxesService.deleteSoftByShelfId(shelfId),
+      this.cardsService.deleteSoftByShelfId(shelfId),
+    ]);
+    // // console.log(userId, shelfId, shelfIndex);
+    // const response = await this.prisma.$queryRawUnsafe<Shelf[]>(
+    //   // `SELECT * FROM add_shelf_and_update_indexes($1, $2);`,
+    //   // userId,
+    //   // createShelfDto.title,
+    //   `SELECT * FROM remove_shelf_and_update_indexes('${userId}', '${shelfId}', '${shelfIndex}') ;`,
+    // );
     return response;
   }
+
+  // shelvesAndBoxesData for /view page
+  async getShelvesAndBoxesData(userId: User['id']) {
+    const shelves = await this.prisma.shelf.findMany({
+      where: { userId, isDeleted: false },
+      include: {
+        box: {
+          orderBy: {
+            index: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        index: 'asc',
+      },
+    });
+
+    const shelvesAndBoxesData: ShelvesDataViewPage = shelves.reduce(
+      (acc, shelf) => {
+        const boxesItems = shelf.box.map((box) => ({
+          id: box.id,
+          index: box.index,
+        }));
+
+        // Добавляем данные о полке
+        acc[shelf.id] = {
+          maxIndexBox: shelf.box.length - 1,
+          boxesItems,
+          shelfTitle: shelf.title,
+          shelfIndex: shelf.index,
+        };
+
+        return acc;
+      },
+      {},
+    );
+
+    return shelvesAndBoxesData;
+  }
+
+  async getDeletedShelves(
+    userId: User['id'],
+  ): Promise<ShelfIncBoxesIncCards[]> {
+    return await this.prisma.shelf.findMany({
+      where: { userId, isDeleted: true },
+      include: {
+        box: true,
+        card: true,
+      },
+    });
+  }
 }
+
+// async orderShelves(userId: User['id'], shelfOrder: ShelfOrderRequest) {
+//   // let update: string[] = [];
+//   // let updateString = '';
+//   // for (const item of shelfOrder) {
+//   //   // for (const { id, index } of shelfOrder) {
+//   //   // update.push(`{ "id": "${id}", "index": ${index} }`);
+//   //   updateString += `${JSON.stringify(item)} ,`;
+//   //   // updateString += `{ "id": "${id}", "index": ${index} } ,`;
+//   // }
+//   // console.log(update);
+//   // console.log(update.join(', '));
+//   // { "id": "c78455b1-25c8-4f72-a60a-e00ff29c6e53", "index": 0 },
+//   await this.prisma.$executeRawUnsafe(
+//     `SELECT update_shelf_order('${JSON.stringify(shelfOrder)}')`,
+//   );
+//   // await this.prisma.$executeRawUnsafe(
+//   //   `SELECT update_shelf_order('[${updateString.slice(
+//   //     0,
+//   //     updateString.length - 2,
+//   //   )}]')`,
+//   // );
+// }
+
+//  const boxesData: BoxSchema[] = templateToUse
+//    .slice(1, templateToUse.length - 2)
+//    .map((timing, index) => {
+//      const boxId = uuid();
+//      const boxData = {
+//        id: boxId,
+//        index,
+//        specialType: 'none',
+//        timing: timing as unknown as TimingBlock,
+//        data: emptyDataTemplate,
+//      };
+//      return boxData;
+//    });

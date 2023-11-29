@@ -3,9 +3,12 @@ import { CreateBoxDto } from './dto/create-box.dto';
 import { UpdateBoxDto } from './dto/update-box.dto';
 import { PrismaService } from 'nestjs-prisma';
 import { Shelf, Prisma, User, BoxSpecialType, Box } from '@prisma/client';
-import { emptyDataTemplate } from 'src/common/const/commonShelfTemplate';
-import { uuid } from 'src/utils/helpers/sql';
-import { CardsService } from 'src/cards/cards.service';
+import {
+  emptyDataTemplate,
+  emptyNewCardsTemplate,
+} from '@/common/const/commonShelfTemplate';
+import { uuid } from '@/utils/helpers/sql';
+import { CardsService } from '@/cards/cards.service';
 
 type GenerateBoxesFromTemplateArg = {
   shelfTemplate: Prisma.JsonArray;
@@ -37,7 +40,7 @@ export class BoxesService {
       shelfId,
     });
     await this.createMany(boxesData);
-    boxesData[0].data = { all: 0 };
+    boxesData[0].data = emptyNewCardsTemplate;
     boxesData.forEach((box) => (box.data = emptyDataTemplate));
     return boxesData;
   }

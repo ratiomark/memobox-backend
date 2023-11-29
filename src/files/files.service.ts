@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from 'nestjs-prisma';
-import { AllConfigType } from 'src/config/config.type';
+import { AllConfigType } from '@/config/config.type';
 import { File } from '@prisma/client';
 import path from 'path';
 

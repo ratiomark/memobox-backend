@@ -3,6 +3,7 @@
   "resetPassword": "Reset password",
   "test": "ЭТО тест мазафака",
   "time": {
+    "now": "пора",
     "day": "{count} день",
     "day_plural": "{count} дн.",
     "month": "{count} месяц",

@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  // Headers,
   Get,
   HttpCode,
   HttpStatus,
@@ -19,14 +18,14 @@ import { AuthForgotPasswordDto } from './dto/auth-forgot-password.dto';
 import { AuthConfirmEmailDto } from './dto/auth-confirm-email.dto';
 import { AuthResetPasswordDto } from './dto/auth-reset-password.dto';
 import { AuthUpdateDto } from './dto/auth-update.dto';
-// import { AuthGuard } from '@nestjs/passport';
 import { AuthRegisterLoginDto } from './dto/auth-register-login.dto';
 import { LoginResponseType } from './types/login-response.type';
 import { User } from '@prisma/client';
 import { NullableType } from '../utils/types/nullable.type';
 import { GetBatchResult } from '@prisma/client/runtime/library';
-import { JwtGuard, JwtRefreshGuard } from 'src/common/guargs';
-import { GetCurrentUser, IsPublic } from 'src/common/decorators';
+import { GetCurrentUser, IsPublic } from '@/common/decorators';
+import { JwtRefreshGuard } from '@/common/guards';
+import { request } from 'express';
 
 @ApiTags('Auth')
 @Controller({
@@ -102,6 +101,7 @@ export class AuthController {
     return this.authService.me(userId);
   }
 
+  @IsPublic()
   @Post('refresh')
   @ApiBearerAuth()
   @ApiOperation({
@@ -113,12 +113,34 @@ export class AuthController {
   @SerializeOptions({
     groups: ['ME'],
   })
-  @IsPublic()
   @UseGuards(JwtRefreshGuard)
   public refresh(
     @GetCurrentUser('sessionId') sessionId: number,
   ): Promise<Omit<LoginResponseType, 'user'>> {
+    console.log(sessionId);
     return this.authService.refreshToken(sessionId);
+  }
+
+  @IsPublic()
+  @Post('refresh-init')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get access token, refresh token and token expiration date',
+    description:
+      'This endpoint requires a Bearer token(refresh token) to be passed in the header.',
+  })
+  @HttpCode(HttpStatus.OK)
+  @SerializeOptions({
+    groups: ['ME'],
+  })
+  @UseGuards(JwtRefreshGuard)
+  public refreshInit(
+    @Body() body: { userId: User['id'] },
+    @GetCurrentUser('sessionId') sessionId: number,
+  ): Promise<Omit<LoginResponseType, 'user'>> {
+    // console.log(body);
+    // console.log(sessionId, userId);
+    return this.authService.refreshTokenInit(sessionId, body.userId);
   }
 
   @Post('logout')

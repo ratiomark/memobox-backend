@@ -7,7 +7,7 @@ import {
 import { PassportStrategy } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { OrNeverType } from '../../utils/types/or-never.type';
-import { AllConfigType } from 'src/config/config.type';
+import { AllConfigType } from '@/config/config.type';
 import { JwtPayloadType } from './types/jwt-payload.type';
 import { jwtStrategyName } from './strategy-names';
 
@@ -22,8 +22,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, jwtStrategyName) {
   }
 
   public validate(payload: JwtPayloadType): OrNeverType<JwtPayloadType> {
-    console.log('*** Inside JwtStrategy validate method ***');
-    console.log('Payload:', payload);
+    console.log('JwtStrategy validate start');
+    // console.log('*** Inside JwtStrategy validate method ***');
+    // console.log('Payload:', payload);
 
     if (!payload.id) {
       console.log('No ID in payload, throwing UnauthorizedException.');
@@ -34,11 +35,15 @@ export class JwtStrategy extends PassportStrategy(Strategy, jwtStrategyName) {
     // console.log(new Date(payload.exp));
     // console.log(payload.exp < new Date().getTime());
 
-    if (payload.exp - payload.iat < 0) {
+    if (payload.exp < Math.floor(Date.now() / 1000)) {
+      console.log(
+        'JwtStrategy - Token expired, throwing UnauthorizedException.',
+      );
+      // if (payload.exp - payload.iat < new Date().getTime()) {
       throw new UnauthorizedException('expired');
     }
 
-    console.log('Validation successful, returning payload.');
+    console.log('JwtStrategy validation successful, returning payload.');
     return payload;
   }
 }

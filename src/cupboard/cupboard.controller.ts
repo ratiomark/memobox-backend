@@ -1,7 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { CupboardService } from './cupboard.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { GetCurrentUser } from 'src/common/decorators';
+import { GetCurrentUser } from '@/common/decorators';
 import { User } from '@prisma/client';
 
 @ApiTags('Cupboard')
