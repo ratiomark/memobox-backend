@@ -28,14 +28,14 @@ export class CardsService {
   deleteSoftByShelfId(shelfId: Shelf['id']) {
     return this.prisma.card.updateMany({
       where: { shelfId },
-      data: { isDeleted: true },
+      data: { isDeleted: true, deletedAt: new Date() },
     });
   }
 
   deleteSoftByBoxId(boxId: Box['id']) {
     return this.prisma.card.updateMany({
       where: { boxId },
-      data: { isDeleted: true },
+      data: { isDeleted: true, deletedAt: new Date() },
     });
   }
 
@@ -284,9 +284,11 @@ export class CardsService {
     });
   }
 
-  // findOne(id: number) {
-  //   return `This action returns a #${id} card`;
-  // }
+  async findAllDeletedCards(userId: User['id']) {
+    return this.prisma.card.findMany({
+      where: { userId, isDeleted: true },
+    });
+  }
 
   async update(id: Card['id'], updateCardDto: UpdateCardDto) {
     const cardUpdated = await this.prisma.card.update({
@@ -316,7 +318,7 @@ export class CardsService {
   async deleteSoftByCardIdList(cardIds: Card['id'][]) {
     const deletedCards = this.prisma.card.updateMany({
       where: { id: { in: cardIds } },
-      data: { isDeleted: true },
+      data: { isDeleted: true, deletedAt: new Date() },
     });
 
     return deletedCards;
@@ -325,7 +327,7 @@ export class CardsService {
   deleteSoftByCardId(cardId: Card['id']) {
     return this.prisma.card.update({
       where: { id: cardId },
-      data: { isDeleted: true },
+      data: { isDeleted: true, deletedAt: new Date() },
     });
   }
 

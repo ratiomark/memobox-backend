@@ -94,7 +94,7 @@ export class BoxesService {
   deleteSoftByShelfId(shelfId: Shelf['id']) {
     return this.prisma.box.updateMany({
       where: { shelfId },
-      data: { isDeleted: true },
+      data: { isDeleted: true, deletedAt: new Date() },
     });
   }
 
@@ -102,11 +102,17 @@ export class BoxesService {
     const [box, cards] = await Promise.all([
       this.prisma.box.update({
         where: { id },
-        data: { isDeleted: true },
+        data: { isDeleted: true, deletedAt: new Date() },
       }),
       this.cardsService.deleteSoftByBoxId(id),
     ]);
     return { box, cards };
+  }
+
+  async findAllDeletedBoxes(userId: User['id']) {
+    return this.prisma.box.findMany({
+      where: { userId, isDeleted: true },
+    });
   }
 
   remove(id: number) {

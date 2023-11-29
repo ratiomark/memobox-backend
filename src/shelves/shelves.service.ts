@@ -177,7 +177,7 @@ export class ShelvesService {
     return shelvesAndBoxesData;
   }
 
-  async getDeletedShelves(
+  async findAllDeletedBoxes(
     userId: User['id'],
   ): Promise<ShelfIncBoxesIncCards[]> {
     return await this.prisma.shelf.findMany({

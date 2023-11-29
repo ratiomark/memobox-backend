@@ -456,16 +456,10 @@ export class AuthService {
         where: { id: userId },
       }),
     ]);
-    // const session = await this.sessionService.findOneWithUser({
-    //   id: sessionId,
-    // });
 
     if (!session || !session.user) {
       throw new TeapotException();
-      // throw new UnauthorizedException();
     }
-    // console.log('ssssssssssssssssssssssss');
-    // console.log(user.jsonDataAndSettings);
     const { token, refreshToken, tokenExpires } = await this.getTokensData({
       id: session.user.id,
       role: session.user.roleId,

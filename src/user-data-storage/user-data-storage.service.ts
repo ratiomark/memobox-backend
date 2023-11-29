@@ -19,16 +19,15 @@ import { NEW_CARDS_COUNTS_AS_TRAIN } from '@/common/const/flags';
 import { ShelvesService } from '@/shelves/shelves.service';
 import { CupboardSchema, BoxSchemaFrontend } from './types/fronted-responses';
 import { I18nService } from 'nestjs-i18n';
-import { cards } from 'prisma/mock-data/staticDataFromDb';
-import { timeLeft } from '@/cards/helpers/timeLeft';
-import { UpdateCardDto } from '@/cards/dto/update-card.dto';
-import { plainToClass } from 'class-transformer';
+import { BoxesService } from '@/boxes/boxes.service';
+
 // import { zonedTimeToUtc } from 'date-fns-tz';
 
 @Injectable()
 export class UserDataStorageService {
   constructor(
     private readonly cardsService: CardsService,
+    private readonly boxesService: BoxesService,
     private readonly shelvesService: ShelvesService,
     private readonly i18n: I18nService,
   ) {}
@@ -134,17 +133,32 @@ export class UserDataStorageService {
     return { cards: enhancedCards, shelvesAndBoxesData };
   }
 
-  async getTrashPageData(userId: User['id'], lang = 'en') {
-    const deletedShelvesAndShelvesData =
-      await this.shelvesService.getDeletedShelves(userId);
+  async getTrashPageData(userId: User['id']) {
+    const [shelves, boxes, cards] = await Promise.all([
+      this.shelvesService.findAllDeletedBoxes(userId),
+      this.boxesService.findAllDeletedBoxes(userId),
+      this.cardsService.findAllDeletedCards(userId),
+    ]);
+    // const deletedShelvesAndShelvesData =
+    // await this.shelvesService.findAllDeletedBoxes(userId);
 
-    return getTrashPageDataFromDbData(deletedShelvesAndShelvesData);
+    return {
+      shelves,
+      boxes,
+      cards,
+      entitiesCount: {
+        shelves: shelves.length,
+        boxes: boxes.length,
+        cards: cards.length,
+      },
+    };
+    // return getTrashPageDataFromDbData(deletedShelvesAndShelvesData);
   }
 }
 
 function getTrashPageDataFromDbData(shelves: ShelfIncBoxesIncCards[]) {
   if (shelves.length === 0) {
-    return {};
+    return { shelves: [] };
   }
   if (shelves.length === 1) {
     const shelf = shelves[0];
