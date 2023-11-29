@@ -9,7 +9,7 @@ import {
 } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { v4 as v4uuid } from 'uuid';
-import { PartialShelf, PartialBox, CardBase } from './types/entities';
+import { PartialShelf, PartialBox } from './types/entities';
 import { newCards, defaultCard } from './mock-data/cards';
 import { getSpecialType } from './helpers/getSpecialType';
 import {
