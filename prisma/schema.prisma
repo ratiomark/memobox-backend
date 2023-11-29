@@ -84,12 +84,11 @@ model User {
   box                 Box[]
   card                Card[]
   // @@index([firstName, socialId, hash, lastName])
-  // ShelfTemplate ShelfTemplate[]
   shelfTemplate       ShelfTemplate?
   timeSleep           TimeSleep?
   notification        Notification?
   missedTraining      MissedTraining?
-  jsonDataAndSettings JsonDataAndSettings?
+  dataAndSettingsJson DataAndSettingsJson?
 
   @@index([id])
   @@index([email])
@@ -112,7 +111,7 @@ model Shelf {
   box                 Box[]
   card                Card[]
 
-  @@unique([userId, title])
+  // @@unique([userId, title])
   @@map("shelf")
 }
 
@@ -213,7 +212,7 @@ model MissedTraining {
   @@map("missed_training")
 }
 
-model JsonDataAndSettings {
+model DataAndSettingsJson {
   id            Int    @id @default(autoincrement())
   // 
   // theme: Theme, isFirstVisit: boolean, settingsPageHasBeenOpen: boolean
@@ -225,7 +224,7 @@ model JsonDataAndSettings {
   user          User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([userId])
-  @@map("json_data_and_settings")
+  @@map("data_and_settings_json")
 }
 
 enum AuthProviders {

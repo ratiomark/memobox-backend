@@ -352,7 +352,7 @@ async function createSeedsInDB() {
     console.log('✔️ settings: notification');
   }
   async function seedJsonDataAndSettingsDefault() {
-    await prisma.jsonDataAndSettings.create({
+    await prisma.dataAndSettingsJson.create({
       data: {
         userId,
         jsonSavedData: jsonSavedDataDefault,
