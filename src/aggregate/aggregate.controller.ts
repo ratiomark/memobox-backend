@@ -28,27 +28,4 @@ export class AggregateController {
   getTrashPageData(@GetCurrentUser('id') userId: User['id']) {
     return this.userDataStorageService.getTrashPageData(userId);
   }
-
-  // @Get('test')
-  // async getTest(@I18n() i18n: I18nContext) {
-  //   return await i18n.translate('common.test');
-  // }
-
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.aggregateService.findOne(+id);
-  // }
-
-  // @Patch(':id')
-  // update(
-  //   @Param('id') id: string,
-  //   @Body() updateAggregateDto: UpdateAggregateDto,
-  // ) {
-  //   return this.aggregateService.update(+id, updateAggregateDto);
-  // }
-
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.aggregateService.remove(+id);
-  // }
 }
