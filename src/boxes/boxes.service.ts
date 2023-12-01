@@ -111,7 +111,7 @@ export class BoxesService {
 
   async findAllDeletedBoxes(userId: User['id']) {
     return this.prisma.box.findMany({
-      where: { userId, isDeleted: true },
+      where: { userId, isDeleted: true, shelf: { isDeleted: false } },
     });
   }
 

@@ -7,7 +7,7 @@
       {
         "include": "i18n/**/*",
         "watchAssets": true,
-        "outDir": "dist/src/i18n"
+        "outDir": "dist/i18n"
       }
     ]
   }

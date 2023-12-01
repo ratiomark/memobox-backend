@@ -11,7 +11,11 @@ import { CreateBoxDto } from '@/boxes/dto/create-box.dto';
 import { SettingsService } from '@/settings/settings.service';
 import { BoxesService } from '@/boxes/boxes.service';
 import { CardsService } from '@/cards/cards.service';
-import { ShelfIncBoxesIncCards } from '@/aggregate/entities/types';
+import {
+  ShelfIncBoxes,
+  ShelfIncBoxesIncCards,
+  ShelfWithBoxesData,
+} from '@/aggregate/entities/types';
 
 @Injectable()
 export class ShelvesService {
@@ -94,7 +98,6 @@ export class ShelvesService {
             },
           },
         },
-        // user: true,
       },
       orderBy: { index: 'asc' },
     });
@@ -153,40 +156,46 @@ export class ShelvesService {
         index: 'asc',
       },
     });
-
-    const shelvesAndBoxesData: ShelvesDataViewPage = shelves.reduce(
-      (acc, shelf) => {
-        const boxesItems = shelf.box.map((box) => ({
-          id: box.id,
-          index: box.index,
-        }));
-
-        // Добавляем данные о полке
-        acc[shelf.id] = {
-          maxIndexBox: shelf.box.length - 1,
-          boxesItems,
-          shelfTitle: shelf.title,
-          shelfIndex: shelf.index,
-        };
-
-        return acc;
-      },
-      {},
-    );
-
-    return shelvesAndBoxesData;
+    return this.createShelvesAndBoxesDataFromShelvesIncBox(shelves);
   }
 
-  async findAllDeletedBoxes(
+  createShelvesAndBoxesDataFromShelvesIncBox(
+    shelves: ShelfIncBoxes[],
+  ): ShelvesDataViewPage {
+    return shelves.reduce((acc, shelf) => {
+      const boxesItems = shelf.box.map((box) => ({
+        id: box.id,
+        index: box.index,
+      }));
+
+      // Добавляем данные о полке
+      acc[shelf.id] = {
+        maxIndexBox: shelf.box.length - 1,
+        boxesItems,
+        shelfTitle: shelf.title,
+        shelfIndex: shelf.index,
+      };
+
+      return acc;
+    }, {});
+  }
+
+  async findAllDeletedShelves(
     userId: User['id'],
   ): Promise<ShelfIncBoxesIncCards[]> {
-    return await this.prisma.shelf.findMany({
+    const shelves = await this.prisma.shelf.findMany({
       where: { userId, isDeleted: true },
       include: {
         box: true,
         card: true,
       },
     });
+
+    return shelves.map((shelf) => ({
+      ...shelf,
+      boxesCount: shelf.box.length,
+      cardsCount: shelf.card.length,
+    }));
   }
 }
 

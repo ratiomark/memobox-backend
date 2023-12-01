@@ -134,23 +134,26 @@ export class UserDataStorageService {
   }
 
   async getTrashPageData(userId: User['id']) {
-    const [shelves, boxes, cards] = await Promise.all([
-      this.shelvesService.findAllDeletedBoxes(userId),
-      this.boxesService.findAllDeletedBoxes(userId),
-      this.cardsService.findAllDeletedCards(userId),
-    ]);
+    const [shelvesDeleted, boxes, cards, shelvesAndBoxesData] =
+      await Promise.all([
+        this.shelvesService.findAllDeletedShelves(userId),
+        this.boxesService.findAllDeletedBoxes(userId),
+        this.cardsService.findAllDeletedCards(userId),
+        this.shelvesService.getShelvesAndBoxesData(userId),
+      ]);
     // const deletedShelvesAndShelvesData =
     // await this.shelvesService.findAllDeletedBoxes(userId);
 
     return {
-      shelves,
+      shelves: shelvesDeleted,
       boxes,
       cards,
       entitiesCount: {
-        shelves: shelves.length,
+        shelves: shelvesDeleted.length,
         boxes: boxes.length,
         cards: cards.length,
       },
+      shelvesAndBoxesData,
     };
     // return getTrashPageDataFromDbData(deletedShelvesAndShelvesData);
   }
