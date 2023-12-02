@@ -162,6 +162,7 @@ model Card {
   @@index([userId])
   @@index([shelfId])
   @@index([boxId])
+  @@index([nextTraining])
 }
 
 model ShelfTemplate {
