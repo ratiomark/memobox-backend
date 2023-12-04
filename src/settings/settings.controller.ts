@@ -19,6 +19,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { GetCurrentUser } from '@/common/decorators';
 import { MissedTrainingValue, Prisma, User } from '@prisma/client';
 import { plainToClass } from 'class-transformer';
+import { NotificationSettings } from '@/aggregate/entities/settings-types';
 
 @ApiTags('Settings')
 @Controller({
@@ -28,10 +29,10 @@ import { plainToClass } from 'class-transformer';
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
-  @Post()
-  create(@Body() createSettingDto: CreateSettingDto) {
-    return this.settingsService.create(createSettingDto);
-  }
+  // @Post()
+  // create(@Body() createSettingDto: CreateSettingDto) {
+  //   return this.settingsService.create(createSettingDto);
+  // }
 
   @Get()
   getAllSettings(@GetCurrentUser('id') userId: User['id']) {
@@ -76,6 +77,20 @@ export class SettingsController {
     const timeSleepObj = plainToClass(UpdateSettingTimeSleepDto, timeSleep);
     console.log('timeSleep', timeSleepObj);
     return this.settingsService.updateTimeSleep(userId, timeSleep);
+  }
+
+  @Patch('notification')
+  updateNotification(
+    @GetCurrentUser('id') userId: User['id'],
+    @Body() notificationSettings: NotificationSettings,
+  ) {
+    // console.log('timeSleep', timeSleep);
+    // const timeSleepObj = plainToClass(UpdateSettingTimeSleepDto, timeSleep);
+    // console.log('timeSleep', timeSleepObj);
+    return this.settingsService.updateNotification(
+      userId,
+      notificationSettings,
+    );
   }
 
   @Get(':id')

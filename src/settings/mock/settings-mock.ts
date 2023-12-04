@@ -169,5 +169,5 @@ export interface DefaultSettings {
   timeSleep: Prisma.JsonValue | TimeSleepSettings;
   shelfTemplate: Prisma.JsonValue;
   missedTraining: string;
-  notification: Prisma.JsonValue | NotificationSettings;
+  notifications: Prisma.JsonValue | NotificationSettings;
 }

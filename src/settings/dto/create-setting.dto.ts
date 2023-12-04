@@ -7,11 +7,13 @@ import {
 import { MissedTrainingValue } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsDefined,
   IsEnum,
   IsNotEmpty,
   IsNotEmptyObject,
+  IsNumber,
   IsObject,
   IsOptional,
   ValidateNested,
@@ -56,4 +58,20 @@ export class CreateSettingTimeSleepDto {
     [key in DaysOfWeek]: TimeSleepDataObject;
   };
 }
-// export class CreateSettingTimeSleepDto {}
+
+export class CreateSettingNotificationDto {
+  @IsBoolean()
+  mobilePushEnabled: boolean;
+
+  @IsNumber()
+  minimumCardsForPush: number;
+
+  @IsBoolean()
+  emailNotificationsEnabled: boolean;
+
+  @IsNumber()
+  minimumCardsForEmailNotification: number;
+
+  // @IsArray()
+  // notificationEmails: NotificationEmails[];
+}

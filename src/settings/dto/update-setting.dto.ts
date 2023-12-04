@@ -19,3 +19,6 @@ export class UpdateSettingShelfTemplateDto extends PartialType(
 export class UpdateSettingTimeSleepDto extends PartialType(
   CreateSettingTimeSleepDto,
 ) {}
+// export class UpdateSettingTimeSleepDto extends PartialType(
+//   CreateSettingTimeSleepDto,
+// ) {}
