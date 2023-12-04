@@ -11,10 +11,16 @@ import {
   jsonSavedDataDefault,
   jsonSettingsDefault,
 } from '../common/const/json-saved-data-and-settings-default';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { EVENT_LISTENER_METADATA } from '@nestjs/event-emitter/dist/constants';
+import { EVENT_USER_CREATED } from '@/common/const/events';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   private async hashPassword(password: string): Promise<string> {
     const salt = await bcrypt.genSalt();
@@ -50,7 +56,10 @@ export class UsersService {
     }
 
     const createdUser = await this.prisma.user.create({ data: userData });
-
+    this.eventEmitter.emit(EVENT_USER_CREATED, {
+      email: createdUser.email,
+      userId: createdUser.id,
+    });
     return new UserEntity({
       ...createdUser,
       provider: createdUser.provider as AuthProviders,
