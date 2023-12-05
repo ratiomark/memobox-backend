@@ -1,4 +1,4 @@
-import { Shelf } from '@prisma/client';
+import { Box, Shelf } from '@prisma/client';
 import { IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CreateCardDto {
@@ -12,5 +12,8 @@ export class CreateCardDto {
   shelfId: Shelf['id'];
 
   @IsNotEmpty()
-  boxId: Shelf['id'];
+  boxId: Box['id'];
+
+  @IsOptional()
+  previousBoxId?: Box['id'];
 }

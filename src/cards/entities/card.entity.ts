@@ -1,4 +1,4 @@
-import { BoxSpecialType, Shelf, Box, $Enums, Card } from '@prisma/client';
+import { BoxSpecialType, Shelf, Box, $Enums, Card, User } from '@prisma/client';
 
 // export class Card {}
 export type TrainingCardsCondition = {
@@ -25,3 +25,4 @@ export type CardIncBox = Card & {
     specialType: $Enums.BoxSpecialType;
   };
 };
+export type CardIncUser = Card & { user: User };
