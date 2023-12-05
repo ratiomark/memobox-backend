@@ -22,12 +22,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, jwtStrategyName) {
   }
 
   public validate(payload: JwtPayloadType): OrNeverType<JwtPayloadType> {
-    console.log('JwtStrategy validate start');
+    // console.log('JwtStrategy validate start');
     // console.log('*** Inside JwtStrategy validate method ***');
     // console.log('Payload:', payload);
 
     if (!payload.id) {
-      console.log('No ID in payload, throwing UnauthorizedException.');
+      // console.log('No ID in payload, throwing UnauthorizedException.');
       throw new UnauthorizedException();
     }
     // console.log(payload.exp);
@@ -36,14 +36,14 @@ export class JwtStrategy extends PassportStrategy(Strategy, jwtStrategyName) {
     // console.log(payload.exp < new Date().getTime());
 
     if (payload.exp < Math.floor(Date.now() / 1000)) {
-      console.log(
-        'JwtStrategy - Token expired, throwing UnauthorizedException.',
-      );
+      // console.log(
+      // 'JwtStrategy - Token expired, throwing UnauthorizedException.',
+      // );
       // if (payload.exp - payload.iat < new Date().getTime()) {
       throw new UnauthorizedException('expired');
     }
 
-    console.log('JwtStrategy validation successful, returning payload.');
+    // console.log('JwtStrategy validation successful, returning payload.');
     return payload;
   }
 }

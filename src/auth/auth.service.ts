@@ -2,6 +2,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Logger,
   // UnauthorizedException,х
 } from '@nestjs/common';
 import { randomStringGenerator } from '@nestjs/common/utils/random-string-generator.util';
@@ -32,9 +33,11 @@ import {
 } from './types/login-response.type';
 import { DevResponseService } from '@/dev-response/dev-response.service';
 import { TeapotException } from '@/common/exceptions/teapot-exception';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   constructor(
     private readonly jwtService: JwtService,
     private readonly usersService: UsersService,
@@ -42,6 +45,7 @@ export class AuthService {
     private readonly forgotService: ForgotService,
     private readonly mailService: MailService,
     private readonly devResponseService: DevResponseService,
+    private readonly eventEmitter: EventEmitter2,
     private readonly configService: ConfigService<AllConfigType>,
   ) {}
 
@@ -165,8 +169,8 @@ export class AuthService {
           secret: this.configService.getOrThrow('auth.refreshSecret', {
             infer: true,
           }),
-          expiresIn: '8d',
-          // expiresIn: refreshTokenExpires,
+          // expiresIn: '8d',
+          expiresIn: refreshTokenExpires,
         },
       ),
     ]);
@@ -229,6 +233,8 @@ export class AuthService {
   }
 
   async register(dto: AuthRegisterLoginDto): Promise<void | { hash: string }> {
+    this.logger.log('register new user - start');
+    // async register(dto: AuthRegisterLoginDto): Promise<User> {
     const hash = crypto
       .createHash('sha256')
       .update(randomStringGenerator())
@@ -242,16 +248,18 @@ export class AuthService {
       statusId: StatusEnum.INACTIVE,
       hash,
     });
-
-    await this.mailService.userSignUp({
-      to: dto.email,
-      data: {
-        hash,
-      },
-    });
-
+    // return userCreated;
+    // await this.validateLogin({ email: dto.email, password: dto.password });
+    this.logger.log('register new user - end');
     return this.devResponseService.sendResponseIfDev({ hash });
   }
+
+  // await this.mailService.userSignUp({
+  //   to: dto.email,
+  //   data: {
+  //     hash,
+  //   },
+  // });
 
   async confirmEmail(
     hash: string,
