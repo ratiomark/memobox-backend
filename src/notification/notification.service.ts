@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { CardIncUser } from '@/cards/entities/card.entity';
@@ -6,6 +6,8 @@ import { CardIncUser } from '@/cards/entities/card.entity';
 // dateTime.setSeconds(dateTime.getSeconds() + data.seconds ?? 0);
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { UserId } from '@/users/types/types';
+import { SettingsService } from '@/settings/settings.service';
+import { EVENT_NOTIFY_EMAIL } from '@/common/const/events';
 // scheduleNotification(
 //   userId: UserId,
 //   data: { text: string; seconds: number },
@@ -15,52 +17,65 @@ import { UserId } from '@/users/types/types';
 // console.log(`${this.formatTime(now)} - сейчас`);
 @Injectable()
 export class NotificationService {
+  private logger = new Logger(NotificationService.name);
   private timers = new Map<string, NodeJS.Timeout>();
 
-  constructor(private eventEmitter: EventEmitter2) {}
+  constructor(
+    private eventEmitter: EventEmitter2,
+    private readonly settingsService: SettingsService,
+  ) {}
 
   scheduleNotification(userId: UserId, dateTime: Date) {
+    this.logger.log(`schedule Notification - started.`);
     const now = new Date();
     const delay = dateTime.getTime() - now.getTime();
-
+    this.logger.log(`delay - ${delay}`);
     // Планирование колбека
     const timerId = setTimeout(() => {
       // Время фактического выполнения колбека
       const callbackTime = new Date();
-      console.log(`${this.formatTime(dateTime)} - должен отработать`);
-      console.log(`${this.formatTime(callbackTime)} - отрабатывает сейчас`);
+      this.logger.log(`${dateTime} - должен отработать`);
+      this.logger.log(`${callbackTime} - отрабатывает сейчас`);
+      this.logger.log(`${this.formatTime(dateTime)} - должен отработать`);
+      this.logger.log(`${this.formatTime(callbackTime)} - отрабатывает сейчас`);
 
-      this.eventEmitter.emit('notify', userId);
+      this.eventEmitter.emit(EVENT_NOTIFY_EMAIL, userId);
     }, delay);
 
     // Сохранение идентификатора таймера для возможной отмены
     this.timers.set(userId, timerId);
+    this.logger.log(`schedule Notification - ended.`);
   }
 
-  cancelNotification(userId: string) {
+  cancelNotification(userId: UserId) {
     const timerId = this.timers.get(userId);
     if (timerId) {
       clearTimeout(timerId);
       this.timers.delete(userId);
-      console.log(`Notification for user ${userId} has been cancelled.`);
+      this.logger.log(`Notification for user ${userId} has been cancelled.`);
     }
   }
 
-  rescheduleNotification(userId: string, newDateTime: Date) {
+  rescheduleNotification(userId: UserId, newDateTime: Date) {
+    this.logger.log(`reschedule Notification for user ${userId} - started.`);
     this.cancelNotification(userId);
-    // this.scheduleNotification(userId, newDateTime);
-    console.log(`Notification for user ${userId} has been rescheduled.`);
+    this.scheduleNotification(userId, newDateTime);
+    this.logger.log(`reschedule Notification for user ${userId} - ended.`);
   }
 
-  @OnEvent('notify')
-  handleNotifyEvent(userId: string) {
+  @OnEvent(EVENT_NOTIFY_EMAIL)
+  handleNotifyEvent(userId: UserId) {
     this.sendNotification(userId);
     this.timers.delete(userId); // Удалить таймер после отправки уведомления
   }
 
-  sendNotification(userId: string) {
+  sendNotification(userId: UserId) {
     // Логика отправки уведомления
-    console.log(`Sending notification to user ${userId}`);
+    this.logger.log(`Sending notification to user ${userId}`);
+  }
+
+  getNotificationSettings(userId: UserId) {
+    return this.settingsService.getNotificationSettings(userId);
   }
 
   // Вспомогательная функция для форматирования времени
