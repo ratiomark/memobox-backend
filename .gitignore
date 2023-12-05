@@ -46,3 +46,8 @@ seed.log.ts
 # 
 GPT.*
 gpt.*
+
+# scripts
+bash_aliases.sh
+start-dev.sh
+update-package-lock.ps1
