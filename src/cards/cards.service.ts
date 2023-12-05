@@ -189,6 +189,7 @@ export class CardsService {
   }
 
   async moveCards(moveCardsDto: MoveCardsDto) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [_, cardsUpdated] = await this.prisma.$transaction([
       this.prisma.card.updateMany({
         where: { id: { in: moveCardsDto.cardIds } },
