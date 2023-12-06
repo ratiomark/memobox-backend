@@ -1,15 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import {
-  Box,
-  BoxSpecialType,
-  Card,
-  MissedTrainingValue,
-  Shelf,
-  User,
-} from '@prisma/client';
+import { BoxSpecialType, MissedTrainingValue, User } from '@prisma/client';
 import {
   CommonShelfFrontedResponse,
-  ShelfIncBoxes,
   ShelfIncBoxesIncCards,
 } from '@/aggregate/entities/types';
 import { CardsService } from '@/cards/cards.service';
@@ -20,8 +12,6 @@ import { ShelvesService } from '@/shelves/shelves.service';
 import { CupboardSchema, BoxSchemaFrontend } from './types/fronted-responses';
 import { I18nService } from 'nestjs-i18n';
 import { BoxesService } from '@/boxes/boxes.service';
-
-// import { zonedTimeToUtc } from 'date-fns-tz';
 
 @Injectable()
 export class UserDataStorageService {
