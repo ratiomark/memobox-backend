@@ -10,11 +10,19 @@ if (process.env.NODE_ENV) {
   dotenv.config({ path: '.env' });
 }
 
+// const jestConfig: JestCon = {}
+
+// export default {};
 module.exports = {
   moduleFileExtensions: ['js', 'json', 'ts'],
-  rootDir: '.',
+  rootDir: '..',
+  // roots: ['<rootDir>/src'],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
   testEnvironment: 'node',
-  testRegex: '.e2e-spec.ts$',
+  testRegex: '.test.ts$',
+  // testRegex: '.e2e-spec.ts$',
   transform: {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
