@@ -1,12 +1,16 @@
+import { GetCurrentUser } from '@/common/decorators';
 import {
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
-  Delete,
   Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
+import { Box, Card, Shelf, User } from '@prisma/client';
+import { CardsTestService } from './services/cards-test.service';
 import { CardsService } from './cards.service';
 import { CreateCardDto } from './dto/create-card.dto';
 import {
@@ -14,10 +18,7 @@ import {
   RemoveMultipleCardsDto,
   UpdateCardDto,
 } from './dto/update-card.dto';
-import { ApiTags } from '@nestjs/swagger';
-import { GetCurrentUser, Lang } from '@/common/decorators';
-import { Box, Card, Shelf, User } from '@prisma/client';
-import { id } from 'date-fns/locale';
+import { TrainingResponseDto } from './dto/update-cards-after-training.dto';
 
 @ApiTags('Cards')
 @Controller({
@@ -25,7 +26,10 @@ import { id } from 'date-fns/locale';
   version: '1',
 })
 export class CardsController {
-  constructor(private readonly cardsService: CardsService) {}
+  constructor(
+    private readonly cardsService: CardsService,
+    private readonly cardsTestService: CardsTestService,
+  ) {}
 
   @Post()
   create(
@@ -39,6 +43,15 @@ export class CardsController {
   // getCardsShelvesBoxesData(@GetCurrentUser('id') userId: User['id']) {
   //   return this.cardsService.getCardsShelvesBoxesData(userId);
   // }
+  @Post('training/answers')
+  updateCardsAfterTraining(
+    @GetCurrentUser('id') userId: User['id'],
+    @Body() body: TrainingResponseDto,
+  ) {
+    console.log(body); // тут пустой объект
+    console.log(body.getCardIds()); // тут пустой объект
+    return this.cardsService.updateCardsAfterTraining(userId);
+  }
 
   @Get('training/:shelfId/:boxId')
   findTrainingCardsByShelfIdAndBoxId(
@@ -53,10 +66,19 @@ export class CardsController {
     );
   }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.cardsService.findOne(+id);
-  // }
+  // test
+  @Get('get-by-shelfId-and-boxId/:shelfId/:boxId')
+  getCardsByShelfIdAndBoxId(
+    @GetCurrentUser('id') userId: User['id'],
+    @Param('shelfId') shelfId: Shelf['id'],
+    @Param('boxId') boxId: Box['id'],
+  ) {
+    return this.cardsTestService.getCardsByShelfIdAndBoxId(
+      userId,
+      shelfId,
+      boxId,
+    );
+  }
 
   @Patch('move-cards')
   moveCards(@Body() moveCardsDto: MoveCardsDto) {
