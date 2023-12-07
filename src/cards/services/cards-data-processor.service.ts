@@ -19,7 +19,7 @@ export class CardDataProcessorService {
     private readonly notificationService: NotificationService,
   ) {}
 
-  async getNotificationTime(userId: UserId, minimumCards = 10) {
+  async getNotificationTime(userId: UserId, minimumCards = 20) {
     this.logger.log('getNotificationTime - started');
     const cards = (await this.prisma.card.findMany({
       where: { userId, isDeleted: false, nextTraining: { not: null } },
@@ -27,12 +27,10 @@ export class CardDataProcessorService {
       orderBy: { nextTraining: 'asc' },
       take: minimumCards,
     })) as { nextTraining: Date }[];
+    // this.logger.log('cards', cards.length);
     if (cards.length < minimumCards) return null;
-    const notificationTime = new Date(
-      Math.max(
-        ...(cards.map((card) => card.nextTraining) as unknown as number[]),
-      ),
-    );
+    const notificationTime = new Date(cards[cards.length - 1].nextTraining);
+
     this.logger.log(`getNotificationTime - ${notificationTime}`);
     this.logger.log('getNotificationTime - ended');
     return notificationTime;
@@ -59,12 +57,11 @@ export class CardDataProcessorService {
         userId,
         notificationSettings.minimumCardsForEmailNotification,
       );
-      if (notificationTime) {
-        this.notificationService.rescheduleNotification(
-          userId,
-          notificationTime,
-        );
+      if (!notificationTime) {
+        this.logger.log('notificationTime is null');
+        return;
       }
+      this.notificationService.rescheduleNotification(userId, notificationTime);
     } catch (error) {
       console.error('Ошибка при обновлении уведомлений:', error);
     }
