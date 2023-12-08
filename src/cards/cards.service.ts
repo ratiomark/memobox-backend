@@ -2,20 +2,19 @@ import { Injectable, Logger } from '@nestjs/common';
 import { CreateCardDto } from './dto/create-card.dto';
 import { MoveCardsDto, UpdateCardDto } from './dto/update-card.dto';
 import { PrismaService } from 'nestjs-prisma';
-import { Box, BoxSpecialType, Card, Shelf, User } from '@prisma/client';
-import { TrainingCardsCondition, CardIncBox } from './entities/card.entity';
-import { plainToClass } from 'class-transformer';
-import { I18nService } from 'nestjs-i18n';
+import { Box, Card, Shelf, User } from '@prisma/client';
 import { UserId } from '@/users/types/types';
-import { NotificationService } from '@/notification/notification.service';
+import { CardDataProcessorService } from './services/cards-data-processor.service';
+import { CardIncBox } from './entities/card.entity';
+import { includeBoxWithIndexAndSpecialType } from './consts/include-box';
 
 @Injectable()
 export class CardsService {
   private readonly logger = new Logger(CardsService.name);
   constructor(
     private readonly prisma: PrismaService,
-    private readonly i18n: I18nService,
-    private readonly notificationService: NotificationService,
+    private readonly cardDataProcessor: CardDataProcessorService,
+    // private readonly notificationService: NotificationService,
   ) {}
 
   async create(
@@ -28,25 +27,6 @@ export class CardsService {
     return card;
   }
 
-  async getNotificationTime(userId: UserId, minimumCards = 10) {
-    this.logger.log('getNotificationTime - started');
-    const cards = (await this.prisma.card.findMany({
-      where: { userId, isDeleted: false, nextTraining: { not: null } },
-      select: { nextTraining: true },
-      orderBy: { nextTraining: 'asc' },
-      take: minimumCards,
-    })) as { nextTraining: Date }[];
-    if (cards.length < minimumCards) return null;
-    const notificationTime = new Date(
-      Math.max(
-        ...(cards.map((card) => card.nextTraining) as unknown as number[]),
-      ),
-    );
-    this.logger.log(`getNotificationTime - ${notificationTime}`);
-    this.logger.log('getNotificationTime - ended');
-    return notificationTime;
-  }
-
   async update(
     id: Card['id'],
     updateCardDto: UpdateCardDto,
@@ -56,50 +36,20 @@ export class CardsService {
     const cardUpdated = await this.prisma.card.update({
       where: { id },
       data: restUpdateCardDto,
-      include: { box: { select: { index: true, specialType: true } } },
+      include: includeBoxWithIndexAndSpecialType,
     });
 
-    void (async () => {
-      // ничего не нужно делать, так как изменение карточки не затронуло nextTraining
-      if (skipNotificationUpdate || cardUpdated.boxId === previousBoxId) return;
-      try {
-        const userId = cardUpdated.userId;
-        const notificationSettings =
-          await this.notificationService.getNotificationSettings(userId);
-        this.logger.log(notificationSettings);
-        if (
-          !notificationSettings ||
-          !notificationSettings.emailNotificationsEnabled
-        ) {
-          return;
-        }
-        const notificationTime = await this.getNotificationTime(
-          userId,
-          notificationSettings.minimumCardsForEmailNotification,
-        );
-        if (notificationTime) {
-          this.notificationService.rescheduleNotification(
-            userId,
-            notificationTime,
-          );
-        }
-      } catch (error) {
-        console.error('Ошибка при обновлении уведомлений:', error);
-      }
-    })();
+    void this.cardDataProcessor.handleNotificationAfterCardUpdate(
+      cardUpdated,
+      previousBoxId,
+      skipNotificationUpdate,
+    );
 
-    return this.enhanceCard(cardUpdated);
+    return this.cardDataProcessor.enhanceCardViewPage(cardUpdated);
   }
 
-  enhanceCardList(cards: CardIncBox[]) {
-    return cards.map((card) => this.enhanceCard(card));
-  }
-
-  enhanceCard(card: CardIncBox) {
-    const enhancedCard = plainToClass(UpdateCardDto, card);
-    enhancedCard.calculateState();
-    enhancedCard.updateNextTraining(this.i18n);
-    return enhancedCard;
+  updateCardsAfterTraining(userId: UserId) {
+    return 'update cards';
   }
 
   deleteSoftByShelfId(shelfId: Shelf['id']) {
@@ -121,52 +71,17 @@ export class CardsService {
     shelfId: Shelf['id'] | 'all',
     boxId: Box['id'] | 'all' | 'new' | 'learnt' | 'learning',
   ) {
-    // const cards: Card[] = [];
-    const mainCondition: TrainingCardsCondition = {
+    const mainCondition = this.cardDataProcessor.createCondition(
       userId,
-      isDeleted: false,
-      OR: [
-        {
-          nextTraining: {
-            lt: new Date(), // Получить карточки, у которых nextTraining меньше текущего времени
-          },
-        },
-        {
-          nextTraining: null, // Получить карточки, у которых nextTraining равно null
-        },
-      ],
-    };
-    if (shelfId === 'all') {
-      switch (boxId) {
-        case 'new':
-          mainCondition.box = { specialType: BoxSpecialType.new };
-
-          break;
-        case 'learning':
-          mainCondition.box = { specialType: BoxSpecialType.none };
-
-          break;
-        case 'learnt':
-          mainCondition.box = { specialType: BoxSpecialType.learnt };
-
-          break;
-      }
-    } else {
-      if (boxId === 'all') {
-        mainCondition.shelfId = shelfId;
-      } else {
-        mainCondition.shelfId = shelfId;
-        mainCondition.boxId = boxId;
-      }
-    }
+      shelfId,
+      boxId,
+    );
     const trainingCards = await this.prisma.card.findMany({
       where: mainCondition,
+      include: includeBoxWithIndexAndSpecialType,
     });
-    // console.log(trainingCards);
-    return trainingCards;
-    // const cards = await this.prisma.card.findMany({
-    //   where: { shelfId, boxId },
-    // });
+
+    return this.cardDataProcessor.enhanceCardListTrainingPage(trainingCards);
   }
 
   async findAll(userId: User['id']): Promise<Card[]> {
@@ -178,7 +93,7 @@ export class CardsService {
   async findAllWithBox(userId: User['id']): Promise<CardIncBox[]> {
     return this.prisma.card.findMany({
       where: { userId, isDeleted: false },
-      include: { box: { select: { index: true, specialType: true } } },
+      include: includeBoxWithIndexAndSpecialType,
     });
   }
 
@@ -197,11 +112,11 @@ export class CardsService {
       }),
       this.prisma.card.findMany({
         where: { id: { in: moveCardsDto.cardIds } },
-        include: { box: { select: { index: true, specialType: true } } },
+        include: includeBoxWithIndexAndSpecialType,
       }),
     ]);
 
-    return this.enhanceCardList(cardsUpdated);
+    return this.cardDataProcessor.enhanceCardListViewPage(cardsUpdated);
   }
 
   async deleteSoftByCardIdList(cardIds: Card['id'][]) {
@@ -218,5 +133,10 @@ export class CardsService {
       where: { id: cardId },
       data: { isDeleted: true, deletedAt: new Date() },
     });
+  }
+
+  // нужно, чтобы лишний раз не импортировать cardDataProcessor в user-data-storage
+  enhanceCard(card: CardIncBox) {
+    return this.cardDataProcessor.enhanceCardViewPage(card);
   }
 }
