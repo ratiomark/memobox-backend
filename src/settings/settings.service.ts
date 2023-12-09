@@ -1,11 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { CreateSettingDto } from './dto/create-setting.dto';
-import {
-  UpdateSettingDto,
-  UpdateSettingMissedTrainingDto,
-  UpdateSettingTimeSleepDto,
-} from './dto/update-setting.dto';
+import { UpdateSettingTimeSleepDto } from './dto/update-setting.dto';
 import { PrismaService } from 'nestjs-prisma';
 import {
   MissedTrainingValue,
@@ -13,11 +8,9 @@ import {
   ShelfTemplate,
   User,
 } from '@prisma/client';
-import { sleep } from '@/utils/common/sleep';
 import {
   NotificationEmails,
   NotificationSettings,
-  TimingBlock,
 } from '@/aggregate/entities/settings-types';
 import {
   DefaultSettings,
@@ -26,9 +19,9 @@ import {
   timeSleepMock,
 } from './mock/settings-mock';
 import { OnEvent } from '@nestjs/event-emitter';
-import { UserId } from '@/users/types/types';
 import { EVENT_USER_CREATED } from '@/common/const/events';
-// const findSettingsCondition = { OR: [{ userId }, { userId: null }] }
+import { UserId } from '@/common/types/prisma-entities';
+
 @Injectable()
 export class SettingsService implements OnModuleInit {
   private defaultSettings: DefaultSettings;
@@ -53,7 +46,7 @@ export class SettingsService implements OnModuleInit {
     };
   }
 
-  async getShelfTemplate(userId: User['id']): Promise<Prisma.JsonArray> {
+  async getShelfTemplate(userId: UserId): Promise<Prisma.JsonArray> {
     // пытаюсь получить пользовательский шаблон, если нет, то общий.
     const shelfTemplateSettings = await this.prisma.shelfTemplate.findMany({
       where: { OR: [{ userId }, { userId: null }] },
@@ -73,7 +66,7 @@ export class SettingsService implements OnModuleInit {
     return `This action returns all settings`;
   }
 
-  async getAllSettings(userId: User['id']) {
+  async getAllSettings(userId: UserId) {
     const {
       timeSleep: timeSleepDefault,
       missedTraining: missedTrainingDefault,
@@ -110,7 +103,7 @@ export class SettingsService implements OnModuleInit {
   }
 
   async updateMissedTrainingValue(
-    userId: User['id'],
+    userId: UserId,
     missedTraining: MissedTrainingValue,
   ) {
     if (missedTraining === 'none') {
@@ -127,7 +120,7 @@ export class SettingsService implements OnModuleInit {
   }
 
   async updateShelfTemplate(
-    userId: User['id'],
+    userId: UserId,
     updateShelfTemplate: Prisma.InputJsonArray,
   ) {
     const shelfTemplateRow = await this.prisma.shelfTemplate.upsert({
@@ -143,10 +136,7 @@ export class SettingsService implements OnModuleInit {
     return { shelfTemplate: this.getDefaultSettings().shelfTemplate };
   }
 
-  async updateTimeSleep(
-    userId: User['id'],
-    timeSleep: UpdateSettingTimeSleepDto,
-  ) {
+  async updateTimeSleep(userId: UserId, timeSleep: UpdateSettingTimeSleepDto) {
     const timeSleepRow = await this.prisma.timeSleep.upsert({
       where: { userId },
       update: { settings: timeSleep as Prisma.InputJsonObject },
@@ -156,7 +146,7 @@ export class SettingsService implements OnModuleInit {
   }
 
   async updateNotification(
-    userId: User['id'],
+    userId: UserId,
     notificationSettings: NotificationSettings,
   ) {
     const notificationSettingsRow = await this.prisma.notification.update({
