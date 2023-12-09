@@ -13,3 +13,4 @@ export interface DataBlock {
   all: number;
   train: number;
 }
+export type AnswerType = 'good' | 'bad' | 'middle';
