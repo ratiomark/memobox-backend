@@ -12,9 +12,18 @@ import { ShelvesService } from '@/shelves/shelves.service';
 import { CupboardSchema, BoxSchemaFrontend } from './types/fronted-responses';
 import { I18nService } from 'nestjs-i18n';
 import { BoxesService } from '@/boxes/boxes.service';
+import {
+  ShelfData,
+  CardTrainingData,
+  TrainingOutcome,
+  CupboardObject,
+} from '@/common/types/entities-types';
+import { TimingBlock } from '@/aggregate/entities/settings-types';
+import { UserId } from '@/users/types/types';
 
 @Injectable()
 export class UserDataStorageService {
+  private cupboards = new Map<string, CupboardObject>();
   constructor(
     private readonly cardsService: CardsService,
     private readonly boxesService: BoxesService,
@@ -22,22 +31,59 @@ export class UserDataStorageService {
     private readonly i18n: I18nService,
   ) {}
 
+  async getCupboardObject(userId: UserId): Promise<CupboardDataObject> {
+    if (!this.cupboards.has(userId)) {
+      const cupboardObject =
+        await this.shelvesService.getCupboardObject(userId);
+      // const cupboardDataObject = new CupboardDataObject(cupboardObject);
+      this.cupboards.set(userId, cupboardObject);
+    }
+    console.log(this.cupboards);
+    return new CupboardDataObject(this.cupboards.get(userId)!);
+  }
+
+  formatTime(date: Date | null) {
+    if (!date) {
+      return null;
+    }
+    const month = date.getUTCMonth() + 1;
+    const day = date.getDay() + 1;
+    const hours = this.padTime(date.getHours());
+    const minutes = this.padTime(date.getMinutes());
+    const seconds = this.padTime(date.getSeconds());
+    return `${month} ${day}  ${hours}:${minutes}:${seconds}`;
+  }
+
+  // Дополнительная функция для добавления ведущих нулей
+  padTime(time: number) {
+    return time.toString().padStart(2, '0');
+  }
+
   async getCupboardPageData(userId: User['id']): Promise<CupboardSchema> {
     const shelvesData = await this.shelvesService.findAllWithBoxCard(userId);
 
     const commonShelf: CommonShelfFrontedResponse = JSON.parse(
       JSON.stringify(commonShelfTemplate),
     );
-
+    const now = new Date();
+    // const delay = dateTime.getTime() - now.getTime();
     const formattedShelves = shelvesData.map((shelf, index) => {
       let allCardsInShelf = 0;
       let trainCardsInShelf = 0;
       const boxesData: BoxSchemaFrontend[] = shelf.box.map((box) => {
         const boxSpecialType = box.specialType;
         const allCardsInBox = box.card.length;
-        const trainCardsInBox = box.card.filter((card) =>
-          card.nextTraining ? card.nextTraining < new Date() : false,
-        ).length;
+        let trainCardsInBox = box.card.filter((card) => {
+          card.nextTraining ? card.nextTraining < now : false;
+        }).length;
+        // const trainCardsInBox = box.card.filter((card) => {
+        //   console.log(
+        //     this.formatTime(card.nextTraining),
+        //     this.formatTime(now),
+        //     card.nextTraining > now,
+        //   );
+        //   return card.nextTraining ? card.nextTraining < now : false;
+        // }).length;
 
         allCardsInShelf += allCardsInBox;
         trainCardsInShelf += trainCardsInBox;
@@ -56,6 +102,7 @@ export class UserDataStorageService {
           case BoxSpecialType.new:
             commonShelf.new.all += allCardsInBox;
             if (NEW_CARDS_COUNTS_AS_TRAIN) {
+              trainCardsInBox = allCardsInBox;
               trainCardsInShelf += allCardsInBox;
             }
             break;
@@ -111,7 +158,7 @@ export class UserDataStorageService {
   }
 
   async getViewPageData(userId: User['id']) {
-    const [cards, shelvesAndBoxesData] = await Promise.all([
+    const [cards, shelvesIncBoxes] = await Promise.all([
       this.cardsService.findAllWithBox(userId),
       this.shelvesService.getShelvesAndBoxesData(userId),
     ]);
@@ -120,7 +167,13 @@ export class UserDataStorageService {
       this.cardsService.enhanceCard(card),
     );
 
-    return { cards: enhancedCards, shelvesAndBoxesData };
+    return {
+      cards: enhancedCards,
+      shelvesAndBoxesData:
+        this.shelvesService.createShelvesAndBoxesDataFromShelvesIncBox(
+          shelvesIncBoxes,
+        ),
+    };
   }
 
   async getTrashPageData(userId: User['id']) {
@@ -179,4 +232,57 @@ function getTrashPageDataFromDbData(shelves: ShelfIncBoxesIncCards[]) {
     boxes,
     cards,
   };
+}
+
+class CupboardDataObject {
+  private shelves: Record<string, ShelfData>;
+
+  constructor(shelvesData: Record<string, ShelfData>) {
+    this.shelves = shelvesData;
+  }
+
+  getNextTrainingTimeByCardData({
+    shelfId,
+    boxId,
+    answer,
+  }: CardTrainingData): TrainingOutcome {
+    const shelf = this.shelves[shelfId];
+    if (!shelf) {
+      throw new Error('Shelf not found');
+    }
+
+    const currentBox = shelf[boxId];
+    if (!currentBox) {
+      throw new Error('Box not found');
+    }
+
+    let targetBoxId: string;
+    // let nextTraining: Date;
+
+    switch (answer) {
+      case 'good':
+        targetBoxId = currentBox.nextBoxIdKey || boxId; // If no next box, stay in current
+        break;
+      case 'bad':
+        targetBoxId = currentBox.previousBoxIdKey || boxId; // If no previous box, stay in current
+        break;
+      case 'middle':
+      default:
+        targetBoxId = boxId;
+        break;
+    }
+
+    const targetBox = shelf[targetBoxId];
+    const nextTraining = this.calculateNextTrainingTime(targetBox.timing);
+
+    return { boxId: targetBoxId, nextTraining };
+  }
+
+  private calculateNextTrainingTime(timing: TimingBlock): Date {
+    return new Date();
+    // Implement the logic to calculate the next training time based on the timing
+    // ...
+  }
+
+  // Additional methods as needed
 }
