@@ -5,9 +5,9 @@ import { CardIncUser } from '@/cards/entities/card.entity';
 // const dateTime = new Date();
 // dateTime.setSeconds(dateTime.getSeconds() + data.seconds ?? 0);
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { UserId } from '@/users/types/types';
 import { SettingsService } from '@/settings/settings.service';
 import { EVENT_NOTIFY_EMAIL } from '@/common/const/events';
+import { UserId } from '@/common/types/prisma-entities';
 // scheduleNotification(
 //   userId: UserId,
 //   data: { text: string; seconds: number },
