@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import { BoxSpecialType, MissedTrainingValue, User } from '@prisma/client';
 import {
   CommonShelfFrontedResponse,
@@ -19,27 +19,48 @@ import {
   CupboardObject,
 } from '@/common/types/entities-types';
 import { TimingBlock } from '@/aggregate/entities/settings-types';
-import { UserId } from '@/users/types/types';
+import { UserId } from '@/common/types/prisma-entities';
+import { ModuleRef } from '@nestjs/core';
 
 @Injectable()
 export class UserDataStorageService {
+  // private cardsService: CardsService;
   private cupboards = new Map<string, CupboardObject>();
   constructor(
+    private readonly moduleRef: ModuleRef,
+    // @Inject(forwardRef(() => CardsService))
     private readonly cardsService: CardsService,
+    // @Inject(forwardRef(() => BoxesService))
     private readonly boxesService: BoxesService,
+    // @Inject(forwardRef(() => ShelvesService))
     private readonly shelvesService: ShelvesService,
+    // private readonly cardsService: CardsService,
+    // private readonly boxesService: BoxesService,
+    // private readonly shelvesService: ShelvesService,
     private readonly i18n: I18nService,
   ) {}
+  // onModuleInit() {
+  //   this.cardsService = this.moduleRef.get(CardsService, { strict: false });
+  // }
+  // private get cardsService() {
+  //   if (!this._cardsService) {
+  //     this._cardsService = this.cardsServiceGetter();
+  //   }
+  //   return this._cardsService;
+  // }
 
   async getCupboardObject(userId: UserId): Promise<CupboardDataObject> {
-    if (!this.cupboards.has(userId)) {
-      const cupboardObject =
-        await this.shelvesService.getCupboardObject(userId);
-      // const cupboardDataObject = new CupboardDataObject(cupboardObject);
-      this.cupboards.set(userId, cupboardObject);
-    }
-    console.log(this.cupboards);
-    return new CupboardDataObject(this.cupboards.get(userId)!);
+    return new CupboardDataObject(
+      await this.shelvesService.getCupboardObject(userId),
+    );
+    // if (!this.cupboards.has(userId)) {
+    //   const cupboardObject =
+    //     await this.shelvesService.getCupboardObject(userId);
+    //   // const cupboardDataObject = new CupboardDataObject(cupboardObject);
+    //   this.cupboards.set(userId, cupboardObject);
+    // }
+    // console.log(this.cupboards);
+    // return new CupboardDataObject(this.cupboards.get(userId)!);
   }
 
   formatTime(date: Date | null) {
@@ -59,7 +80,7 @@ export class UserDataStorageService {
     return time.toString().padStart(2, '0');
   }
 
-  async getCupboardPageData(userId: User['id']): Promise<CupboardSchema> {
+  async getCupboardPageData(userId: UserId): Promise<CupboardSchema> {
     const shelvesData = await this.shelvesService.findAllWithBoxCard(userId);
 
     const commonShelf: CommonShelfFrontedResponse = JSON.parse(
@@ -157,7 +178,7 @@ export class UserDataStorageService {
     return result;
   }
 
-  async getViewPageData(userId: User['id']) {
+  async getViewPageData(userId: UserId) {
     const [cards, shelvesIncBoxes] = await Promise.all([
       this.cardsService.findAllWithBox(userId),
       this.shelvesService.getShelvesAndBoxesData(userId),
@@ -176,7 +197,7 @@ export class UserDataStorageService {
     };
   }
 
-  async getTrashPageData(userId: User['id']) {
+  async getTrashPageData(userId: UserId) {
     const [shelvesDeleted, boxes, cards, shelvesAndBoxesData] =
       await Promise.all([
         this.shelvesService.findAllDeletedShelves(userId),
@@ -202,39 +223,7 @@ export class UserDataStorageService {
   }
 }
 
-function getTrashPageDataFromDbData(shelves: ShelfIncBoxesIncCards[]) {
-  if (shelves.length === 0) {
-    return { shelves: [] };
-  }
-  if (shelves.length === 1) {
-    const shelf = shelves[0];
-    return {
-      cards: shelf.card,
-      boxes: shelf.box,
-      shelves: [shelf],
-    };
-  }
-  const boxes = shelves.reduce((acc, shelf) => {
-    const newBoxesObject = {
-      ...shelf.box,
-      shelfId: shelf.id,
-      shelfTitle: shelf.title,
-    };
-    return [newBoxesObject, ...acc];
-  }, []);
-
-  const cards = shelves.reduce((acc, shelf) => {
-    return [...shelf.card, ...acc];
-  }, []);
-
-  return {
-    shelves: shelves,
-    boxes,
-    cards,
-  };
-}
-
-class CupboardDataObject {
+export class CupboardDataObject {
   private shelves: Record<string, ShelfData>;
 
   constructor(shelvesData: Record<string, ShelfData>) {
@@ -242,20 +231,14 @@ class CupboardDataObject {
   }
 
   getNextTrainingTimeByCardData({
+    id,
     shelfId,
     boxId,
     answer,
+    nextTraining: nextTrainingCurrent,
   }: CardTrainingData): TrainingOutcome {
     const shelf = this.shelves[shelfId];
-    if (!shelf) {
-      throw new Error('Shelf not found');
-    }
-
     const currentBox = shelf[boxId];
-    if (!currentBox) {
-      throw new Error('Box not found');
-    }
-
     let targetBoxId: string;
     // let nextTraining: Date;
 
@@ -273,16 +256,78 @@ class CupboardDataObject {
     }
 
     const targetBox = shelf[targetBoxId];
-    const nextTraining = this.calculateNextTrainingTime(targetBox.timing);
+    const nextTraining = this.calculateNextTrainingTime(
+      nextTrainingCurrent,
+      targetBox.timing,
+    );
 
-    return { boxId: targetBoxId, nextTraining };
+    return { boxId: targetBoxId, id, nextTraining };
   }
 
-  private calculateNextTrainingTime(timing: TimingBlock): Date {
-    return new Date();
+  private calculateNextTrainingTime(
+    cardNextTrainingCurrent: Date | string,
+    timing: TimingBlock,
+  ): Date | string {
+    const currentTime = cardNextTrainingCurrent ?? new Date();
+
+    // Расчет нового времени тренировки
+    const newTrainingTime = new Date(currentTime);
+    newTrainingTime.setDate(
+      newTrainingTime.getDate() + timing.days + timing.weeks * 7,
+    );
+    newTrainingTime.setHours(newTrainingTime.getHours() + timing.hours);
+    newTrainingTime.setMinutes(newTrainingTime.getMinutes() + timing.minutes);
+    newTrainingTime.setMonth(newTrainingTime.getMonth() + timing.months);
+
+    return newTrainingTime.toISOString();
+    // return newTrainingTime;
     // Implement the logic to calculate the next training time based on the timing
     // ...
   }
 
   // Additional methods as needed
 }
+
+// @Injectable()
+// export class UserDataStorageProxyService {
+//   private get userDataStorageService() {
+//     return this.moduleRef.get(UserDataStorageService, { strict: false });
+//   }
+
+//   constructor(private moduleRef: ModuleRef) {}
+
+//   getUserData(userId: string) {
+//     return this.userDataStorageService.getCupboardObject(userId);
+//   }
+// }
+// function getTrashPageDataFromDbData(shelves: ShelfIncBoxesIncCards[]) {
+//   if (shelves.length === 0) {
+//     return { shelves: [] };
+//   }
+//   if (shelves.length === 1) {
+//     const shelf = shelves[0];
+//     return {
+//       cards: shelf.card,
+//       boxes: shelf.box,
+//       shelves: [shelf],
+//     };
+//   }
+//   const boxes = shelves.reduce((acc, shelf) => {
+//     const newBoxesObject = {
+//       ...shelf.box,
+//       shelfId: shelf.id,
+//       shelfTitle: shelf.title,
+//     };
+//     return [newBoxesObject, ...acc];
+//   }, []);
+
+//   const cards = shelves.reduce((acc, shelf) => {
+//     return [...shelf.card, ...acc];
+//   }, []);
+
+//   return {
+//     shelves: shelves,
+//     boxes,
+//     cards,
+//   };
+// }
