@@ -45,8 +45,6 @@ import { NotificationModule } from './notification/notification.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { DevtoolsModule } from '@nestjs/devtools-integration';
-import { PROVIDER_REDIS } from './common/const/provider-names';
-import Redis from 'ioredis';
 import { RedisModule } from './redis/redis.module';
 
 @Module({
