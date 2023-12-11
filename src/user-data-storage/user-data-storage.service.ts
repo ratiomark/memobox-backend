@@ -1,9 +1,6 @@
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { BoxSpecialType, MissedTrainingValue, User } from '@prisma/client';
-import {
-  CommonShelfFrontedResponse,
-  ShelfIncBoxesIncCards,
-} from '@/aggregate/entities/types';
+import { CommonShelfFrontedResponse } from '@/aggregate/entities/types';
 import { CardsService } from '@/cards/cards.service';
 import { commonShelfTemplate } from '@/common/const/commonShelfTemplate';
 import { NEW_CARDS_COUNTS_AS_TRAIN } from '@/common/const/flags';
@@ -16,16 +13,17 @@ import {
   ShelfData,
   CardTrainingData,
   TrainingOutcome,
-  CupboardObject,
 } from '@/common/types/entities-types';
 import { TimingBlock } from '@/aggregate/entities/settings-types';
 import { UserId } from '@/common/types/prisma-entities';
 import { ModuleRef } from '@nestjs/core';
+import { RedisService } from '@/redis/redis.service';
 
 @Injectable()
 export class UserDataStorageService {
   // private cardsService: CardsService;
-  private cupboards = new Map<string, CupboardObject>();
+  private readonly logger = new Logger(UserDataStorageService.name);
+  // private cupboards = new Map<string, CupboardObject>();
   constructor(
     private readonly moduleRef: ModuleRef,
     // @Inject(forwardRef(() => CardsService))
@@ -38,6 +36,7 @@ export class UserDataStorageService {
     // private readonly boxesService: BoxesService,
     // private readonly shelvesService: ShelvesService,
     private readonly i18n: I18nService,
+    private readonly redisService: RedisService,
   ) {}
   // onModuleInit() {
   //   this.cardsService = this.moduleRef.get(CardsService, { strict: false });
@@ -49,10 +48,23 @@ export class UserDataStorageService {
   //   return this._cardsService;
   // }
 
-  async getCupboardObject(userId: UserId): Promise<CupboardDataObject> {
-    return new CupboardDataObject(
-      await this.shelvesService.getCupboardObject(userId),
-    );
+  async getCupboardClass(userId: UserId): Promise<CupboardDataObject> {
+    let cupboardData =
+      await this.redisService.getCupboardObjectByUserId(userId);
+    if (!cupboardData) {
+      this.logger.log('cupboardData is null');
+      cupboardData = await this.shelvesService.getCupboardObject(userId);
+      await this.redisService.saveCupboardObjectByUserId(userId, cupboardData);
+    } else {
+      this.logger.log('cupboardData уже в редисе!!!!!');
+    }
+    // вот тут можно обратиться к редис сервису и получить объект, только нужно его туда положить
+    // const obj = await this.shelvesService.getCupboardObject(userId);
+    // this.
+    return new CupboardDataObject(cupboardData);
+    // return new CupboardDataObject(
+    //   await this.shelvesService.getCupboardObject(userId),
+    // );
     // if (!this.cupboards.has(userId)) {
     //   const cupboardObject =
     //     await this.shelvesService.getCupboardObject(userId);
@@ -80,6 +92,7 @@ export class UserDataStorageService {
     return time.toString().padStart(2, '0');
   }
 
+  // @WaitForUnlock('updateCardsLock')
   async getCupboardPageData(userId: UserId): Promise<CupboardSchema> {
     const shelvesData = await this.shelvesService.findAllWithBoxCard(userId);
 
@@ -95,7 +108,7 @@ export class UserDataStorageService {
         const boxSpecialType = box.specialType;
         const allCardsInBox = box.card.length;
         let trainCardsInBox = box.card.filter((card) => {
-          card.nextTraining ? card.nextTraining < now : false;
+          return card.nextTraining ? card.nextTraining < now : false;
         }).length;
         // const trainCardsInBox = box.card.filter((card) => {
         //   console.log(
@@ -171,6 +184,7 @@ export class UserDataStorageService {
       commonShelf.learning.wait +
       commonShelf.learnt.wait +
       (!NEW_CARDS_COUNTS_AS_TRAIN ? commonShelf.new.all : 0);
+
     const result = {
       shelves: formattedShelves,
       commonShelf: { ...commonShelf, isCollapsed: true },
@@ -240,6 +254,17 @@ export class CupboardDataObject {
     const shelf = this.shelves[shelfId];
     const currentBox = shelf[boxId];
     let targetBoxId: string;
+    if (currentBox.index === 0) {
+      const targetBox = shelf[currentBox.nextBoxIdKey!];
+      const nextTraining = this.calculateNextTrainingTime(
+        nextTrainingCurrent,
+        targetBox.timing,
+      );
+
+      return { boxId: currentBox.nextBoxIdKey!, id, nextTraining };
+    }
+
+    console.log(currentBox);
     // let nextTraining: Date;
 
     switch (answer) {
