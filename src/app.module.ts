@@ -17,6 +17,7 @@ import facebookConfig from './config/facebook.config';
 import googleConfig from './config/google.config';
 import twitterConfig from './config/twitter.config';
 import appleConfig from './config/apple.config';
+import redisConfig from './config/redis.config';
 import path from 'path';
 import { AuthAppleModule } from './auth-apple/auth-apple.module';
 import { AuthFacebookModule } from './auth-facebook/auth-facebook.module';
@@ -40,9 +41,17 @@ import { CardsModule } from './cards/cards.module';
 import { AggregateModule } from './aggregate/aggregate.module';
 import { UserDataStorageModule } from './user-data-storage/user-data-storage.module';
 import { SettingsModule } from './settings/settings.module';
+import { NotificationModule } from './notification/notification.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { DevtoolsModule } from '@nestjs/devtools-integration';
+import { PROVIDER_REDIS } from './common/const/provider-names';
+import Redis from 'ioredis';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
+    // должен быть первым
     ConfigModule.forRoot({
       isGlobal: true,
       load: [
@@ -54,10 +63,13 @@ import { SettingsModule } from './settings/settings.module';
         facebookConfig,
         googleConfig,
         twitterConfig,
+        redisConfig,
         appleConfig,
       ],
       envFilePath: [
-        `.env.${process.env.NODE_ENV}`,
+        process.env.NODE_ENV === 'production'
+          ? '.env'
+          : `.env.${process.env.NODE_ENV}`,
         // '.env.development',
         // '.env.production',
       ],
@@ -71,6 +83,9 @@ import { SettingsModule } from './settings/settings.module';
       prismaServiceOptions: {
         middlewares: [loggingMiddleware()],
       },
+    }),
+    DevtoolsModule.register({
+      http: process.env.NODE_ENV !== 'production',
     }),
     I18nModule.forRootAsync({
       useFactory: (configService: ConfigService<AllConfigType>) => ({
@@ -99,6 +114,10 @@ import { SettingsModule } from './settings/settings.module';
       imports: [ConfigModule],
       inject: [ConfigService],
     }),
+    // CacheModule.register(),
+    ScheduleModule.forRoot(),
+    EventEmitterModule.forRoot(),
+    RedisModule,
     UsersModule,
     FilesModule,
     AuthModule,
@@ -112,13 +131,14 @@ import { SettingsModule } from './settings/settings.module';
     MailerModule,
     HomeModule,
     DevResponseModule,
-    CupboardModule,
     ShelvesModule,
     BoxesModule,
     CardsModule,
     AggregateModule,
+    CupboardModule,
     UserDataStorageModule,
     SettingsModule,
+    NotificationModule,
   ],
   providers: [
     {
