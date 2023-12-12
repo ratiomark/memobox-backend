@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RedisRepository } from './redis-repository.service';
+import { UserId } from '@/common/types/prisma-entities';
+import { CupboardObject } from '@/common/types/entities-types';
+import { createKeyWithPrefix } from '@/utils/helpers/create-key-with-prefix';
+import { REDIS_KEY_CUPBOARD, REDIS_KEY_SHELVES } from './const/keys';
+import { ShelfIncBoxes } from '@/aggregate/entities/types';
 
 @Injectable()
 export class RedisService {
@@ -31,5 +36,35 @@ export class RedisService {
       this.logger.log(`Waiting for unlock ${key}`);
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
+  }
+
+  async getCupboardObjectByUserId(
+    userId: UserId,
+  ): Promise<CupboardObject | null> {
+    const key = createKeyWithPrefix(REDIS_KEY_CUPBOARD, userId);
+    return await this.redisRepository.get(key);
+  }
+
+  async saveCupboardObjectByUserId(
+    userId: UserId,
+    cupboardObject: CupboardObject,
+  ): Promise<void> {
+    const key = createKeyWithPrefix(REDIS_KEY_CUPBOARD, userId);
+    return await this.redisRepository.set(key, cupboardObject);
+  }
+
+  async getShelvesByUserId(userId: UserId): Promise<ShelfIncBoxes[] | null> {
+    const key = createKeyWithPrefix(REDIS_KEY_SHELVES, userId);
+    this.logger.log(`достаю shelves из redis `);
+    return await this.redisRepository.get(key);
+  }
+
+  async saveShelvesByUserId(
+    userId: UserId,
+    shelves: ShelfIncBoxes[],
+  ): Promise<void> {
+    const key = createKeyWithPrefix(REDIS_KEY_SHELVES, userId);
+    this.logger.log(`сохраняю shelves в redis `);
+    return await this.redisRepository.set(key, shelves);
   }
 }
