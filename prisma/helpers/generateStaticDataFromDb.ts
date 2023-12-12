@@ -1,6 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
+import {
+  TEST_shelfId,
+  TEST_cardsInNewBox,
+  TEST_boxIdNewCards,
+  TEST_boxesByShelfIdOrderIndex,
+} from '../../test/utils/constants';
 const prisma = new PrismaClient();
 interface DataEntry {
   constName: string;
@@ -11,17 +17,30 @@ const defaultFileName = 'staticDataFromDb.ts';
 const saveFilePath = 'prisma/mock-data';
 
 async function createFileWithData(
-  dataEntries: DataEntry[],
+  dataEntries: DataEntry[] | string | any,
   fileName: string = defaultFileName,
   path: string = __dirname,
 ): Promise<void> {
   // Формирование содержимого файла
   let fileContent = '/* cSpell:disable */\n';
   dataEntries.forEach((entry) => {
-    const dataString = entry.data
-      .map((item) => JSON.stringify(item, null, 2))
-      .join(',\n    ');
-    fileContent += `export const ${entry.constName} = [\n    ${dataString}\n];\n\n`;
+    let dataString;
+
+    if (Array.isArray(entry.data)) {
+      // Обработка массива
+      dataString = entry.data
+        .map((item) => JSON.stringify(item, null, 2))
+        .join(',\n    ');
+      fileContent += `export const ${entry.constName} = [\n    ${dataString}\n];\n\n`;
+    } else if (typeof entry.data === 'object') {
+      // Обработка объекта
+      dataString = JSON.stringify(entry.data, null, 2);
+      fileContent += `export const ${entry.constName} = ${dataString};\n\n`;
+    } else {
+      // Обработка примитивных типов (например, строки)
+      dataString = JSON.stringify(entry.data);
+      fileContent += `export const ${entry.constName} = ${dataString};\n\n`;
+    }
   });
 
   // Полный путь к файлу
@@ -53,6 +72,17 @@ async function getSeedDataFromDb() {
   const shelves = await prisma.shelf.findMany();
   const boxes = await prisma.box.findMany();
   const cards = await prisma.card.findMany();
+  const shelfIdToCheck = shelves[0].id;
+  const boxIdNewCards = boxes.find(
+    (box) => box.specialType === 'new' && box.shelfId === shelfIdToCheck,
+  )?.id;
+  const cardsInNewBox = cards.filter((card) => card.boxId === boxIdNewCards);
+  const boxesByShelfId = await prisma.box.findMany({
+    where: { shelfId: shelfIdToCheck },
+    orderBy: { index: 'asc' },
+  });
+  // const boxId
+  // boxIndexToIdObject[]
   return [
     { constName: 'roles', data: roles },
     { constName: 'statuses', data: statuses },
@@ -60,6 +90,10 @@ async function getSeedDataFromDb() {
     { constName: 'shelves', data: shelves },
     { constName: 'boxes', data: boxes },
     { constName: 'cards', data: cards },
+    { constName: TEST_shelfId, data: shelfIdToCheck },
+    { constName: TEST_boxIdNewCards, data: boxIdNewCards },
+    { constName: TEST_cardsInNewBox, data: cardsInNewBox },
+    { constName: TEST_boxesByShelfIdOrderIndex, data: boxesByShelfId },
   ];
 }
 

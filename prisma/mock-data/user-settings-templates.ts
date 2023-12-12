@@ -94,7 +94,7 @@ const timeSleepMockExtended = {
 
 export const notificationsMock: NotificationSettings = {
   mobilePushEnabled: false,
-  emailNotificationsEnabled: false,
+  emailNotificationsEnabled: true,
   minimumCardsForPush: 15,
   minimumCardsForEmailNotification: 10,
   notificationEmails: [
