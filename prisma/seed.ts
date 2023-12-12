@@ -13,6 +13,7 @@ import { PartialShelf, PartialBox } from './types/entities';
 import { newCards, defaultCard } from './mock-data/cards';
 import { getSpecialType } from './helpers/getSpecialType';
 import {
+  notificationsMock,
   shelfTemplateDefaultMock,
   timeSleepMock,
 } from './mock-data/user-settings-templates';
@@ -22,8 +23,10 @@ import {
   ADMIN_PASSWORD,
   TESTER_EMAIL,
 } from '../test/utils/constants';
-import { TimingBlock } from '../src/aggregate/entities/settings-types';
-import { getRandomBetween } from '../src/utils/common/getRandomBetween';
+import {
+  NotificationEmails,
+  TimingBlock,
+} from '../src/aggregate/entities/settings-types';
 import {
   jsonSavedDataDefault,
   jsonSettingsDefault,
@@ -176,24 +179,24 @@ async function createSeedsInDB() {
         index: 0,
         isDeleted: false,
       },
-      {
-        id: shelfB,
-        title: 'Shelf B',
-        userId: userId,
-        isCollapsed: true,
-        missedTrainingValue: 'none',
-        index: 1,
-        isDeleted: false,
-      },
-      {
-        id: shelfC,
-        title: 'Shelf C',
-        userId: userId,
-        isCollapsed: true,
-        missedTrainingValue: 'none',
-        index: 2,
-        isDeleted: false,
-      },
+      // {
+      //   id: shelfB,
+      //   title: 'Shelf B',
+      //   userId: userId,
+      //   isCollapsed: true,
+      //   missedTrainingValue: 'none',
+      //   index: 1,
+      //   isDeleted: false,
+      // },
+      // {
+      //   id: shelfC,
+      //   title: 'Shelf C',
+      //   userId: userId,
+      //   isCollapsed: true,
+      //   missedTrainingValue: 'none',
+      //   index: 2,
+      //   isDeleted: false,
+      // },
     ];
     // await prisma.shelf.createMany({ data: userShelves });
     // return prisma.shelf.findMany();
@@ -205,7 +208,8 @@ async function createSeedsInDB() {
   }
 
   async function seedBoxes() {
-    const shelfIds = [shelfA, shelfB, shelfC];
+    const shelfIds = [shelfA];
+    // const shelfIds = [shelfA, shelfB, shelfC];
     const userBoxes: PartialBox[] = [];
     const boxCounts = {}; // Для хранения количества коробок на каждой полке
     // const allBoxes: PartialBox[] = []; // Для хранения всех созданных коробок
@@ -346,8 +350,16 @@ async function createSeedsInDB() {
   }
 
   async function seedNotificationDefaultSettings() {
+    const notificationEmails: NotificationEmails[] = [
+      { email: TESTER_EMAIL, verified: false },
+    ];
+    const notifications = notificationsMock;
+    notifications.notificationEmails = notificationEmails;
     await prisma.notification.create({
-      data: { userId: null },
+      data: {
+        userId,
+        settings: notifications as unknown as Prisma.InputJsonValue,
+      },
     });
     console.log('✔️ settings: notification');
   }
