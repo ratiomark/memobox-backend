@@ -5,18 +5,8 @@ import {
   TESTER_EMAIL,
   TESTER_PASSWORD,
 } from '../utils/constants';
-import { sleep } from '@/utils/common/sleep';
-// как я могу сохранить токен из первого теста? Например, во втором тесте я сохраняю все body отедльным запросом, а потом достаю из него токен. Могу ли я поступить похожим способом в первом тесте? Можно ли сохранить данные из теста в переменную и использовать их в другом тесте? Можно ли сохранять данные и одновременно с этим использовать expect?
-const testLoopValue = 40;
-const sleepValue = 0;
-const SECONDS = 1000;
-if (sleepValue > 0) {
-  jest.setTimeout((testLoopValue + 5) * sleepValue * SECONDS);
-}
-// Во первых, объясни откуда ты взял вот это:
-// expect(response.body).toHaveProperty('cards');
-// expect(Array.isArray(response.body.cards)).toBeTruthy();
-// Пожалуйста, покажи место в нашей переписке, где ты увидел, что '/cards/training/all/all' возвращает объект в котором есть поле cards.
+import { addMinutes } from 'date-fns';
+
 describe('Test cards training receiving', () => {
   const app = APP_URL;
   const app_url_full = app + API_PREFIX;
@@ -25,6 +15,7 @@ describe('Test cards training receiving', () => {
   let shelvesData;
   let shelfId;
   let newCardsBoxId;
+  let isSeedInInitialState = true;
 
   beforeAll(async () => {
     // Получение токена пользователя
@@ -48,20 +39,38 @@ describe('Test cards training receiving', () => {
   });
 
   it('should retrieve all new cards from cupboard', async () => {
-    const response = await request(app_url_full)
-      .get(`/cards/training/all/new`)
-      .auth(userToken, { type: 'bearer' });
+    try {
+      const response = await request(app_url_full)
+        .get(`/cards/training/all/new`)
+        .auth(userToken, { type: 'bearer' });
 
-    expect(response.status).toBe(200);
-    expect(response.body).toBeInstanceOf(Array);
-    response.body.forEach((card) => {
-      expect(card.shelfId).toBe(shelfId);
-      expect(card.boxId).toBe(newCardsBoxId);
-      expect(card.specialType).toBe('new');
-      expect(card.state).toBe('train');
-      expect(card.nextTraining).toBe(null);
-    });
+      expect(response.status).toBe(200);
+      expect(response.body).toBeInstanceOf(Array);
+      response.body.forEach((card) => {
+        expect(card.shelfId).toBe(shelfId);
+        expect(card.boxId).toBe(newCardsBoxId);
+        expect(card.specialType).toBe('new');
+        expect(card.state).toBe('train');
+        expect(card.nextTraining).toBe(null);
+      });
+    } catch (error) {
+      isSeedInInitialState = false;
+      throw new Error('Seed test failed, set correct initial db state');
+    }
+
+    // if (expect.getState().currentTestName && expect.hasAssertions() === false) {
+    // isSeedInInitialState = false;
+    // }
+    // if (!isPreviousTestSuccessful) {
+    // throw new Error('Previous test failed, skipping...');
+    // }
   });
+
+  // afterEach(() => {
+  //   if (!isSeedInInitialState) {
+  //     throw new Error('Seed test failed, skipping...');
+  //   }
+  // });
 
   it('should retrieve all new cards from specific shelf', async () => {
     const boxWithNewCards = shelvesData[shelfId].boxesItems[0];
@@ -83,7 +92,6 @@ describe('Test cards training receiving', () => {
       expect(card.nextTraining).toBe(null);
     });
   });
-
   it('should retrieve all training cards from the entire shelf', async () => {
     // Получение всех карточек для тренировки
     const response = await request(app_url_full)
@@ -148,4 +156,117 @@ describe('Test cards training receiving', () => {
       expect(new Date(card.nextTraining).toString()).not.toBe('Invalid Date');
     });
   });
+  // ==================
+
+  it('should correctly update new cards after training responses', async () => {
+    // Получение новых карточек для тренировки
+    const boxWithIndex1boxId = shelvesData[shelfId].boxesItems.find(
+      (box) => box.index === 1,
+    ).id;
+
+    const trainingCardsResponse = await request(app_url_full)
+      .get(`/cards/training/all/new`)
+      .auth(userToken, { type: 'bearer' });
+
+    const trainingCards = trainingCardsResponse.body;
+    const trainingCardIds = trainingCards.map((card) => card.id);
+
+    // Формируем ответы пользователя на тренировке
+    const trainingResponses = trainingCards.map((card, index) => {
+      let answer;
+      if (index % 3 === 0) answer = 'bad';
+      else if (index % 3 === 1) answer = 'middle';
+      else answer = 'good';
+      return { ...card, answer };
+    });
+
+    const serverTimeResponse = await request(app_url_full)
+      .get('/aggregate/server-time')
+      .auth(userToken, { type: 'bearer' });
+    const serverTime = new Date(serverTimeResponse.body);
+
+    // Отправка ответов на тренировку
+    await request(app_url_full)
+      .post('/cards/training/answers')
+      .send({ responses: trainingResponses })
+      .auth(userToken, { type: 'bearer' });
+
+    // Проверка обновленных карточек
+    const cardsFromNextBox = await request(app_url_full)
+      .get(`/cards/get-by-shelfId-and-boxId/${shelfId}/${boxWithIndex1boxId}`)
+      .auth(userToken, { type: 'bearer' });
+    const updatedCards = cardsFromNextBox.body.filter((card) =>
+      trainingCardIds.includes(card.id),
+    );
+
+    updatedCards.forEach((updatedCard) => {
+      expect(updatedCard.state).toBe('wait');
+      expect(updatedCard.boxId).toBe(boxWithIndex1boxId);
+
+      const expectedNextTraining = addMinutes(serverTime, 5);
+
+      // Проверка nextTraining с допустимым отклонением в 30 секунд
+      const nextTraining = new Date(updatedCard.nextTraining);
+      expect(nextTraining.getTime()).toBeCloseTo(
+        expectedNextTraining.getTime(),
+        30 * 1000,
+      );
+    });
+  });
 });
+// коробка 0(новые) - 5 карточек (nextTraining = null)
+// коробка 1 - 5 карточек (nextTraining = seedTime) - timing = 5 минут
+// коробка 2 - 5 карточек (nextTraining = seedTime) - timing = 8 часов
+// коробка 3 - 5 карточек (nextTraining = seedTime) - timing = 1 день
+// коробка 4 - 5 карточек (nextTraining = seedTime) - timing = 3 дня
+// коробка 5(изученные) - 5 карточек (nextTraining = seedTime) - timing = 14 дней
+// Соответственно, в данный момент в шкафу:
+// -5 новых карточек
+// -20 карточек на изучении
+// -5 изученных карточек
+// Все эти карточки должны иметь состояние train, поскольку тест будет запущен после запуска seed
+// let hasTestFailed = false;
+
+// beforeEach(() => {
+//   if (hasTestFailed) {
+//     throw new Error('Previous test failed, skipping...');
+//   }
+// });
+
+// afterEach(() => {
+//   if (expect.getState().currentTestName.failed) {
+//     hasTestFailed = true;
+//   }
+// });
+
+// export function calculateNextTraining(timing: TimingBlock, now: Date) {
+//   let nextTraining = now;
+//   // Добавляем интервалы из TimingBlock
+//   nextTraining = addMinutes(nextTraining, timing.minutes);
+//   nextTraining = addHours(nextTraining, timing.hours);
+//   nextTraining = addDays(nextTraining, timing.days);
+//   nextTraining = addWeeks(nextTraining, timing.weeks);
+//   nextTraining = addMonths(nextTraining, timing.months);
+
+//   return nextTraining;
+// }
+// it('should correctly update new cards after training responses', async () => {
+// 	// Получение новых карточек для тренировки
+// 	const trainingCardsResponse = await request(app_url_full)
+// 		.get(`/cards/training/all/new`)
+// 		.auth(userToken, { type: 'bearer' });
+
+// 	const trainingCards = trainingCardsResponse.body;
+// 	const trainingCardIds = trainingCards.map(card => card.id);
+
+// 	// Формируем ответы пользователя на тренировке
+// 	const trainingResponses = trainingCards.map((card, index) => {
+// 		let answer;
+// 		if (index % 3 === 0) answer = 'bad';
+// 		else if (index % 3 === 1) answer = 'middle';
+// 		else answer = 'good';
+// 		return { ...card, answer };
+// 	});
+
+// 	// ПРОДОЛЖИ ПИСАТЬ ТЕСТ
+// }
