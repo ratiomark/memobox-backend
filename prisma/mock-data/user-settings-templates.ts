@@ -105,6 +105,79 @@ export const notificationsMock: NotificationSettings = {
   ],
 };
 
+export const shelfTemplateTestMock = [
+  // export const shelfTemplateDefaultMock: TimingBlock[] = [
+  {
+    minutes: 5,
+    hours: 0,
+    days: 0,
+    weeks: 0,
+    months: 0,
+  },
+  {
+    minutes: 0,
+    hours: 8,
+    days: 0,
+    weeks: 0,
+    months: 0,
+  },
+  {
+    minutes: 0,
+    hours: 0,
+    days: 1,
+    weeks: 0,
+    months: 0,
+  },
+  {
+    minutes: 0,
+    hours: 0,
+    days: 0,
+    weeks: 1,
+    months: 0,
+  },
+  {
+    minutes: 0,
+    hours: 0,
+    days: 0,
+    weeks: 0,
+    months: 1,
+  },
+  {
+    minutes: 0,
+    hours: 0,
+    days: 28,
+    weeks: 0,
+    months: 0,
+  },
+  {
+    minutes: 0,
+    hours: 0,
+    days: 0,
+    weeks: 3,
+    months: 0,
+  },
+  {
+    minutes: 0,
+    hours: 0,
+    days: 2,
+    weeks: 3,
+    months: 1,
+  },
+  {
+    minutes: 0,
+    hours: 0,
+    days: 0,
+    weeks: 0,
+    months: 2,
+  },
+  {
+    minutes: 0,
+    hours: 0,
+    days: 0,
+    weeks: 4,
+    months: 2,
+  },
+];
 export const shelfTemplateDefaultMock = [
   // export const shelfTemplateDefaultMock: TimingBlock[] = [
   {

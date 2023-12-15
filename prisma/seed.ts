@@ -14,6 +14,7 @@ import { newCards, defaultCard } from './mock-data/cards';
 import { getSpecialType } from './helpers/getSpecialType';
 import {
   notificationsMock,
+  shelfTemplateTestMock,
   shelfTemplateDefaultMock,
   timeSleepMock,
 } from './mock-data/user-settings-templates';
@@ -217,7 +218,7 @@ async function createSeedsInDB() {
     for (const shelfId of shelfIds) {
       // const boxCount = getRandomBetween(4, 8);
       boxCounts[shelfId] = maxBoxCount;
-      shelfTemplateDefaultMock.slice(0, maxBoxCount).forEach((template, i) => {
+      shelfTemplateTestMock.slice(0, maxBoxCount).forEach((template, i) => {
         const box: PartialBox = {
           id: uuid(),
           shelfId: shelfId,
@@ -273,9 +274,11 @@ async function createSeedsInDB() {
     defaultCard: Partial<Card>,
   ) {
     // Функция для создания копии defaultCard с добавлением нужных полей
+    const now = new Date();
     const createDefaultCards = (
       box: PartialBox,
       count: number,
+      now: Date,
     ): Partial<Card>[] => {
       return Array.from({ length: count }, () => ({
         ...defaultCard,
@@ -283,10 +286,12 @@ async function createSeedsInDB() {
         userId: box.userId,
         boxId: box.id,
         isDeleted: false,
-        createdAt: new Date(),
-        nextTraining: calculateNextTraining(
-          box.timing as unknown as TimingBlock,
-        ),
+        createdAt: now,
+        nextTraining: now,
+        // nextTraining: calculateNextTraining(
+        //   box.timing as unknown as TimingBlock,
+        //   now,
+        // ),
       }));
     };
 
@@ -304,7 +309,7 @@ async function createSeedsInDB() {
       } else {
         // const randomCount = getRandomBetween(2, 4);
         const randomCount = 5;
-        return createDefaultCards(box, randomCount);
+        return createDefaultCards(box, randomCount, now);
       }
     });
     // console.log(allCards);
