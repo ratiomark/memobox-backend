@@ -184,3 +184,6 @@ ALTER TABLE "Card" ADD CONSTRAINT "Card_shelfId_fkey" FOREIGN KEY ("shelfId") RE
 
 -- AddForeignKey
 ALTER TABLE "Card" ADD CONSTRAINT "Card_boxId_fkey" FOREIGN KEY ("boxId") REFERENCES "Box"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- SetTimeZone
+SET TIMEZONE='UTC';

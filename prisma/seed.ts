@@ -32,6 +32,7 @@ import {
   jsonSavedDataDefault,
   jsonSettingsDefault,
 } from './mock-data/json-data-and-settings';
+process.env.TZ = 'Etc/UTC';
 
 const snakeCase = (str) =>
   str &&
@@ -286,7 +287,7 @@ async function createSeedsInDB() {
         userId: box.userId,
         boxId: box.id,
         isDeleted: false,
-        createdAt: now,
+        // createdAt: now,
         nextTraining: now,
         // nextTraining: calculateNextTraining(
         //   box.timing as unknown as TimingBlock,
