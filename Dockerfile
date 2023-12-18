@@ -20,7 +20,6 @@ RUN npm install --package-lock-only
 ###################
 FROM node:16-alpine as build
 
-ENV NODE_ENV=production
 
 WORKDIR /app
 
@@ -34,6 +33,8 @@ COPY --from=dependencies app/package.json ./
 # Отдельно копируем src и prisma
 COPY app/src ./src/
 COPY app/prisma ./prisma/
+
+ENV NODE_ENV=production
 
 # Установка зависимостей и сборка приложения
 RUN npm ci
