@@ -22,12 +22,15 @@ FROM node:16-alpine as build
 
 WORKDIR /app
 
+# Копируем свежий package-lock.json
+COPY --from=dependencies app/package-lock* ./
+
 # Игнорируем src и prisma в .dockerignore, копируем остальные файлы
-COPY --from=dependencies app/ ./
+COPY app/ ./
 
 # Отдельно копируем src и prisma
-COPY --from=dependencies app/src ./src/
-COPY --from=dependencies app/prisma ./prisma/
+COPY app/src ./src/
+COPY app/prisma ./prisma/
 
 # Установка зависимостей и сборка приложения
 RUN npm ci
