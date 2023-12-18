@@ -15,8 +15,8 @@ import { TimingBlock } from '@/aggregate/entities/settings-types';
 //   console.log(nextTraining, new Date());
 //   return nextTraining;
 // }
-export function calculateNextTraining(timing: TimingBlock) {
-  let nextTraining = new Date(); // Текущее время
+export function calculateNextTraining(timing: TimingBlock, now: Date) {
+  let nextTraining = now;
   // Добавляем интервалы из TimingBlock
   nextTraining = addMinutes(nextTraining, timing.minutes);
   nextTraining = addHours(nextTraining, timing.hours);
