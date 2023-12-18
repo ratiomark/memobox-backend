@@ -13,11 +13,16 @@ import {
   ShelfData,
   CardTrainingData,
   TrainingOutcome,
+  CupboardObject,
 } from '@/common/types/entities-types';
 import { TimingBlock } from '@/aggregate/entities/settings-types';
 import { UserId } from '@/common/types/prisma-entities';
 import { ModuleRef } from '@nestjs/core';
 import { RedisService } from '@/redis/redis.service';
+import { ShelvesProcessorService } from '@/shelves/services/shelves-data-processor.service';
+import { cacheOrFetchData } from '@/utils/helpers/cache-or-fetch';
+import { addMinutes, addHours, addDays, addWeeks, addMonths } from 'date-fns';
+import { PrismaService } from 'nestjs-prisma';
 
 @Injectable()
 export class UserDataStorageService {
@@ -32,11 +37,13 @@ export class UserDataStorageService {
     private readonly boxesService: BoxesService,
     // @Inject(forwardRef(() => ShelvesService))
     private readonly shelvesService: ShelvesService,
+    private readonly shelvesProcessorService: ShelvesProcessorService,
     // private readonly cardsService: CardsService,
     // private readonly boxesService: BoxesService,
     // private readonly shelvesService: ShelvesService,
     private readonly i18n: I18nService,
     private readonly redisService: RedisService,
+    private readonly prisma: PrismaService,
   ) {}
   // onModuleInit() {
   //   this.cardsService = this.moduleRef.get(CardsService, { strict: false });
@@ -47,32 +54,26 @@ export class UserDataStorageService {
   //   }
   //   return this._cardsService;
   // }
-
-  async getCupboardClass(userId: UserId): Promise<CupboardDataObject> {
-    let cupboardData =
-      await this.redisService.getCupboardObjectByUserId(userId);
-    if (!cupboardData) {
-      this.logger.log('cupboardData is null');
-      cupboardData = await this.shelvesService.getCupboardObject(userId);
-      await this.redisService.saveCupboardObjectByUserId(userId, cupboardData);
-    } else {
-      this.logger.log('cupboardData уже в редисе!!!!!');
-    }
-    // вот тут можно обратиться к редис сервису и получить объект, только нужно его туда положить
-    // const obj = await this.shelvesService.getCupboardObject(userId);
-    // this.
-    return new CupboardDataObject(cupboardData);
-    // return new CupboardDataObject(
-    //   await this.shelvesService.getCupboardObject(userId),
-    // );
-    // if (!this.cupboards.has(userId)) {
-    //   const cupboardObject =
-    //     await this.shelvesService.getCupboardObject(userId);
-    //   // const cupboardDataObject = new CupboardDataObject(cupboardObject);
-    //   this.cupboards.set(userId, cupboardObject);
+  async getDbTimeZone() {
+    return await this.prisma.$queryRaw`SHOW timezone;`;
+  }
+  async getCupboardClass(userId: UserId): Promise<CupboardClass> {
+    const cupboardData = await cacheOrFetchData<CupboardObject>(
+      userId,
+      this.redisService.getCupboardObjectByUserId.bind(this.redisService),
+      this.shelvesService.getCupboardObject.bind(this.shelvesService),
+      this.redisService.saveCupboardObjectByUserId.bind(this.redisService),
+    );
+    // let cupboardData =
+    //   await this.redisService.getCupboardObjectByUserId(userId);
+    // if (!cupboardData) {
+    //   this.logger.log('cupboardData is null');
+    //   cupboardData = await this.shelvesService.getCupboardObject(userId);
+    //   await this.redisService.saveCupboardObjectByUserId(userId, cupboardData);
+    // } else {
+    //   this.logger.log('cupboardData уже в редисе!!!!!');
     // }
-    // console.log(this.cupboards);
-    // return new CupboardDataObject(this.cupboards.get(userId)!);
+    return new CupboardClass(cupboardData);
   }
 
   formatTime(date: Date | null) {
@@ -205,7 +206,7 @@ export class UserDataStorageService {
     return {
       cards: enhancedCards,
       shelvesAndBoxesData:
-        this.shelvesService.createShelvesAndBoxesDataFromShelvesIncBox(
+        this.shelvesProcessorService.createShelvesAndBoxesDataFromShelvesIncBox(
           shelvesIncBoxes,
         ),
     };
@@ -219,8 +220,6 @@ export class UserDataStorageService {
         this.cardsService.findAllDeletedCards(userId),
         this.shelvesService.getShelvesAndBoxesData(userId),
       ]);
-    // const deletedShelvesAndShelvesData =
-    // await this.shelvesService.findAllDeletedBoxes(userId);
 
     return {
       shelves: shelvesDeleted,
@@ -237,7 +236,8 @@ export class UserDataStorageService {
   }
 }
 
-export class CupboardDataObject {
+export class CupboardClass {
+  private readonly logger = new Logger(CupboardClass.name);
   private shelves: Record<string, ShelfData>;
 
   constructor(shelvesData: Record<string, ShelfData>) {
@@ -249,22 +249,32 @@ export class CupboardDataObject {
     shelfId,
     boxId,
     answer,
-    nextTraining: nextTrainingCurrent,
+    now,
   }: CardTrainingData): TrainingOutcome {
     const shelf = this.shelves[shelfId];
-    const currentBox = shelf[boxId];
+    const shelfBoxes = shelf.boxes;
+    const currentBox = shelfBoxes[boxId];
     let targetBoxId: string;
     if (currentBox.index === 0) {
-      const targetBox = shelf[currentBox.nextBoxIdKey!];
+      const targetBox = shelfBoxes[currentBox.nextBoxIdKey!];
       const nextTraining = this.calculateNextTrainingTime(
-        nextTrainingCurrent,
+        now,
         targetBox.timing,
       );
-
+      // no matter what answer is, we should move card to the box 1
       return { boxId: currentBox.nextBoxIdKey!, id, nextTraining };
     }
+    if (currentBox.index === 1 && answer !== 'good') {
+      const targetBox = currentBox;
+      const nextTraining = this.calculateNextTrainingTime(
+        now,
+        targetBox.timing,
+      );
+      // no matter what answer is, we should not move card to the new cards box
+      return { boxId, id, nextTraining };
+    }
 
-    console.log(currentBox);
+    // console.log(currentBox);
     // let nextTraining: Date;
 
     switch (answer) {
@@ -280,79 +290,109 @@ export class CupboardDataObject {
         break;
     }
 
-    const targetBox = shelf[targetBoxId];
-    const nextTraining = this.calculateNextTrainingTime(
-      nextTrainingCurrent,
-      targetBox.timing,
-    );
-
+    const targetBox = shelfBoxes[targetBoxId];
+    const nextTraining = this.calculateNextTrainingTime(now, targetBox.timing);
+    // targetBoxId = targetBoxId
     return { boxId: targetBoxId, id, nextTraining };
   }
 
   private calculateNextTrainingTime(
-    cardNextTrainingCurrent: Date | string,
+    now: Date | string,
     timing: TimingBlock,
   ): Date | string {
-    const currentTime = cardNextTrainingCurrent ?? new Date();
+    const currentTime = now ?? new Date();
 
     // Расчет нового времени тренировки
-    const newTrainingTime = new Date(currentTime);
-    newTrainingTime.setDate(
-      newTrainingTime.getDate() + timing.days + timing.weeks * 7,
-    );
-    newTrainingTime.setHours(newTrainingTime.getHours() + timing.hours);
-    newTrainingTime.setMinutes(newTrainingTime.getMinutes() + timing.minutes);
-    newTrainingTime.setMonth(newTrainingTime.getMonth() + timing.months);
+    let newTrainingTime = new Date(currentTime);
+    newTrainingTime = addMinutes(newTrainingTime, timing.minutes);
+    newTrainingTime = addHours(newTrainingTime, timing.hours);
+    newTrainingTime = addDays(newTrainingTime, timing.days);
+    newTrainingTime = addWeeks(newTrainingTime, timing.weeks);
+    newTrainingTime = addMonths(newTrainingTime, timing.months);
+    // newTrainingTime.setDate(
+    //   newTrainingTime.getDate() + timing.days + timing.weeks * 7,
+    // );
+    // newTrainingTime.setHours(newTrainingTime.getHours() + timing.hours);
+    // newTrainingTime.setMinutes(newTrainingTime.getMinutes() + timing.minutes);
+    // newTrainingTime.setMonth(newTrainingTime.getMonth() + timing.months);
 
     return newTrainingTime.toISOString();
-    // return newTrainingTime;
-    // Implement the logic to calculate the next training time based on the timing
-    // ...
   }
-
-  // Additional methods as needed
 }
 
-// @Injectable()
-// export class UserDataStorageProxyService {
-//   private get userDataStorageService() {
-//     return this.moduleRef.get(UserDataStorageService, { strict: false });
+// export class CupboardDataObject {
+//   private readonly logger = new Logger(CupboardDataObject.name);
+//   private shelves: Record<string, ShelfData>;
+
+//   constructor(shelvesData: Record<string, ShelfData>) {
+//     this.shelves = shelvesData;
 //   }
 
-//   constructor(private moduleRef: ModuleRef) {}
+//   getNextTrainingTimeByCardData({
+//     id,
+//     shelfId,
+//     boxId,
+//     answer,
+//     nextTraining: nextTrainingCurrent,
+//   }: CardTrainingData): TrainingOutcome {
+//     const shelf = this.shelves[shelfId];
+//     const currentBox = shelf[boxId];
+//     let targetBoxId: string;
+//     if (currentBox.index === 0) {
+//       const targetBox = shelf[currentBox.nextBoxIdKey!];
+//       const nextTraining = this.calculateNextTrainingTime(
+//         nextTrainingCurrent,
+//         targetBox.timing,
+//       );
 
-//   getUserData(userId: string) {
-//     return this.userDataStorageService.getCupboardObject(userId);
-//   }
-// }
-// function getTrashPageDataFromDbData(shelves: ShelfIncBoxesIncCards[]) {
-//   if (shelves.length === 0) {
-//     return { shelves: [] };
-//   }
-//   if (shelves.length === 1) {
-//     const shelf = shelves[0];
-//     return {
-//       cards: shelf.card,
-//       boxes: shelf.box,
-//       shelves: [shelf],
-//     };
-//   }
-//   const boxes = shelves.reduce((acc, shelf) => {
-//     const newBoxesObject = {
-//       ...shelf.box,
-//       shelfId: shelf.id,
-//       shelfTitle: shelf.title,
-//     };
-//     return [newBoxesObject, ...acc];
-//   }, []);
+//       return { boxId: currentBox.nextBoxIdKey!, id, nextTraining };
+//     }
 
-//   const cards = shelves.reduce((acc, shelf) => {
-//     return [...shelf.card, ...acc];
-//   }, []);
+//     // console.log(currentBox);
+//     // let nextTraining: Date;
 
-//   return {
-//     shelves: shelves,
-//     boxes,
-//     cards,
-//   };
+//     switch (answer) {
+//       case 'good':
+//         targetBoxId = currentBox.nextBoxIdKey || boxId; // If no next box, stay in current
+//         break;
+//       case 'bad':
+//         targetBoxId = currentBox.previousBoxIdKey || boxId; // If no previous box, stay in current
+//         break;
+//       case 'middle':
+//       default:
+//         targetBoxId = boxId;
+//         break;
+//     }
+
+//     const targetBox = shelf[targetBoxId];
+//     const nextTraining = this.calculateNextTrainingTime(
+//       nextTrainingCurrent,
+//       targetBox.timing,
+//     );
+
+//     return { boxId: targetBoxId, id, nextTraining };
+//   }
+
+//   private calculateNextTrainingTime(
+//     cardNextTrainingCurrent: Date | string,
+//     timing: TimingBlock,
+//   ): Date | string {
+//     const currentTime = cardNextTrainingCurrent ?? new Date();
+
+//     // Расчет нового времени тренировки
+//     const newTrainingTime = new Date(currentTime);
+//     newTrainingTime.setDate(
+//       newTrainingTime.getDate() + timing.days + timing.weeks * 7,
+//     );
+//     newTrainingTime.setHours(newTrainingTime.getHours() + timing.hours);
+//     newTrainingTime.setMinutes(newTrainingTime.getMinutes() + timing.minutes);
+//     newTrainingTime.setMonth(newTrainingTime.getMonth() + timing.months);
+
+//     return newTrainingTime.toISOString();
+//     // return newTrainingTime;
+//     // Implement the logic to calculate the next training time based on the timing
+//     // ...
+//   }
+
+//   // Additional methods as needed
 // }
