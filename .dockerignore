@@ -5,3 +5,6 @@
 /.vscode
 /.github
 .env
+/src
+/prisma
+/test
