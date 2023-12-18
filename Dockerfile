@@ -35,6 +35,7 @@ COPY app/src ./src/
 COPY app/prisma ./prisma/
 
 ENV NODE_ENV=production
+# ENV NODE_ENV production
 
 # Установка зависимостей и сборка приложения
 RUN npm ci
