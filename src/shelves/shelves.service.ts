@@ -1,21 +1,21 @@
-import { Injectable } from '@nestjs/common';
-import { CreateShelfDto } from './dto/create-shelf.dto';
-import { UpdateShelfDto } from './dto/update-shelf.dto';
-import { PrismaService } from 'nestjs-prisma';
-import { uuid } from '@/utils/helpers/sql';
-import { Prisma, Shelf, User } from '@prisma/client';
-import { ShelfOrderRequest } from './entities/types';
-import { ShelfWithBoxCards, ShelvesDataViewPage } from '@/aggregate';
-import { emptyDataTemplate } from '@/common/const/commonShelfTemplate';
-import { CreateBoxDto } from '@/boxes/dto/create-box.dto';
-import { SettingsService } from '@/settings/settings.service';
+import { ShelfWithBoxCards } from '@/aggregate';
+import {
+  ShelfIncBoxesIncCards,
+  ShelfIncBoxes,
+} from '@/aggregate/entities/types';
 import { BoxesService } from '@/boxes/boxes.service';
 import { CardsService } from '@/cards/cards.service';
-import {
-  ShelfIncBoxes,
-  ShelfIncBoxesIncCards,
-  ShelfWithBoxesData,
-} from '@/aggregate/entities/types';
+import { SettingsService } from '@/settings/settings.service';
+import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { User, Shelf, Prisma } from '@prisma/client';
+import { PrismaService } from 'nestjs-prisma';
+import { CreateShelfDto } from './dto/create-shelf.dto';
+import { UpdateShelfDto } from './dto/update-shelf.dto';
+import { ShelfOrderRequest } from './entities/types';
+import { ShelvesProcessorService } from './services/shelves-data-processor.service';
+import { ShelfId, UserId } from '@/common/types/prisma-entities';
+import { async } from 'rxjs';
+import { cacheOrFetchData } from '@/utils/helpers/cache-or-fetch';
 
 @Injectable()
 export class ShelvesService {
@@ -24,9 +24,10 @@ export class ShelvesService {
     private readonly settingsService: SettingsService,
     private readonly boxesService: BoxesService,
     private readonly cardsService: CardsService,
+    private readonly shelvesProcessor: ShelvesProcessorService,
   ) {}
 
-  async create(userId: User['id'], createShelfDto: CreateShelfDto) {
+  async create(userId: UserId, createShelfDto: CreateShelfDto) {
     const [shelfFromDb, shelfTemplate] = await Promise.all([
       // return array with created shelf, so response[0] === createdShelf
       this.prisma.$queryRawUnsafe<Shelf[]>(
@@ -34,39 +35,16 @@ export class ShelvesService {
       ),
       this.settingsService.getShelfTemplate(userId),
     ]);
-    // const response = await this.prisma.$queryRawUnsafe<Shelf[]>(
-    //   // `SELECT * FROM add_shelf_and_update_indexes($1, $2);`,
-    //   // userId,
-    //   // createShelfDto.title,
-    //   `SELECT * FROM add_shelf_and_update_indexes('${userId}', '${createShelfDto.title}') ;`,
-    // );
-    // console.log(shelfTemplateSettings);
-    // let templateToUse: ShelfTemplate['template'];
-    // if (shelfTemplateSettings.length == 2) {
-    //   templateToUse = shelfTemplateSettings[1].userId
-    //     ? (shelfTemplateSettings[1].template as Prisma.JsonArray)
-    //     : (shelfTemplateSettings[0].template as Prisma.JsonArray);
-    // } else {
-    //   templateToUse = shelfTemplateSettings[0].template as Prisma.JsonArray;
-    // }
 
-    const shelf = shelfFromDb[0];
-    const shelfResponse = {
-      boxesData: [] as CreateBoxDto[],
-      // boxesData: [] as BoxSchema[],
-      data: emptyDataTemplate,
-      ...shelf,
-      isCollapsed: true,
-    };
-    const shelfId = shelf.id;
-    const boxesData = await this.boxesService.createBoxesFromTemplate({
-      shelfId,
-      userId,
-      shelfTemplate,
-    });
-    // console.log(boxesData);
-    shelfResponse.boxesData = boxesData;
-    return shelfResponse;
+    const newShelfFromDb = shelfFromDb[0];
+
+    const shelfCreated =
+      await this.shelvesProcessor.createShelfResponseFromNewShelf(
+        userId,
+        newShelfFromDb,
+        shelfTemplate,
+      );
+    return shelfCreated;
   }
 
   async orderShelves(shelfOrder: ShelfOrderRequest) {
@@ -79,7 +57,7 @@ export class ShelvesService {
     return this.prisma.shelf.findMany(params);
   }
 
-  async findAllWithBoxCard(userId: User['id']): Promise<ShelfWithBoxCards[]> {
+  async findAllWithBoxCard(userId: UserId): Promise<ShelfWithBoxCards[]> {
     return await this.prisma.shelf.findMany({
       where: {
         userId,
@@ -107,10 +85,7 @@ export class ShelvesService {
     return `This action returns a #${id} shelf`;
   }
 
-  async update(
-    id: Shelf['id'],
-    updateShelfDto: UpdateShelfDto,
-  ): Promise<Shelf> {
+  async update(id: ShelfId, updateShelfDto: UpdateShelfDto): Promise<Shelf> {
     const shelfUpdated = await this.prisma.shelf.update({
       where: { id },
       data: updateShelfDto,
@@ -118,11 +93,7 @@ export class ShelvesService {
     return shelfUpdated;
   }
 
-  async deleteSoft(
-    userId: User['id'],
-    shelfId: Shelf['id'],
-    shelfIndex: number,
-  ) {
+  async deleteSoft(userId: UserId, shelfId: ShelfId, shelfIndex: number) {
     // console.log(userId, shelfId, shelfIndex);
     const [response] = await Promise.all([
       this.prisma.$queryRawUnsafe<Shelf[]>(
@@ -142,7 +113,22 @@ export class ShelvesService {
   }
 
   // shelvesAndBoxesData for /view page
-  async getShelvesAndBoxesData(userId: User['id']) {
+  async getShelvesAndBoxesData(userId: UserId) {
+    return await cacheOrFetchData<ShelfIncBoxes[]>(
+      userId,
+      this.shelvesProcessor.getShelvesAndBoxesData.bind(this.shelvesProcessor),
+      this.getShelvesAndBoxesDataFromDb.bind(this),
+      this.shelvesProcessor.saveShelvesAndBoxesData.bind(this.shelvesProcessor),
+    );
+    // let shelves = await this.shelvesProcessor.getShelvesAndBoxesData(userId);
+    // if (!shelves) {
+    //   shelves = await this.getShelvesAndBoxesDataFromDb(userId);
+    //   await this.shelvesProcessor.saveShelvesAndBoxesData(userId, shelves);
+    // }
+    // return shelves;
+  }
+
+  async getShelvesAndBoxesDataFromDb(userId: UserId): Promise<ShelfIncBoxes[]> {
     const shelves = await this.prisma.shelf.findMany({
       where: { userId, isDeleted: false },
       include: {
@@ -156,32 +142,34 @@ export class ShelvesService {
         index: 'asc',
       },
     });
-    return this.createShelvesAndBoxesDataFromShelvesIncBox(shelves);
+    return shelves;
   }
 
-  createShelvesAndBoxesDataFromShelvesIncBox(
-    shelves: ShelfIncBoxes[],
-  ): ShelvesDataViewPage {
-    return shelves.reduce((acc, shelf) => {
-      const boxesItems = shelf.box.map((box) => ({
-        id: box.id,
-        index: box.index,
-      }));
+  // private transformShelvesData(userShelves: any[]): Record<string, ShelfData> {
+  //   const shelvesData: Record<string, ShelfData> = {};
 
-      // Добавляем данные о полке
-      acc[shelf.id] = {
-        maxIndexBox: shelf.box.length - 1,
-        boxesItems,
-        shelfTitle: shelf.title,
-        shelfIndex: shelf.index,
-      };
+  //   userShelves.forEach((shelf) => {
+  //     const boxData: Record<string, BoxData> = {};
+  //     const sortedBoxes = shelf.box.sort((a, b) => a.index - b.index);
 
-      return acc;
-    }, {});
-  }
+  //     sortedBoxes.forEach((box, index) => {
+  //       boxData[box.id] = {
+  //         nextBoxIdKey:
+  //           index < sortedBoxes.length - 1 ? sortedBoxes[index + 1].id : null,
+  //         previousBoxIdKey: index > 0 ? sortedBoxes[index - 1].id : null,
+  //         index: box.index,
+  //         timing: box.timing,
+  //       };
+  //     });
+
+  //     shelvesData[shelf.id] = boxData;
+  //   });
+
+  //   return shelvesData;
+  // }
 
   async findAllDeletedShelves(
-    userId: User['id'],
+    userId: UserId,
   ): Promise<ShelfIncBoxesIncCards[]> {
     const shelves = await this.prisma.shelf.findMany({
       where: { userId, isDeleted: true },
@@ -197,9 +185,28 @@ export class ShelvesService {
       cardsCount: shelf.card.length,
     }));
   }
+
+  async getCupboardObject(userId: UserId) {
+    const shelves = await this.getShelvesAndBoxesData(userId);
+    return this.shelvesProcessor.transformShelvesIncBoxToCupboardObject(
+      shelves,
+    );
+  }
+
+  createShelvesAndBoxesDataFromShelvesIncBox(shelves: ShelfIncBoxes[]) {
+    return this.shelvesProcessor.createShelvesAndBoxesDataFromShelvesIncBox(
+      shelves,
+    );
+  }
+
+  transformShelvesIncBoxToCupboardObject(shelves: ShelfIncBoxes[]) {
+    return this.shelvesProcessor.transformShelvesIncBoxToCupboardObject(
+      shelves,
+    );
+  }
 }
 
-// async orderShelves(userId: User['id'], shelfOrder: ShelfOrderRequest) {
+// async orderShelves(userId: UserId, shelfOrder: ShelfOrderRequest) {
 //   // let update: string[] = [];
 //   // let updateString = '';
 //   // for (const item of shelfOrder) {
@@ -221,17 +228,3 @@ export class ShelvesService {
 //   //   )}]')`,
 //   // );
 // }
-
-//  const boxesData: BoxSchema[] = templateToUse
-//    .slice(1, templateToUse.length - 2)
-//    .map((timing, index) => {
-//      const boxId = uuid();
-//      const boxData = {
-//        id: boxId,
-//        index,
-//        specialType: 'none',
-//        timing: timing as unknown as TimingBlock,
-//        data: emptyDataTemplate,
-//      };
-//      return boxData;
-//    });
