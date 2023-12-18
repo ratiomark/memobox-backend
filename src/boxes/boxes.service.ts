@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import { CreateBoxDto } from './dto/create-box.dto';
 import { UpdateBoxDto } from './dto/update-box.dto';
 import { PrismaService } from 'nestjs-prisma';
@@ -9,17 +9,19 @@ import {
 } from '@/common/const/commonShelfTemplate';
 import { uuid } from '@/utils/helpers/sql';
 import { CardsService } from '@/cards/cards.service';
+import { UserId, ShelfId } from '@/common/types/prisma-entities';
 
 type GenerateBoxesFromTemplateArg = {
   shelfTemplate: Prisma.JsonArray;
-  userId: User['id'];
-  shelfId: Shelf['id'];
+  userId: UserId;
+  shelfId: ShelfId;
 };
 
 @Injectable()
 export class BoxesService {
   constructor(
     private readonly prisma: PrismaService,
+    // @Inject(forwardRef(() => CardsService))
     private readonly cardsService: CardsService,
   ) {}
   create(createBoxDto: CreateBoxDto) {

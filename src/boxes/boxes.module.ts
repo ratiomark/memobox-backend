@@ -7,6 +7,7 @@ import { CardsModule } from '@/cards/cards.module';
   controllers: [BoxesController],
   providers: [BoxesService],
   exports: [BoxesService],
-  imports: [CardsModule],
+  imports: [forwardRef(() => CardsModule)],
+  // imports: [CardsModule],
 })
 export class BoxesModule {}
