@@ -36,7 +36,8 @@ COPY app/prisma ./prisma/
 # Установка зависимостей и сборка приложения
 # RUN npm ci
 # RUN npm run build
-RUN sleep 3600
+# RUN sleep 3600
+RUN exit 0
 
 # Генерация Prisma клиента
 # RUN npx prisma generate
