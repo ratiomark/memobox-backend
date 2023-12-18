@@ -10,14 +10,13 @@ import { User } from '@prisma/client';
   version: '1',
 })
 export class CupboardController {
-  constructor(private readonly cupboardService: CupboardService) {}
-
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Get cupboard data: shelves, boxes, current state of system',
-  })
-  @Get()
-  async getCupboard(@GetCurrentUser('id') userId: User['id']) {
-    return this.cupboardService.getCupboard(userId);
-  }
+  // constructor(private readonly cupboardService: CupboardService) {}
+  // @ApiBearerAuth()
+  // @ApiOperation({
+  //   summary: 'Get cupboard data: shelves, boxes, current state of system',
+  // })
+  // @Get()
+  // async getCupboard(@GetCurrentUser('id') userId: User['id']) {
+  //   return this.cupboardService.getCupboard(userId);
+  // }
 }
