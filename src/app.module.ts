@@ -79,11 +79,11 @@ import { RedisModule } from './redis/redis.module';
     PrismaModule.forRoot({
       isGlobal: true,
       prismaServiceOptions: {
-        middlewares: [loggingMiddleware()],
+        // middlewares: [loggingMiddleware()],
       },
     }),
     DevtoolsModule.register({
-      http: process.env.NODE_ENV !== 'production',
+      // http: process.env.NODE_ENV !== 'production',
     }),
     I18nModule.forRootAsync({
       useFactory: (configService: ConfigService<AllConfigType>) => ({
