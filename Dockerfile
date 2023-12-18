@@ -48,20 +48,20 @@ RUN exit 0
 ###################
 # Этап запуска
 FROM node:16-alpine
-RUN exit 0
 WORKDIR /app
+RUN exit 0
 
 # Копирование собранного приложения и зависимостей из этапа сборки
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/prisma ./prisma
+# COPY --from=build /app/node_modules ./node_modules
+# COPY --from=build /app/dist ./dist
+# COPY --from=build /app/prisma ./prisma
 
 # Копируем остальные необходимые файлы
 # COPY --from=build /app ./
 
 # Экспорт порта и запуск приложения
-EXPOSE 3000
-CMD ["node", "dist/main"]
+# EXPOSE 3000
+# CMD ["node", "dist/main"]
 
 
 
