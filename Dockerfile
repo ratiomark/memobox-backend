@@ -47,9 +47,9 @@ RUN exit 0
 # PRODUCTION
 ###################
 # Этап запуска
-FROM node:16-alpine
-WORKDIR /app
-RUN exit 0
+# FROM node:16-alpine
+# WORKDIR /app
+# RUN exit 0
 
 # Копирование собранного приложения и зависимостей из этапа сборки
 # COPY --from=build /app/node_modules ./node_modules
