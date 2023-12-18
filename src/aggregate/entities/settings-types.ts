@@ -6,7 +6,7 @@ export interface TimingBlock {
   months: number;
 }
 
-interface NotificationEmails {
+export interface NotificationEmails {
   email: string;
   verified: boolean;
 }
