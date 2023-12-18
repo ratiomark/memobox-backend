@@ -34,34 +34,34 @@ COPY app/src ./src/
 COPY app/prisma ./prisma/
 
 # Установка зависимостей и сборка приложения
-# RUN npm ci
-# RUN npm run build
+RUN npm ci
+RUN npm run build
 # RUN sleep 3600
-RUN exit 0
+# RUN exit 0
 
 # Генерация Prisma клиента
-# RUN npx prisma generate
+RUN npx prisma generate
 
 
 ###################
 # PRODUCTION
 ###################
 # Этап запуска
-# FROM node:16-alpine
-# WORKDIR /app
+FROM node:16-alpine
 # RUN exit 0
+WORKDIR /app
 
 # Копирование собранного приложения и зависимостей из этапа сборки
-# COPY --from=build /app/node_modules ./node_modules
-# COPY --from=build /app/dist ./dist
-# COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/prisma ./prisma
 
 # Копируем остальные необходимые файлы
 # COPY --from=build /app ./
 
 # Экспорт порта и запуск приложения
-# EXPOSE 3000
-# CMD ["node", "dist/main"]
+EXPOSE 3000
+CMD ["node", "dist/main"]
 
 
 
