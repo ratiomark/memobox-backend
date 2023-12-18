@@ -1,3 +1,6 @@
+###################
+# DEPENDENCIES 
+###################
 # Этап генерации package-lock.json
 FROM node:16-alpine as dependencies
 
@@ -11,7 +14,10 @@ RUN sed -i '/\"prepare\":/d' package.json
 # Установка зависимостей с помощью npm для генерации package-lock.json
 RUN npm install --package-lock-only
 
-# Этап сборки
+
+###################
+# BUILD 
+###################
 FROM node:16-alpine as build
 
 WORKDIR /app
@@ -28,13 +34,17 @@ COPY app/src ./src/
 COPY app/prisma ./prisma/
 
 # Установка зависимостей и сборка приложения
-RUN npm ci
-RUN npm run build
-# RUN sleep 3600
+# RUN npm ci
+# RUN npm run build
+RUN sleep 3600
 
 # Генерация Prisma клиента
-RUN npx prisma generate
+# RUN npx prisma generate
 
+
+###################
+# PRODUCTION
+###################
 # Этап запуска
 FROM node:16-alpine
 
@@ -51,6 +61,21 @@ COPY --from=build /app/prisma ./prisma
 # Экспорт порта и запуск приложения
 EXPOSE 3000
 CMD ["node", "dist/main"]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # # Этап сборки
 # FROM node:16-alpine as build
 
