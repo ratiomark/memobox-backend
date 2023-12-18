@@ -1,5 +1,6 @@
 import {
   ClassSerializerInterceptor,
+  Logger,
   ValidationPipe,
   VersioningType,
 } from '@nestjs/common';
@@ -11,12 +12,19 @@ import { useContainer } from 'class-validator';
 import { AppModule } from './app.module';
 import { validationOptions } from '@/utils/validation-options';
 import { AllConfigType } from './config/config.type';
+process.env.TZ = 'Etc/UTC';
 // "builder": "swc",
 // "typeCheck": true,
 const DOCS_ROUTE = 'docs';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const logger = new Logger();
+  const app = await NestFactory.create(AppModule, {
+    cors: true,
+    snapshot: true,
+    // logger: ['error', 'warn'],
+    // logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+  });
 
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
@@ -50,7 +58,7 @@ async function bootstrap() {
   await app.listen(
     configService.getOrThrow('app.port', { infer: true }),
     () => {
-      console.log(
+      logger.log(
         `Listening on port http://localhost:${configService.getOrThrow(
           'app.port',
           {
@@ -58,12 +66,32 @@ async function bootstrap() {
           },
         )}`,
       );
-      console.log(
+      logger.log(
         `Docs on route http://localhost:${configService.getOrThrow('app.port', {
           infer: true,
         })}/${DOCS_ROUTE}`,
       );
+      logger.log(
+        `Using NODE_ENV = ${configService.getOrThrow('app.nodeEnv', {
+          infer: true,
+        })}`,
+      );
+      logger.log(`Timezone сервера: ${process.env.TZ}`);
+      logger.log(`Время сервера: ${new Date().toLocaleString()}`);
     },
   );
+  // process.on('SIGTERM', async () => {
+  //   console.log('Закрытие сервера NestJS...');
+  //   await app.close();
+  //   console.log('Сервер NestJS закрыт.');
+  //   process.exit(0); // Явно завершает процесс Node.js
+  // });
+
+  // process.on('SIGINT', async () => {
+  //   console.log('Закрытие сервера NestJS (SIGINT)...');
+  //   await app.close();
+  //   console.log('Сервер NestJS закрыт (SIGINT).');
+  //   process.exit(0); // Явно завершает процесс Node.js
+  // });
 }
 void bootstrap();
