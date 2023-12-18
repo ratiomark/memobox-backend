@@ -38,7 +38,7 @@ ENV NODE_ENV=production
 # ENV NODE_ENV production
 
 # Установка зависимостей и сборка приложения
-RUN npm ci
+RUN npm ci --only=production
 RUN npm run build
 # RUN sleep 3600
 # RUN exit 0
