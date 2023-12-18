@@ -12,6 +12,8 @@ import { useContainer } from 'class-validator';
 import { AppModule } from './app.module';
 import { validationOptions } from '@/utils/validation-options';
 import { AllConfigType } from './config/config.type';
+import { on } from 'events';
+import { logger } from 'handlebars';
 process.env.TZ = 'Etc/UTC';
 // "builder": "swc",
 // "typeCheck": true,
@@ -25,7 +27,7 @@ async function bootstrap() {
     // logger: ['error', 'warn'],
     // logger: ['error', 'warn', 'log', 'debug', 'verbose'],
   });
-
+  logger.log(`ёёёёёёёёё - ${process.env.NODE_ENV}`);
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
   const configService = app.get(ConfigService<AllConfigType>);
