@@ -42,7 +42,9 @@ export class RedisService {
     userId: UserId,
   ): Promise<CupboardObject | null> {
     const key = createKeyWithPrefix(REDIS_KEY_CUPBOARD, userId);
-    return await this.redisRepository.get(key);
+    return await this.getWithLogger(key, 'достаю cupboardData из redis ');
+    // this.logger.log(`достаю cupboardData из redis `);
+    // return await this.redisRepository.get(key);
   }
 
   async saveCupboardObjectByUserId(
@@ -50,13 +52,20 @@ export class RedisService {
     cupboardObject: CupboardObject,
   ): Promise<void> {
     const key = createKeyWithPrefix(REDIS_KEY_CUPBOARD, userId);
-    return await this.redisRepository.set(key, cupboardObject);
+    return await this.saveWithLogger(
+      key,
+      cupboardObject,
+      'сохраняю shelves в redis ',
+    );
+    // this.logger.log(`сохраняю cupboardData из redis `);
+    // return await this.redisRepository.set(key, cupboardObject);
   }
 
   async getShelvesByUserId(userId: UserId): Promise<ShelfIncBoxes[] | null> {
     const key = createKeyWithPrefix(REDIS_KEY_SHELVES, userId);
-    this.logger.log(`достаю shelves из redis `);
-    return await this.redisRepository.get(key);
+    return await this.getWithLogger(key, 'достаю shelves из redis ');
+    // this.logger.log(`достаю shelves из redis `);
+    // return await this.redisRepository.get(key);
   }
 
   async saveShelvesByUserId(
@@ -64,7 +73,25 @@ export class RedisService {
     shelves: ShelfIncBoxes[],
   ): Promise<void> {
     const key = createKeyWithPrefix(REDIS_KEY_SHELVES, userId);
-    this.logger.log(`сохраняю shelves в redis `);
-    return await this.redisRepository.set(key, shelves);
+    return this.saveWithLogger(key, shelves, 'сохраняю shelves в redis ');
+    // return await this.redisRepository.set(key, shelves);
+  }
+
+  private async saveWithLogger(
+    key: string,
+    value: any,
+    message?: string,
+  ): Promise<void> {
+    if (message) {
+      this.logger.log(message);
+    }
+    return await this.redisRepository.set(key, value);
+  }
+
+  private async getWithLogger(key: string, message?: string): Promise<any> {
+    if (message) {
+      this.logger.log(message);
+    }
+    return await this.redisRepository.get(key);
   }
 }
