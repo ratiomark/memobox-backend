@@ -20,6 +20,8 @@ RUN npm install --package-lock-only
 ###################
 FROM node:16-alpine as build
 
+ENV NODE_ENV=production
+
 WORKDIR /app
 
 # Игнорируем src и prisma в .dockerignore, копируем остальные файлы
