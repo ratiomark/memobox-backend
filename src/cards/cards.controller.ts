@@ -4,9 +4,11 @@ import {
   Controller,
   Delete,
   Get,
+  Inject,
   Param,
   Patch,
   Post,
+  forwardRef,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Box, Card, Shelf, User } from '@prisma/client';
@@ -19,6 +21,8 @@ import {
   UpdateCardDto,
 } from './dto/update-card.dto';
 import { TrainingResponseDto } from './dto/update-cards-after-training.dto';
+import { Lock } from '@/common/decorators/lock.decorator';
+import { LOCK_KEYS } from '@/common/const/lock-keys-patterns';
 
 @ApiTags('Cards')
 @Controller({
@@ -27,6 +31,7 @@ import { TrainingResponseDto } from './dto/update-cards-after-training.dto';
 })
 export class CardsController {
   constructor(
+    @Inject(forwardRef(() => CardsService))
     private readonly cardsService: CardsService,
     private readonly cardsTestService: CardsTestService,
   ) {}
@@ -39,18 +44,33 @@ export class CardsController {
     return this.cardsService.create(userId, createCardDto);
   }
 
+  @Post('drop')
+  drop(@GetCurrentUser('id') userId: User['id']) {
+    return this.cardsService.drop(userId);
+  }
+
   // @Get()
   // getCardsShelvesBoxesData(@GetCurrentUser('id') userId: User['id']) {
   //   return this.cardsService.getCardsShelvesBoxesData(userId);
   // }
+  @Lock(LOCK_KEYS.updateCardsAfterTraining)
+  @Post('training/answers/by-prisma')
+  updateCardsAfterTrainingPrisma(
+    @GetCurrentUser('id') userId: User['id'],
+    @Body() body: any,
+    // @Body() body: TrainingResponseDto,
+  ) {
+    return this.cardsService.updateCardsWithPrisma(userId, body);
+  }
+
+  @Lock(LOCK_KEYS.updateCardsAfterTraining)
   @Post('training/answers')
   updateCardsAfterTraining(
     @GetCurrentUser('id') userId: User['id'],
-    @Body() body: TrainingResponseDto,
+    @Body() body: any,
+    // @Body() body: TrainingResponseDto,
   ) {
-    console.log(body); // тут пустой объект
-    console.log(body.getCardIds()); // тут пустой объект
-    return this.cardsService.updateCardsAfterTraining(userId);
+    return this.cardsService.updateCardsAfterTraining(userId, body);
   }
 
   @Get('training/:shelfId/:boxId')
@@ -67,6 +87,11 @@ export class CardsController {
   }
 
   // test
+  @Get('get-cards-from-new-box')
+  getCardsFromNewBox(@GetCurrentUser('id') userId: User['id']) {
+    return this.cardsTestService.getCardsFromNewBox(userId);
+  }
+
   @Get('get-by-shelfId-and-boxId/:shelfId/:boxId')
   getCardsByShelfIdAndBoxId(
     @GetCurrentUser('id') userId: User['id'],

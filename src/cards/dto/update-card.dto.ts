@@ -12,19 +12,19 @@ export class UpdateCardDto extends PartialType(CreateCardDto) {
   //   super(partial); // Вызов конструктора родительского класса
   // }
 
-  calculateState() {
-    if (this.specialType === BoxSpecialType.new && NEW_CARDS_COUNTS_AS_TRAIN) {
-      this.state = 'train';
-    } else if (this.nextTraining && this.nextTraining < new Date()) {
-      this.state = 'train';
-    } else {
-      this.state = 'wait';
-    }
-  }
+  // calculateState() {
+  //   if (this.specialType === BoxSpecialType.new && NEW_CARDS_COUNTS_AS_TRAIN) {
+  //     this.state = 'train';
+  //   } else if (this.nextTraining && this.nextTraining < new Date()) {
+  //     this.state = 'train';
+  //   } else {
+  //     this.state = 'wait';
+  //   }
+  // }
 
-  updateNextTraining(i18nService: I18nService) {
-    this.nextTraining = timeLeft(this.nextTraining as Date, i18nService);
-  }
+  // updateNextTraining(i18nService: I18nService) {
+  //   this.nextTraining = timeLeft(this.nextTraining as Date, i18nService);
+  // }
 
   @Exclude({ toClassOnly: true })
   box: any;
