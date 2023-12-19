@@ -45,6 +45,8 @@ RUN npm run build
 # RUN exit 0
 
 # Генерация Prisma клиента
+RUN npm run build
+RUN npx prisma migrate deploy
 RUN npx prisma generate
 
 
