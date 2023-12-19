@@ -22,12 +22,11 @@ const DOCS_ROUTE = 'docs';
 async function bootstrap() {
   const logger = new Logger();
   const app = await NestFactory.create(AppModule, {
-    cors: true,
+    // cors: true,
     snapshot: true,
     // logger: ['error', 'warn'],
     // logger: ['error', 'warn', 'log', 'debug', 'verbose'],
   });
-  logger.log(`ёёёёёёёёё - ${process.env.NODE_ENV}`);
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
   const configService = app.get(ConfigService<AllConfigType>);
