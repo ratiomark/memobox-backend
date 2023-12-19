@@ -6,9 +6,9 @@ services:
     ports:
       - '3000:3000'
     environment:
-      DATABASE_URL: postgres://user:password@postgres:5432/dbname
-      REDIS_URL: redis://redis:6379
-      NODE_ENV: production
+      - DATABASE_URL=${DATABASE_URL}
+      - NODE_ENV=${NODE_ENV}
+      - REDIS_URL=${REDIS_URL}
     depends_on:
       - postgres
       - redis
