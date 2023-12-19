@@ -32,6 +32,7 @@ COPY --from=dependencies app/package.json ./
 
 # Отдельно копируем src и prisma
 COPY app/src ./src/
+COPY app/src/.env.production ./.env
 COPY app/prisma ./prisma/
 
 ENV NODE_ENV=production
@@ -45,7 +46,7 @@ RUN npm run build
 # RUN exit 0
 
 # Генерация Prisma клиента
-RUN npm run build
+RUN npx prisma db push --accept-data-loss
 RUN npx prisma migrate deploy
 RUN npx prisma generate
 
