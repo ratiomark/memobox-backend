@@ -60,6 +60,8 @@ WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/.env.production ./dist/.env.production
+COPY --from=build /app/.env.production ./.env.production
 ENV NODE_ENV=production
 
 # Копируем остальные необходимые файлы
