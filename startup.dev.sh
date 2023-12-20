@@ -5,6 +5,15 @@ set -e
 
 /opt/wait-for-it.sh postgres:5432
 # : Этот скрипт используется для ожидания, пока сервис (в данном случае PostgreSQL на порту 5432) не станет доступным. Это полезно, потому что контейнеры Docker могут запускаться в любом порядке, и ваше приложение может попытаться подключиться к базе данных до того, как она будет готова к работе.
-npm run start:db
+# npm run start:db
 # npm run seed:run
-npm run start:prod
+
+# RUN npx prisma db push --accept-data-loss
+# RUN npx prisma generate
+echo "База данных доступна, выполняем миграции..."
+npx prisma db push --accept-data-loss # или npx prisma migrate deploy
+npx prisma migrate deploy
+
+echo "Запуск приложения..."
+node dist/main
+# npm run start:prod
