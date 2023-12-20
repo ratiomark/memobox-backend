@@ -19,9 +19,9 @@ services:
       restart_policy:
         condition: on-failure
 
-networks:
-  memobox-swarm:
-    external: true
+# networks:
+#   memobox-swarm:
+#     external: true
     # depends_on:
     #   redis:
     #     condition: service_started
