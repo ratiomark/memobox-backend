@@ -17,17 +17,10 @@ RUN npm install --package-lock-only
 ##################
 # PREBUILD 
 ##################
-# FROM node:16-alpine as prebuild
-
-# WORKDIR /app
-
-# # Игнорируем src и prisma в .dockerignore, копируем остальные файлы
-# COPY app/ ./
-
-# # Копируем свежий и синхронизированный package-lock.json
-# COPY --from=dependencies app/package-lock.json ./
-# COPY --from=dependencies app/package.json ./
-# RUN npm install
+FROM node:16-alpine as prebuild
+WORKDIR /app
+COPY --from=dependencies /app/package-lock.json ./
+RUN npm ci
 
 ###################
 # BUILD 
@@ -39,10 +32,10 @@ WORKDIR /app
 
 # Игнорируем src и prisma в .dockerignore, копируем остальные файлы
 COPY app/ ./
-
+COPY --from=prebuild /app/node_modules ./node_modules
 # Копируем свежий и синхронизированный package-lock.json
-COPY --from=dependencies app/package-lock.json ./
-COPY --from=dependencies app/package.json ./
+# COPY --from=dependencies app/package-lock.json ./
+# COPY --from=dependencies app/package.json ./
 
 # Отдельно копируем src и prisma
 COPY app/src ./src/
@@ -56,7 +49,7 @@ ENV NODE_ENV=production
 
 # Установка зависимостей и сборка приложения
 # RUN npm ci --only=production
-RUN npm install
+# RUN npm install
 RUN npm run build
 # RUN sleep 180
 # RUN exit 0
@@ -84,15 +77,17 @@ COPY --from=build /app/.env.production ./.env
 COPY --from=build /app/startup.dev.sh ./startup.dev.sh
 COPY --from=build /app/wait-for-it.sh  ./wait-for-it.sh 
 ENV NODE_ENV=production
-
+# COPY ./wait-for-it.sh /opt/wait-for-it.sh
+# Делает скрипт wait-for-it.sh исполняемым.
+# RUN chmod +x /opt/wait-for-it.sh
 # Копируем остальные необходимые файлы
 # COPY --from=build /app ./
 
 # Экспорт порта и запуск приложения
 EXPOSE 3000
 # COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x app/startup.dev.sh
-ENTRYPOINT ["app/startup.dev.sh"]
+RUN chmod +x /app/startup.dev.sh
+ENTRYPOINT ["/app/startup.dev.sh"]
 # CMD ["node", "dist/main"]
 
 
