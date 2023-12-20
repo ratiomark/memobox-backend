@@ -89,8 +89,8 @@ ENV NODE_ENV=production
 # Экспорт порта и запуск приложения
 EXPOSE 3000
 # COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /startup.dev.sh
-ENTRYPOINT ["/startup.dev.sh"]
+RUN chmod +x app/startup.dev.sh
+ENTRYPOINT ["app/startup.dev.sh"]
 # CMD ["node", "dist/main"]
 
 
