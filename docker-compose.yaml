@@ -18,6 +18,7 @@ services:
   postgres:
     container_name: db
     image: postgres:16-alpine
+    restart: always
     ports:
       - 5432:5432
     environment:
