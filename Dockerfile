@@ -66,6 +66,7 @@ RUN npm run build
 ###################
 # Этап запуска
 FROM node:16-alpine
+RUN apk add --no-cache bash
 # RUN exit 0
 WORKDIR /app
 
@@ -86,10 +87,10 @@ ENV NODE_ENV=production
 
 # Экспорт порта и запуск приложения
 EXPOSE 3000
-# COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /app/startup.dev.sh
 ENTRYPOINT ["/app/startup.dev.sh"]
 # CMD ["node", "dist/main"]
+# COPY entrypoint.sh /entrypoint.sh
 
 
 
