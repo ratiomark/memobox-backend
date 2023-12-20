@@ -51,6 +51,7 @@ ENV NODE_ENV=production
 # Установка зависимостей и сборка приложения
 # RUN npm ci --only=production
 # RUN npm install
+RUN npx prisma generate
 RUN npm run build
 # RUN sleep 180
 # RUN exit 0
@@ -58,7 +59,6 @@ RUN npm run build
 # Генерация Prisma клиента
 # RUN npx prisma db push --accept-data-loss
 # RUN npx prisma migrate deploy
-RUN npx prisma generate
 
 
 ###################
