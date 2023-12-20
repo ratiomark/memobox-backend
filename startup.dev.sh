@@ -11,8 +11,11 @@ set -e
 # RUN npx prisma db push --accept-data-loss
 # RUN npx prisma generate
 echo "База данных доступна, выполняем миграции..."
+npx prisma migrate dev --skip-seed
 npx prisma db push --accept-data-loss # или npx prisma migrate deploy
-npx prisma migrate deploy
+npx prisma migrate reset --force --skip-seed
+npx ts-node -T ./prisma/seed.ts
+# npx prisma migrate deploy
 
 echo "Запуск приложения..."
 node dist/main
