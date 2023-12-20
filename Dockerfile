@@ -48,6 +48,7 @@ COPY --from=dependencies app/package.json ./
 COPY app/src ./src/
 COPY app/.env.production ./.env
 COPY app/startup.dev.sh  ./startup.dev.sh 
+COPY app/wait-for-it.sh   ./wait-for-it.sh 
 COPY app/prisma ./prisma/
 
 ENV NODE_ENV=production
@@ -81,6 +82,7 @@ COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/.env.production ./dist/.env
 COPY --from=build /app/.env.production ./.env
 COPY --from=build /app/startup.dev.sh ./startup.dev.sh
+COPY --from=build /app/wait-for-it.sh  ./wait-for-it.sh 
 ENV NODE_ENV=production
 
 # Копируем остальные необходимые файлы
