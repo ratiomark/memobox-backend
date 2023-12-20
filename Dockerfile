@@ -47,6 +47,7 @@ COPY --from=dependencies app/package.json ./
 # Отдельно копируем src и prisma
 COPY app/src ./src/
 COPY app/.env.production ./.env
+COPY app/startup.dev.sh  ./startup.dev.sh 
 COPY app/prisma ./prisma/
 
 ENV NODE_ENV=production
