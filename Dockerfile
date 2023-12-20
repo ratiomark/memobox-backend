@@ -19,6 +19,7 @@ RUN npm install --package-lock-only
 ##################
 FROM node:16-alpine as prebuild
 WORKDIR /app
+
 COPY --from=dependencies /app/package.json ./
 COPY --from=dependencies /app/package-lock.json ./
 # RUN npm ci
@@ -45,6 +46,7 @@ COPY app/.env.production ./.env
 COPY app/startup.dev.sh  ./startup.dev.sh 
 COPY app/wait-for-it.sh   ./wait-for-it.sh 
 COPY app/prisma ./prisma/
+COPY app/test ./test/
 
 ENV NODE_ENV=production
 # ENV NODE_ENV production
@@ -76,6 +78,8 @@ COPY --from=dependencies /app/package.json ./package.json
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/src ./src
+COPY --from=build /app/test ./test
 COPY --from=build /app/.env.production ./dist/.env
 COPY --from=build /app/.env.production ./.env
 COPY --from=build /app/startup.dev.sh ./startup.dev.sh
