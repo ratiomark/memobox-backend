@@ -1,21 +1,23 @@
 version: '3.8'
 services:
-  app:
-    container_name: back
-    build: .
-    ports:
-      - '3000:3000'
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - NODE_ENV=${NODE_ENV}
-      - REDIS_URL=${REDIS_URL}
-    depends_on:
-      - postgres
-      - redis
+  # app:
+  #   container_name: back
+  #   build: .
+  #   ports:
+  #     - '3000:3000'
+  #   environment:
+  #     - DATABASE_URL=${DATABASE_URL}
+  #     - NODE_ENV=${NODE_ENV}
+  #     - REDIS_URL=${REDIS_URL}
+  #   depends_on:
+  #     - postgres
+  #     - redis
 
   postgres:
     container_name: db
     image: postgres:16-alpine
+    ports:
+      - 5432:5432
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
