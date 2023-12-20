@@ -9,6 +9,13 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - NODE_ENV=${NODE_ENV}
       - REDIS_URL=${REDIS_URL}
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
     # depends_on:
     #   redis:
     #     condition: service_started
