@@ -19,6 +19,7 @@ RUN npm install --package-lock-only
 ##################
 FROM node:16-alpine as prebuild
 WORKDIR /app
+COPY --from=dependencies /app/package.json ./
 COPY --from=dependencies /app/package-lock.json ./
 RUN npm ci
 
