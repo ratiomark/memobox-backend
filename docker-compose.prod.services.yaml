@@ -3,6 +3,8 @@ services:
   postgres:
     container_name: db
     image: postgres:16-alpine
+    networks:
+      - memobox-swarm
     restart: always
     ports:
       - 5432:5432
@@ -21,10 +23,16 @@ services:
   redis:
     container_name: redis
     image: redis:6-alpine
+    networks:
+      - memobox-swarm
     ports:
       - '6379:6379'
     volumes:
       - redis-data:/data
+
+networks:
+  memobox-swarm:
+    external: true
 
 volumes:
   postgres-data:
