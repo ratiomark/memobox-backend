@@ -14,7 +14,7 @@ echo "База данных доступна, выполняем миграци�
 npx prisma migrate deploy
 npx prisma db push --accept-data-loss # или npx prisma migrate deploy
 npx prisma migrate reset --force --skip-seed
-npx ts-node -T ./prisma/seed.ts
+# npx ts-node -T ./prisma/seed.ts
 # npx prisma migrate deploy
 
 echo "Запуск приложения..."
