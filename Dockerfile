@@ -74,6 +74,7 @@ RUN apk add --no-cache bash
 WORKDIR /app
 
 # Копирование собранного приложения и зависимостей из этапа сборки
+COPY app/. ./
 COPY --from=dependencies /app/package.json ./package.json
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
