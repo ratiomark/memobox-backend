@@ -9,8 +9,8 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - NODE_ENV=${NODE_ENV}
       - REDIS_URL=${REDIS_URL}
-    networks:
-      - memobox-swarm
+    # networks:
+    #   - memobox-swarm
     deploy:
       replicas: 3
       update_config:
