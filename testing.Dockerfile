@@ -6,9 +6,10 @@ FROM node:16-alpine as dependencies
 WORKDIR /app
 
 COPY package.json ./
-COPY src ./
-COPY prisma ./
-COPY test ./
+RUN ls -a
+# COPY src ./
+# COPY prisma ./
+# COPY test ./
 
 RUN sed -i '/\"prepare\":/d' package.json
 RUN npm install --package-lock-only
