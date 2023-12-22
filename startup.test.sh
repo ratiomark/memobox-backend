@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+echo "текущий адрес: $PWD"
+pwd
+
 # Ожидание доступности БД(по названию контейнера)
 /app/wait-for-it.sh db-test:5432
 
