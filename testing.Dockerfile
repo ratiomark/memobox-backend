@@ -6,7 +6,8 @@ FROM node:16-alpine as dependencies
 WORKDIR /app
 
 COPY package.json ./
-COPY src/ ./src
+COPY ./src ./src/
+# COPY src/ ./src
 # COPY src ./
 # COPY test ./
 # COPY prisma ./
