@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-# Ожидание доступности БД
-/app/wait-for-it.sh postgres:5432
+# Ожидание доступности БД(по названию контейнера)
+/app/wait-for-it.sh db-test:5432
 
 # Генерация клиента Prisma и запуск seed
 echo "Применение миграций и запуск seed..."
