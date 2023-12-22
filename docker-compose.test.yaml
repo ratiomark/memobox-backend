@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: testing.Dockerfile
     ports:
-      - '${APP_PORT}:3000'
+      - '${APP_PORT}:3001'
     environment:
       - NODE_ENV=${NODE_ENV}
       - DATABASE_URL=${DATABASE_URL}
@@ -27,4 +27,4 @@ services:
     image: redis:6-alpine
     container_name: redis-test
     ports:
-      - '${REDIS_PORT}:6379'
+      - '${REDIS_PORT}:6378'
