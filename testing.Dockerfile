@@ -30,19 +30,19 @@ FROM node:16-alpine as build
 WORKDIR /app
 
 # Игнорируем src и prisma в .dockerignore, копируем остальные файлы
-COPY / ./
+# COPY / ./
 COPY --from=prebuild /app/node_modules ./node_modules
 # Копируем свежий и синхронизированный package-lock.json
 # COPY --from=dependencies app/package-lock.json ./
 # COPY --from=dependencies app/package.json ./
 
 # Отдельно копируем src и prisma
-COPY /src ./src
-COPY /.env.testing ./.env
-COPY /startup.test.sh  ./startup.test.sh 
-COPY /wait-for-it.sh   ./wait-for-it.sh 
-COPY /prisma ./prisma
-COPY /test ./test
+# COPY /src ./src
+# COPY /.env.testing ./.env
+# COPY /startup.test.sh  ./startup.test.sh 
+# COPY /wait-for-it.sh   ./wait-for-it.sh 
+# COPY /prisma ./prisma
+# COPY /test ./test
 
 # ENV NODE_ENV testing
 
