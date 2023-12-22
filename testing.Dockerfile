@@ -30,7 +30,7 @@ FROM node:16-alpine as build
 WORKDIR /app
 
 # Игнорируем src и prisma в .dockerignore, копируем остальные файлы
-COPY /app ./
+COPY / ./
 COPY --from=prebuild /app/node_modules ./node_modules
 # Копируем свежий и синхронизированный package-lock.json
 # COPY --from=dependencies app/package-lock.json ./
