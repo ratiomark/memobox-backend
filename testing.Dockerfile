@@ -84,6 +84,8 @@ COPY --from=build /app/.env.testing ./dist/.env
 COPY --from=build /app/.env.testing ./.env
 COPY --from=build /app/startup.test.sh ./startup.test.sh
 COPY --from=build /app/wait-for-it.sh  ./wait-for-it.sh 
+COPY --from=build /app/tsconfig.build.json  ./tsconfig.build.json
+COPY --from=build /app/tsconfig.json  ./tsconfig.json
 
 EXPOSE 3000
 RUN chmod +x /app/startup.test.sh
