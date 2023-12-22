@@ -13,3 +13,4 @@ export const MAIL_PORT = process.env.MAIL_CLIENT_PORT;
 export const TEST_shelfId = 'TEST_shelfId';
 export const TEST_boxIdNewCards = 'TEST_boxIdNewCards';
 export const TEST_cardsInNewBox = 'TEST_cardsInNewBox';
+export const TEST_boxesByShelfIdOrderIndex = 'TEST_boxesByShelfIdOrderIndex';

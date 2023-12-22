@@ -19,6 +19,7 @@ module.exports = {
   // roots: ['<rootDir>/src'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^test/(.*)$': '<rootDir>/test/$1',
   },
   testEnvironment: 'node',
   testRegex: '.test.ts$',
@@ -30,16 +31,16 @@ module.exports = {
     // дефолтный в консоли
     'default',
     // репортер из npm
-    [
-      'jest-html-reporters',
-      {
-        // место сохранения отчета
-        publicPath: '<rootDir>/reports/unit-test',
-        filename: 'report.html',
-        openReport: false,
-        // опция делает так, что в папке оказывается только один html файл
-        inlineSource: true,
-      },
-    ],
+    // [
+    //   'jest-html-reporters',
+    //   {
+    //     // место сохранения отчета
+    //     publicPath: '<rootDir>/reports/unit-test',
+    //     filename: 'report.html',
+    //     openReport: false,
+    //     // опция делает так, что в папке оказывается только один html файл
+    //     inlineSource: true,
+    //   },
+    // ],
   ],
 };

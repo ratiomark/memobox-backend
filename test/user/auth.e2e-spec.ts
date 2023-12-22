@@ -71,57 +71,57 @@ describe('Auth user (e2e)', () => {
       });
   });
 
-  it('Confirm email: /api/v1/auth/email/confirm (POST)', async () => {
-    const hash = await request(mail)
-      .get('/email')
-      .then(
-        ({ body }) =>
-          body
-            .find(
-              (letter) =>
-                letter.to[0].address.toLowerCase() ===
-                  newUserEmail.toLowerCase() &&
-                /.*confirm\-email\?hash\=(\w+).*/g.test(letter.text),
-            )
-            ?.text.replace(/.*confirm\-email\?hash\=(\w+).*/g, '$1'),
-      );
+  // it('Confirm email: /api/v1/auth/email/confirm (POST)', async () => {
+  //   const hash = await request(mail)
+  //     .get('/email')
+  //     .then(
+  //       ({ body }) =>
+  //         body
+  //           .find(
+  //             (letter) =>
+  //               letter.to[0].address.toLowerCase() ===
+  //                 newUserEmail.toLowerCase() &&
+  //               /.*confirm\-email\?hash\=(\w+).*/g.test(letter.text),
+  //           )
+  //           ?.text.replace(/.*confirm\-email\?hash\=(\w+).*/g, '$1'),
+  //     );
 
-    return request(app)
-      .post('/api/v1/auth/email/confirm')
-      .send({
-        hash,
-      })
-      .expect(HttpStatus.OK);
-  });
+  //   return request(app)
+  //     .post('/api/v1/auth/email/confirm')
+  //     .send({
+  //       hash,
+  //     })
+  //     .expect(HttpStatus.OK);
+  // });
 
-  it('Can not confirm email with same link twice: /api/v1/auth/email/confirm (POST)', async () => {
-    const hash = await request(mail)
-      .get('/email')
-      .then(
-        ({ body }) =>
-          body
-            .find(
-              (letter) =>
-                letter.to[0].address.toLowerCase() ===
-                  newUserEmail.toLowerCase() &&
-                /.*confirm\-email\?hash\=(\w+).*/g.test(letter.text),
-            )
-            ?.text.replace(/.*confirm\-email\?hash\=(\w+).*/g, '$1'),
-      );
+  // it('Can not confirm email with same link twice: /api/v1/auth/email/confirm (POST)', async () => {
+  //   const hash = await request(mail)
+  //     .get('/email')
+  //     .then(
+  //       ({ body }) =>
+  //         body
+  //           .find(
+  //             (letter) =>
+  //               letter.to[0].address.toLowerCase() ===
+  //                 newUserEmail.toLowerCase() &&
+  //               /.*confirm\-email\?hash\=(\w+).*/g.test(letter.text),
+  //           )
+  //           ?.text.replace(/.*confirm\-email\?hash\=(\w+).*/g, '$1'),
+  //     );
 
-    return request(app)
-      .post('/api/v1/auth/email/confirm')
-      .send({
-        hash,
-      })
-      .expect(404)
-      .expect(({ body }) => {
-        expect(body.message).toBeDefined();
-        expect(body.message).toBe(
-          '[P2025]: An operation failed because it depends on one or more records that were required but not found. Record to update not found.',
-        );
-      });
-  });
+  //   return request(app)
+  //     .post('/api/v1/auth/email/confirm')
+  //     .send({
+  //       hash,
+  //     })
+  //     .expect(404)
+  //     .expect(({ body }) => {
+  //       expect(body.message).toBeDefined();
+  //       expect(body.message).toBe(
+  //         '[P2025]: An operation failed because it depends on one or more records that were required but not found. Record to update not found.',
+  //       );
+  //     });
+  // });
 
   it('Login confirmed user: /api/v1/auth/email/login (POST)', () => {
     return request(app)

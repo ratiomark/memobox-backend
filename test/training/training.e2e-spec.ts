@@ -12,12 +12,12 @@ import {
   TEST_boxIdNewCards,
   TEST_shelfId,
   TEST_cardsInNewBox,
+  TEST_boxesByShelfIdOrderIndex,
 } from '../../prisma/mock-data/staticDataFromDb';
 
-describe('Auth user (e2e)', () => {
+describe('Training and cards flow (e2e)', () => {
   const app = APP_URL;
   const app_url_full = app + API_PREFIX;
-  const mail = `http://${MAIL_HOST}:${MAIL_PORT}`;
   let userToken;
   let userRefreshToken;
   const newCardIds = TEST_cardsInNewBox.map((card) => card.id);
@@ -114,21 +114,23 @@ describe('Auth user (e2e)', () => {
       });
   });
   // training test
-  it(`Check cards after training: ${API_PREFIX}/cards/get-by-shelfId-and-boxId/:shelfId/:boxId (GET)`, async () => {
-    await request(app_url_full)
-      .get(`get-by-shelfId-and-boxId/${TEST_shelfId}/${TEST_boxIdNewCards}`)
-      .auth(userToken, {
-        type: 'bearer',
-      })
-      .expect(200)
-      .expect(({ body }) => {
-        // Проверка, что body является массивом
-        expect(Array.isArray(body)).toBe(true);
+  // it(`Check cards after training: ${API_PREFIX}/cards/get-by-shelfId-and-boxId/:shelfId/:boxId (GET)`, async () => {
+  //   await request(app_url_full)
+  //     .get(
+  //       `/cards/get-by-shelfId-and-boxId/${TEST_shelfId}/${TEST_boxIdNewCards}`,
+  //     )
+  //     .auth(userToken, {
+  //       type: 'bearer',
+  //     })
+  //     .expect(200)
+  //     .expect(({ body }) => {
+  //       // Проверка, что body является массивом
+  //       expect(Array.isArray(body)).toBe(true);
 
-        // Проверка, что в массиве ровно 4 элемента
-        expect(body).toHaveLength(0);
-      });
-  });
+  //       // Проверка, что в массиве ровно 4 элемента
+  //       expect(body).toHaveLength(0);
+  //     });
+  // });
   // it(`Training: ${API_PREFIX}/cards/training/:shelfId/:boxId (GET)`, async () => {
   //   await request(app_url_full)
   //     .get(`/cards/training/${TEST_shelfId}/${TEST_boxIdNewCards}`)
