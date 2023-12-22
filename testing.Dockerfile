@@ -35,9 +35,9 @@ COPY --from=prebuild /app/node_modules ./node_modules
 COPY --from=prebuild /app/package.json ./package.json
 # Копируем свежий и синхронизированный package-lock.json
 
-COPY src/ ./src
-COPY prisma/ ./prisma
-COPY test/ ./test
+COPY src ./src
+COPY prisma ./prisma
+COPY test ./test
 
 # ENV NODE_ENV testing
 
