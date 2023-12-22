@@ -16,6 +16,11 @@ RUN npm install --package-lock-only
 FROM node:16-alpine as prebuild
 WORKDIR /app
 
+
+COPY . . 
+COPY /src ./src
+COPY prisma ./
+COPY test ./
 COPY --from=dependencies /app/package.json ./
 COPY --from=dependencies /app/package-lock.json ./
 # RUN npm ci
@@ -29,10 +34,10 @@ FROM node:16-alpine as build
 
 WORKDIR /app
 
-COPY . . 
-COPY /src ./src
-COPY prisma ./
-COPY test ./
+COPY --from=prebuild /app ./
+# COPY /src ./src
+# COPY prisma ./
+# COPY test ./
 COPY --from=prebuild /app/node_modules ./node_modules
 COPY --from=prebuild /app/package.json ./package.json
 # Копируем свежий и синхронизированный package-lock.json
