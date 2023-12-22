@@ -2,11 +2,18 @@
 # DEPENDENCIES 
 ###################
 FROM node:16-alpine as dependencies
-
+# Установка рабочей директории
 WORKDIR /app
 
-COPY package.json ./
+# Копирование файлов в контейнер
+COPY . .
+
+# Вывод содержимого рабочей директории
 RUN ls -a
+# WORKDIR /app
+
+# COPY package.json ./
+# RUN ls -a
 # COPY src ./
 # COPY prisma ./
 # COPY test ./
