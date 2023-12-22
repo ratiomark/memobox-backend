@@ -18,7 +18,7 @@ WORKDIR /app
 
 
 # COPY . . 
-COPY /src ./src
+COPY src ./src
 # COPY prisma ./
 # COPY test ./
 COPY --from=dependencies /app/package.json ./
