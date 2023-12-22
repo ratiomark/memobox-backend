@@ -1,23 +1,21 @@
-NODE_ENV=testing
+NODE_ENV=development
 APP_PORT=3001
 APP_NAME="Memobox Boilerplate Backend"
 API_PREFIX=api
 APP_FALLBACK_LANGUAGE=en
 APP_HEADER_LANGUAGE=x-custom-lang
-FRONTEND_DOMAIN=http://memobox.tech
-BACKEND_DOMAIN=http://localhost:3001
+FRONTEND_DOMAIN=http://127.0.0.1:5173
+BACKEND_DOMAIN=http://localhost:3000
 
-REDIS_PORT=6378
-REDIS_HOST=localhost
-REDIS_URL="redis://${REDIS_HOST}:${REDIS_PORT}"
-
+# DATABASE_URL=postgresql://postgres:1@postgres:5432/memobox?schema=public
+# DATABASE_URL=postgresql://postgres:1@localhost:5432/memobox?schema=public
+DATABASE_URL=postgresql://postgres:1@localhost:5432/test?schema=public
 DATABASE_TYPE=postgres
-DATABASE_HOST=localhost
-DATABASE_PORT=5433
-DATABASE_USERNAME=user
-DATABASE_PASSWORD=password
-DATABASE_NAME=dbname_test
-DATABASE_URL="${DATABASE_TYPE}://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}"
+DATABASE_HOST=postgres
+DATABASE_PORT=5432
+DATABASE_USERNAME=root
+DATABASE_PASSWORD=1
+DATABASE_NAME=test
 
 DATABASE_SYNCHRONIZE=false
 DATABASE_MAX_CONNECTIONS=100

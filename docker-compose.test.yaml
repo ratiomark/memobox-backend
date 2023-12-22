@@ -1,47 +1,28 @@
+version: '3.8'
 services:
-  # название сервиса
-  postgres:
-    # какой image используем
-    image: postgres:16.0-alpine
-    container_name: postgresDb
+  app:
+    build:
+      context: .
+      dockerfile: testing.Dockerfile
+      container_name: back-test
     ports:
-      - ${DATABASE_PORT}:5432
-    volumes:
-      - boilerplate-db:/var/lib/postgresql/data
+      - '${APP_PORT}:3000'
     environment:
-      POSTGRES_USER: ${DATABASE_USERNAME}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-      POSTGRES_DB: ${DATABASE_NAME}
-  # название сервиса
-  maildev:
-    # описаываем какой Dockerfile используем и путь к нему
-    build:
-      context: .
-      dockerfile: maildev.Dockerfile
-      container_name: mailService
+      - DATABASE_URL=${DATABASE_URL}
+      - NODE_ENV=${NODE_ENV}
+      - REDIS_URL=${REDIS_URL}
+
+  db:
+    image: postgres:16.0-alpine
+    container_name: db-test
+    environment:
+      - POSTGRES_DB=${DATABASE_NAME}
+      - POSTGRES_USER=${DATABASE_USERNAME}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
     ports:
-      - ${MAIL_CLIENT_PORT}:1080
-      - ${MAIL_PORT}:1025
+      - '${DATABASE_PORT}:5432'
 
-  adminer:
-    image: adminer
-    restart: always
+  redis:
+    image: redis
     ports:
-      - 8080:8080
-
-  # Uncomment to use redis
-  # redis:
-  #   image: redis:7-alpine
-  #   ports:
-  #     - 6379:6379
-
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      container_name: backendApi
-    ports:
-      - ${APP_PORT}:${APP_PORT}
-
-volumes:
-  boilerplate-db:
+      - '6379:6379'

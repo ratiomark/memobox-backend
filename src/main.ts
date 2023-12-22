@@ -82,17 +82,17 @@ async function bootstrap() {
     },
   );
   // process.on('SIGTERM', async () => {
-  //   console.log('Закрытие сервера NestJS...');
+  //   logger.log('Закрытие сервера NestJS...');
   //   await app.close();
-  //   console.log('Сервер NestJS закрыт.');
+  //   logger.log('Сервер NestJS закрыт.');
   //   process.exit(0); // Явно завершает процесс Node.js
   // });
 
-  // process.on('SIGINT', async () => {
-  //   console.log('Закрытие сервера NestJS (SIGINT)...');
-  //   await app.close();
-  //   console.log('Сервер NestJS закрыт (SIGINT).');
-  //   process.exit(0); // Явно завершает процесс Node.js
-  // });
+  process.on('SIGINT', async () => {
+    logger.log('Закрытие сервера NestJS (SIGINT)...');
+    await app.close();
+    logger.log('Сервер NestJS закрыт (SIGINT).');
+    process.exit(0); // Явно завершает процесс Node.js
+  });
 }
 void bootstrap();

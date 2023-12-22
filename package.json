@@ -8,6 +8,7 @@
   "scripts": {
     "prebuild": "rimraf dist",
     "dev": "cross-env NODE_ENV=development nest start -b swc --watch ",
+    "dev:test": "cross-env NODE_ENV=testing nest start -b swc --watch ",
     "build": "nest build",
     "build:prod": "npm install && npx @nestjs/cli build",
     "start": "cross-env NODE_ENV=development nest start",
@@ -42,7 +43,7 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "lint:fix": "eslint --fix prisma/dataFromDb.ts",
-    "test": "cross-env NODE_ENV=development jest --config test/jest-e2e.ts  --verbose -T --detectOpenHandles",
+    "test": "cross-env NODE_ENV=testing jest --config test/jest-e2e.ts  --verbose -T --detectOpenHandles",
     "test:pipe": "powershell ./test-pipe.ps1",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
