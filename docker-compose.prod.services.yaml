@@ -7,11 +7,11 @@ services:
     #   - memobox-swarm
     restart: always
     ports:
-      - 5432:5432
+      - "${DATABASE_PORT}:5432"
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: dbname
+      - POSTGRES_DB=${DATABASE_NAME}
+      - POSTGRES_USER=${DATABASE_USERNAME}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U user -d dbname']
       interval: 10s
