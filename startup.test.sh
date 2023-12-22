@@ -4,7 +4,8 @@ set -e
 echo "текущий адрес: $PWD"
 
 # Ожидание доступности БД(по названию контейнера)
-wait-for-it.sh db-test:5432
+RUN chmod +x /app/wait-for-it.sh
+/app/wait-for-it.sh db-test:5432
 
 # Генерация клиента Prisma и запуск seed
 echo "Применение миграций и запуск seed..."
