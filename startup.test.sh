@@ -6,8 +6,11 @@ set -e
 
 # Генерация клиента Prisma и запуск seed
 echo "Применение миграций и запуск seed..."
-npx prisma migrate deploy
-npx prisma db seed
+# npx prisma migrate deploy
+# npx prisma db seed
+npm run start:db
+# npm run seed:run
+# npm run start:prod
 
 # Запуск сервера в фоновом режиме
 echo "Запуск сервера..."
