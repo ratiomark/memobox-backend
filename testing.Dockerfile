@@ -49,7 +49,7 @@ COPY --from=prebuild /app/package.json ./package.json
 # Копируем свежий и синхронизированный package-lock.json
 
 # ENV NODE_ENV testing
-
+COPY /.env.testing ./.env
 # Установка зависимостей и сборка приложения
 # RUN npm ci --only=testing
 # RUN npm install
