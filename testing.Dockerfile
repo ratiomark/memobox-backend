@@ -6,7 +6,7 @@ FROM node:16-alpine as dependencies
 WORKDIR /app
 
 COPY package.json ./
-COPY ./src ./src/
+# COPY ./src ./src/
 # COPY src/ ./src
 # COPY src ./
 # COPY test ./
@@ -39,9 +39,9 @@ FROM node:16-alpine as build
 
 
 WORKDIR /app
-
-COPY --from=prebuild /app ./
-# COPY /src ./src
+COPY . .
+# COPY --from=prebuild /app ./
+# COPY /src ./
 # COPY prisma ./
 # COPY test ./
 COPY --from=prebuild /app/node_modules ./node_modules
