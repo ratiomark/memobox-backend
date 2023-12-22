@@ -17,10 +17,10 @@ FROM node:16-alpine as prebuild
 WORKDIR /app
 
 
-COPY . . 
-COPY /src ./src
-COPY prisma ./
-COPY test ./
+# COPY . . 
+COPY /wait-for-it.sh ./wait-for-it.sh
+# COPY prisma ./
+# COPY test ./
 COPY --from=dependencies /app/package.json ./
 COPY --from=dependencies /app/package-lock.json ./
 # RUN npm ci
