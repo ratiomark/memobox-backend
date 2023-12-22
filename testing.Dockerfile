@@ -18,7 +18,7 @@ WORKDIR /app
 
 
 # COPY . . 
-COPY /wait-for-it.sh ./wait-for-it.sh
+COPY /src ./src
 # COPY prisma ./
 # COPY test ./
 COPY --from=dependencies /app/package.json ./
