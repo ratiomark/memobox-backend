@@ -19,7 +19,7 @@ node dist/main &
 # Ожидание запуска сервера
 echo "Ожидание запуска сервера..."
 sleep 15
-/app/wait-for-it.sh localhost:3000
+/app/wait-for-it.sh localhost:3001
 
 # Запуск тестов с сохранением логов в файл
 echo "Запуск тестов..."
