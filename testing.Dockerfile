@@ -58,10 +58,6 @@ RUN npm run build
 # RUN sleep 180
 # RUN exit 0
 
-# Генерация Prisma клиента
-# RUN npx prisma db push --accept-data-loss
-# RUN npx prisma migrate deploy
-
 
 ###################
 # testing
