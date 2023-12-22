@@ -2,7 +2,7 @@
 set -e
 
 # Ожидание доступности БД
-/wait-for-it.sh postgres:5432
+/app/wait-for-it.sh postgres:5432
 
 # Генерация клиента Prisma и запуск seed
 echo "Применение миграций и запуск seed..."
@@ -15,7 +15,7 @@ node dist/main &
 
 # Ожидание запуска сервера
 echo "Ожидание запуска сервера..."
-/wait-for-it.sh localhost:3000
+/app/wait-for-it.sh localhost:3000
 
 # Запуск тестов с сохранением логов в файл
 echo "Запуск тестов..."
