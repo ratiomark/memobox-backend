@@ -21,13 +21,7 @@ services:
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
     ports:
       - '${DATABASE_PORT}:5432'
-  # redis:
-  #   container_name: redis
-  #   image: redis:6-alpine
-  #   # networks:
-  #   #   - memobox-swarm
-  #   ports:
-  #     - '6379:6379'
+      
   redis:
     image: redis:6-alpine
     ports:
