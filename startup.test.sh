@@ -2,16 +2,16 @@
 set -e
 
 echo "текущий адрес: $PWD"
-pwd
 
 # Ожидание доступности БД(по названию контейнера)
-/app/wait-for-it.sh db-test:5432
+wait-for-it.sh db-test:5432
 
 # Генерация клиента Prisma и запуск seed
 echo "Применение миграций и запуск seed..."
 # npx prisma migrate deploy
 # npx prisma db seed
-npm run start:db
+npx prisma migrate deploy
+npx prisma db seed
 # npm run seed:run
 # npm run start:prod
 
@@ -21,8 +21,8 @@ node dist/main &
 
 # Ожидание запуска сервера
 echo "Ожидание запуска сервера..."
-sleep 15
-/app/wait-for-it.sh localhost:3001
+sleep 40  
+# /app/wait-for-it.sh localhost:3001
 
 # Запуск тестов с сохранением логов в файл
 echo "Запуск тестов..."
