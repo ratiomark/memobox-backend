@@ -23,7 +23,7 @@ services:
     ports:
       - '${DATABASE_PORT}:5432'
 
-  redis-test-service:
+  redis:
     image: redis:6-alpine
     container_name: redis-test
     # ports:
