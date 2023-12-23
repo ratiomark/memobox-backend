@@ -29,4 +29,4 @@ services:
     # ports:
     #   - '${REDIS_PORT}:6379'
     ports:
-      - '6380:6379'
+      - '6382:6379'
