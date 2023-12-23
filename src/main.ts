@@ -1,5 +1,6 @@
 import {
   ClassSerializerInterceptor,
+  LogLevel,
   Logger,
   ValidationPipe,
   VersioningType,
@@ -21,10 +22,15 @@ const DOCS_ROUTE = 'docs';
 
 async function bootstrap() {
   const logger = new Logger();
+  const loggerLevels: LogLevel[] =
+    process.env.NODE_ENV === 'testing'
+      ? ['error', 'warn']
+      : ['error', 'warn', 'log', 'debug', 'verbose'];
+
   const app = await NestFactory.create(AppModule, {
     // cors: true,
     snapshot: true,
-    // logger: ['error', 'warn'],
+    logger: loggerLevels,
     // logger: ['error', 'warn', 'log', 'debug', 'verbose'],
   });
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
