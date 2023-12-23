@@ -26,5 +26,7 @@ services:
   redis:
     image: redis:6-alpine
     container_name: redis-test
+    # ports:
+    #   - '${REDIS_PORT}:6379'
     ports:
-      - '${REDIS_PORT}:6379'
+      - '6378:6379'
