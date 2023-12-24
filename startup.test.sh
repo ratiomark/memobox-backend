@@ -24,7 +24,7 @@ npx prisma db seed
 # npm run seed:run
 # npm run start:prod
 
-/app/wait-for-it.sh redis-test:6379
+/app/wait-for-it.sh ${REDIS_CONTAINER_NAME}:${REDIS_PORT}
 # Запуск сервера в фоновом режиме
 echo "Запуск сервера..."
 node dist/main &
