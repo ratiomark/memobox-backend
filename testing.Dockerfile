@@ -6,7 +6,7 @@ FROM node:16-alpine as dependencies
 WORKDIR /app
 
 # Сначала копируем только package.json и package-lock.json
-COPY package.json package-lock.json ./
+COPY package.json ./
 
 # Удаляем husky из скрипта prepare
 RUN sed -i '/\"prepare\":/d' package.json
