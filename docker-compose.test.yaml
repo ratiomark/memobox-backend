@@ -5,8 +5,8 @@ services:
     build:
       context: .
       dockerfile: testing.Dockerfile
-    ports:
-      - '3033:${APP_PORT}'
+    # ports:
+      # - '3033:${APP_PORT}'
     environment:
       - NODE_ENV=${NODE_ENV}
       - DATABASE_URL=${DATABASE_URL}
@@ -20,13 +20,13 @@ services:
       - POSTGRES_USER=${DATABASE_USERNAME}
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
       - POSTGRES_HOST=${DATABASE_HOST}
-    ports:
-      - '${DATABASE_PORT}:5432'
+    # ports:
+      # - '${DATABASE_PORT}:5432'
 
   redis:
     image: redis:6-alpine
     container_name: redis-test
     # ports:
     #   - '${REDIS_PORT}:6379'
-    ports:
-      - '6382:6379'
+    # ports:
+      # - '6382:6379'
