@@ -83,7 +83,7 @@ COPY --from=build /app/wait-for-it.sh  ./wait-for-it.sh
 COPY --from=build /app/tsconfig.build.json  ./tsconfig.build.json
 COPY --from=build /app/tsconfig.json  ./tsconfig.json
 
-EXPOSE 3000
+# EXPOSE 3001
 RUN chmod +x /app/startup.test.sh
 ENTRYPOINT ["/app/startup.test.sh"]
 
