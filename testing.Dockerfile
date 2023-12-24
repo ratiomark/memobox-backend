@@ -41,6 +41,7 @@ RUN apk add --no-cache bash
 WORKDIR /app
 
 # Копируем необходимые файлы из этапа сборки
+COPY --from=dependencies /app/package.json ./package.json
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/src ./src
