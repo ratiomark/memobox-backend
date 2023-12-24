@@ -20,7 +20,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
-  redis:
+  redis-prod:
     container_name: redis
     image: redis:6-alpine
     restart: unless-stopped
