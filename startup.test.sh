@@ -32,7 +32,7 @@ node dist/main &
 # Ожидание запуска сервера
 echo "Ожидание запуска сервера..."
 # sleep 40  
-/app/wait-for-it.sh back-test:3001
+/app/wait-for-it.sh ${APP_CONTAINER_NAME}:${APP_PORT}
 
 # Запуск тестов с сохранением логов в файл
 echo "Запуск тестов..."
