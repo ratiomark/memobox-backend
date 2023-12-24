@@ -13,7 +13,7 @@ fi
 
 # Ожидание доступности БД(по названию контейнера)
 chmod +x /app/wait-for-it.sh
-/app/wait-for-it.sh db-test:5432
+/app/wait-for-it.sh ${DATABASE_CONTAINER_NAME}:${DATABASE_PORT}
 
 # Генерация клиента Prisma и запуск seed
 echo "Применение миграций и запуск seed..."
