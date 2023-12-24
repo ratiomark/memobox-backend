@@ -5,9 +5,9 @@ services:
     image: postgres:16-alpine
     # networks:
     #   - memobox-swarm
-    restart: always
     ports:
       - 5432:5432
+    restart: unless-stopped
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
@@ -23,6 +23,7 @@ services:
   redis:
     container_name: redis
     image: redis:6-alpine
+    restart: unless-stopped
     # networks:
     #   - memobox-swarm
     ports:

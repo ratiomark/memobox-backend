@@ -9,6 +9,7 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - NODE_ENV=${NODE_ENV}
       - REDIS_URL=${REDIS_URL}
+    restart: unless-stopped
 
     # depends_on:
     #   redis:
