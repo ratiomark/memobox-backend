@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
 set -e
 
-echo "текущий адрес: $PWD"
+# echo "текущий адрес: $PWD"
+
+if [ -f ".env" ]; then
+  source .env
+else
+  echo "Файл .env не найден!"
+  exit 1
+fi
+
 
 # Ожидание доступности БД(по названию контейнера)
 chmod +x /app/wait-for-it.sh
@@ -23,8 +31,8 @@ node dist/main &
 
 # Ожидание запуска сервера
 echo "Ожидание запуска сервера..."
-sleep 40  
-# /app/wait-for-it.sh localhost:3001
+# sleep 40  
+/app/wait-for-it.sh back-test:3001
 
 # Запуск тестов с сохранением логов в файл
 echo "Запуск тестов..."
