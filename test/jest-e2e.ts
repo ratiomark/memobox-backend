@@ -22,7 +22,8 @@ module.exports = {
     '^test/(.*)$': '<rootDir>/test/$1',
   },
   testEnvironment: 'node',
-  testRegex: '.test.ts$',
+  // testRegex: '.test.ts$',
+  testRegex: '(.test.ts$)|(.e2e-spec.ts$)',
   // testRegex: '.e2e-spec.ts$',
   transform: {
     '^.+\\.(t|j)s$': 'ts-jest',
