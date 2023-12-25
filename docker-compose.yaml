@@ -26,7 +26,7 @@ services:
       - POSTGRES_DB=${DATABASE_NAME}
       # - POSTGRES_HOST=${DATABASE_HOST}
     ports:
-      - '${DATABASE_PORT}:${DATABASE_PORT_INNER}'
+      - '${DATABASE_HOST_PORT}:${DATABASE_PORT}'
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}']
       interval: 10s
@@ -40,7 +40,7 @@ services:
     image: redis:6-alpine
     restart: unless-stopped
     ports:
-      - '${REDIS_PORT}:${REDIS_PORT_INNER}'
+      - '${REDIS_HOST_PORT}:${REDIS_PORT}'
     volumes:
       - redis-data:/data
 
