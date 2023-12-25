@@ -1,6 +1,6 @@
 version: '3.8'
 services:
-  app:
+  backend-prod:
     container_name: ${APP_CONTAINER_NAME}
     build: .
     ports:
@@ -11,12 +11,12 @@ services:
       - REDIS_URL=${REDIS_URL}
     restart: unless-stopped
     depends_on:
-      redis:
+      redis-prod:
         condition: service_started
-      postgres:
+      postgres-prod:
         condition: service_healthy
 
-  postgres:
+  postgres-prod:
     container_name: ${DATABASE_CONTAINER_NAME}
     image: postgres:16-alpine
     restart: unless-stopped
