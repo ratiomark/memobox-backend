@@ -10,6 +10,7 @@ if (process.env.NODE_ENV) {
   console.error('JEST: NODE_ENV is not defined, falling back to .env');
   dotenv.config({ path: '.env' });
 }
+
 const config: Config = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: '..',
