@@ -24,7 +24,7 @@ services:
       - POSTGRES_USER=${DATABASE_USERNAME}
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
       - POSTGRES_DB=${DATABASE_NAME}
-    expose:
+    ports:
       - '${DATABASE_PORT}'
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U user -d dbname']
@@ -38,7 +38,7 @@ services:
     container_name: ${REDIS_CONTAINER_NAME}
     image: redis:6-alpine
     restart: unless-stopped
-    expose:
+    ports:
       - '${REDIS_PORT}'
     volumes:
       - redis-data:/data
