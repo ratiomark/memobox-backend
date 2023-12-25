@@ -4,7 +4,7 @@ services:
     container_name: ${APP_CONTAINER_NAME}
     build: .
     ports:
-      - '3000:3000'
+      - '${APP_PORT}:${APP_PORT}'
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - NODE_ENV=${NODE_ENV}
@@ -24,8 +24,8 @@ services:
       POSTGRES_USER=${DATABASE_USERNAME}
       POSTGRES_PASSWORD=${DATABASE_PASSWORD}
       POSTGRES_DB=${DATABASE_NAME}
-    ports:
-      - '${DATABASE_PORT}'
+    expose:
+      - "${DATABASE_PORT}"
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U user -d dbname']
       interval: 10s
@@ -38,8 +38,8 @@ services:
     container_name: ${REDIS_CONTAINER_NAME}
     image: redis:6-alpine
     restart: unless-stopped
-    ports:
-      - '${REDIS_PORT}'
+    expose:
+      - "${REDIS_PORT}"
     volumes:
       - redis-data:/data
 
