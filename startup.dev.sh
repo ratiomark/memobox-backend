@@ -13,9 +13,9 @@ fi
 chmod +x /app/wait-for-it.sh
 
 echo "Ожидание БД..."
-/app/wait-for-it.sh ${DATABASE_CONTAINER_NAME}:${DATABASE_PORT} -t 60
+/app/wait-for-it.sh ${DATABASE_CONTAINER_NAME}:${DATABASE_PORT_INNER} -t 60
 echo "Ожидание Редиса..."
-/app/wait-for-it.sh ${REDIS_CONTAINER_NAME}:${REDIS_PORT} -t 60
+/app/wait-for-it.sh ${REDIS_CONTAINER_NAME}:${REDIS_PORT_INNER} -t 60
 echo "БД и РЕДИС доступны."
 
 npm run start:db
