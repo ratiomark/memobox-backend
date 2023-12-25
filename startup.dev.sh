@@ -18,7 +18,7 @@ echo "Ожидание Редиса..."
 /app/wait-for-it.sh ${REDIS_CONTAINER_NAME}:${REDIS_PORT} -t 60
 echo "БД и РЕДИС доступны."
 
-npm run start:db
+# npm run start:db
 
 echo "Запуск сервера..."
 node dist/main
