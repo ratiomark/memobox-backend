@@ -17,6 +17,8 @@ import { GetCurrentUser } from '@/common/decorators';
 import { ShelfOrderRequest } from './entities/types';
 import { ShelfFrontedResponse } from './entities/shelf.entity';
 import { RemoveShelfDto } from './dto/remove-shelf.dto';
+import { LOCK_KEYS } from '@/common/const/lock-keys-patterns';
+import { Lock } from '@/common/decorators/lock.decorator';
 
 @ApiTags('Shelves')
 @Controller({
@@ -27,6 +29,7 @@ export class ShelvesController {
   constructor(private readonly shelvesService: ShelvesService) {}
 
   @Post()
+  @Lock(LOCK_KEYS.creatingNewShelf)
   async create(
     @GetCurrentUser('id') userId: User['id'],
     @Body() createShelfDto: CreateShelfDto,
@@ -63,6 +66,7 @@ export class ShelvesController {
   }
 
   @Delete(':id')
+  @Lock(LOCK_KEYS.removingShelfToTrash)
   deleteSoft(
     @GetCurrentUser('id') userId: User['id'],
     @Param('id') shelfId: Shelf['id'],
