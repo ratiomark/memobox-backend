@@ -5,6 +5,11 @@ import { CupboardObject } from '@/common/types/entities-types';
 import { createKeyWithPrefix } from '@/utils/helpers/create-key-with-prefix';
 import { REDIS_KEY_CUPBOARD, REDIS_KEY_SHELVES } from './const/keys';
 import { ShelfIncBoxes } from '@/aggregate/entities/types';
+import {
+  EVENT_SHELF_CREATED,
+  EVENT_SHELF_DELETED,
+} from '@/common/const/events';
+import { OnEvent } from '@nestjs/event-emitter';
 
 @Injectable()
 export class RedisService {
@@ -93,5 +98,23 @@ export class RedisService {
       this.logger.log(message);
     }
     return await this.redisRepository.get(key);
+  }
+
+  @OnEvent(EVENT_SHELF_CREATED)
+  async updateRedisAfterCreation(payload: { userId: UserId }) {
+    this.logger.log('new shelf created - invalidate cache');
+    const key = createKeyWithPrefix(REDIS_KEY_SHELVES, payload.userId);
+    const key2 = createKeyWithPrefix(REDIS_KEY_CUPBOARD, payload.userId);
+    await this.redisRepository.del(key);
+    await this.redisRepository.del(key2);
+  }
+
+  @OnEvent(EVENT_SHELF_DELETED)
+  async updateRedisAfterDeletion(payload: { userId: UserId }) {
+    this.logger.log('shelf deleted - inv cache');
+    const key = createKeyWithPrefix(REDIS_KEY_SHELVES, payload.userId);
+    const key2 = createKeyWithPrefix(REDIS_KEY_CUPBOARD, payload.userId);
+    await this.redisRepository.del(key);
+    await this.redisRepository.del(key2);
   }
 }
