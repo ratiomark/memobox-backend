@@ -94,7 +94,7 @@ export class CardsService {
     return this.cardDataProcessor.enhanceCardViewPage(cardUpdated);
   }
 
-  @Lock(LOCK_KEYS.updateCardsAfterTraining)
+  // @Lock(LOCK_KEYS.updateCardsAfterTraining)
   async updateCardsAfterTraining(
     userId: UserId,
     cardsWithAnswer: TrainingResponseDto,
