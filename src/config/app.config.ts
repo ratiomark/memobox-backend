@@ -14,7 +14,8 @@ import {
 enum Environment {
   Development = 'development',
   Production = 'production',
-  Test = 'test',
+  // Test = 'test',
+  Testing = 'testing',
 }
 
 class EnvironmentVariablesValidator {

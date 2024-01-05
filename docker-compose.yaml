@@ -1,17 +1,48 @@
 version: '3.8'
 services:
-  app:
-    container_name: back
+  backend-prod:
+    container_name: ${APP_CONTAINER_NAME}
     build: .
     ports:
-      - '${APP_PORT}:3000'
+      - '${APP_PORT}:${APP_PORT}'
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - NODE_ENV=${NODE_ENV}
       - REDIS_URL=${REDIS_URL}
+    restart: unless-stopped
+    depends_on:
+      redis-prod:
+        condition: service_started
+      postgres-prod:
+        condition: service_healthy
 
-    # depends_on:
-    #   redis:
-    #     condition: service_started
-    #   postgres:
-    #     condition: service_healthy
+  postgres-prod:
+    container_name: ${DATABASE_CONTAINER_NAME}
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${DATABASE_USERNAME}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_NAME}
+    ports:
+      - '${DATABASE_HOST_PORT}:${DATABASE_PORT}'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis-prod:
+    container_name: ${REDIS_CONTAINER_NAME}
+    image: redis:6-alpine
+    restart: unless-stopped
+    ports:
+      - '${REDIS_HOST_PORT}:${REDIS_PORT}'
+    volumes:
+      - redis-data:/data
+
+volumes:
+  postgres-data:
+  redis-data:

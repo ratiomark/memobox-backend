@@ -17,6 +17,8 @@ export class AggregateController {
   ) {}
 
   @Get('view')
+  @WaitForUnlock(LOCK_KEYS.creatingNewShelf)
+  @WaitForUnlock(LOCK_KEYS.removingShelfToTrash)
   async getViewPageData(@GetCurrentUser('id') userId: User['id']) {
     return this.userDataStorageService.getViewPageData(userId);
   }

@@ -6,16 +6,20 @@ import {
 import { BoxesService } from '@/boxes/boxes.service';
 import { CardsService } from '@/cards/cards.service';
 import { SettingsService } from '@/settings/settings.service';
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
-import { User, Shelf, Prisma } from '@prisma/client';
+import { Injectable } from '@nestjs/common';
+import { Shelf, Prisma } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { CreateShelfDto } from './dto/create-shelf.dto';
 import { UpdateShelfDto } from './dto/update-shelf.dto';
 import { ShelfOrderRequest } from './entities/types';
 import { ShelvesProcessorService } from './services/shelves-data-processor.service';
 import { ShelfId, UserId } from '@/common/types/prisma-entities';
-import { async } from 'rxjs';
 import { cacheOrFetchData } from '@/utils/helpers/cache-or-fetch';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  EVENT_SHELF_CREATED,
+  EVENT_SHELF_DELETED,
+} from '@/common/const/events';
 
 @Injectable()
 export class ShelvesService {
@@ -25,6 +29,7 @@ export class ShelvesService {
     private readonly boxesService: BoxesService,
     private readonly cardsService: CardsService,
     private readonly shelvesProcessor: ShelvesProcessorService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async create(userId: UserId, createShelfDto: CreateShelfDto) {
@@ -44,6 +49,9 @@ export class ShelvesService {
         newShelfFromDb,
         shelfTemplate,
       );
+    this.eventEmitter.emit(EVENT_SHELF_CREATED, {
+      userId,
+    });
     return shelfCreated;
   }
 
@@ -109,6 +117,9 @@ export class ShelvesService {
     //   // createShelfDto.title,
     //   `SELECT * FROM remove_shelf_and_update_indexes('${userId}', '${shelfId}', '${shelfIndex}') ;`,
     // );
+    this.eventEmitter.emit(EVENT_SHELF_DELETED, {
+      userId,
+    });
     return response;
   }
 
