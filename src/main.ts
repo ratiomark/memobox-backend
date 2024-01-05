@@ -28,7 +28,7 @@ async function bootstrap() {
       : ['error', 'warn', 'log', 'debug', 'verbose'];
 
   const app = await NestFactory.create(AppModule, {
-    // cors: true,
+    cors: true,
     snapshot: true,
     logger: loggerLevels,
     // logger: ['error', 'warn', 'log', 'debug', 'verbose'],
