@@ -15,8 +15,9 @@ export default () => {
     let shelvesData;
     let isSeedInInitialState = true;
     let sortedBoxesIds;
-    const titleFirstTest = 'Test shelf';
-    const titleSecondTest = 'Test shelf';
+    let initialShelfTitle;
+    const titleFirstTest = 'shelf_name_test_1';
+    const titleSecondTest = 'shelf_name_test_2';
     // const dropCards = async () => {
     //   await request(app_url_full)
     //     .post('/cards/drop')
@@ -36,11 +37,12 @@ export default () => {
       userToken = loginResponse.body.token;
 
       // Получение данных о полках и коробках
-      const shelvesResponse = await request(app_url_full)
+      const cupboardResponse = await request(app_url_full)
         .get('/aggregate/cupboard')
         .auth(userToken, { type: 'bearer' });
       // await dropCards();
-      shelvesData = shelvesResponse.body.shelves;
+      shelvesData = cupboardResponse.body.shelves;
+      initialShelfTitle = cupboardResponse.body.shelves[0].title;
     });
 
     beforeEach(() => {
@@ -74,7 +76,7 @@ export default () => {
       }
     });
 
-    it('should create new shelf', async () => {
+    it(`should create new shelf [${titleFirstTest}]`, async () => {
       const response = await request(app_url_full)
         .post('/shelves')
         .send({ title: titleFirstTest })
@@ -108,14 +110,14 @@ export default () => {
       expect(shelves).toHaveLength(2);
       expect(shelves[0]).toBeInstanceOf(Object);
       expect(shelves[0].boxesData).toBeInstanceOf(Array);
-      expect(shelves[0].title).toEqual(titleFirstTest);
+      expect(shelves[0].title).toEqual(titleSecondTest);
       expect(shelves[0].index).toBe(0);
     });
 
-    it('should create new shelf', async () => {
+    it(`should create new shelf [${titleSecondTest}]`, async () => {
       const response = await request(app_url_full)
         .post('/shelves')
-        .send({ title: titleFirstTest })
+        .send({ title: titleSecondTest })
         .auth(userToken, { type: 'bearer' });
 
       const {
@@ -129,11 +131,83 @@ export default () => {
       expect(boxesData).toBeInstanceOf(Array);
       expect(index).toBe(0);
       expect(isCollapsed).toBe(true);
-      expect(titleResponse).toEqual(titleFirstTest);
+      expect(titleResponse).toEqual(titleSecondTest);
       expect(data).toBeInstanceOf(Object);
       expect(data).toEqual(
         expect.objectContaining({ wait: 0, all: 0, train: 0 }),
       );
+
+      const cupboardResponse = await request(app_url_full)
+        .get('/aggregate/cupboard')
+        .auth(userToken, { type: 'bearer' });
+      const { shelves } = cupboardResponse.body;
+      expect(response.status).toBe(200);
+      expect(shelves).toBeInstanceOf(Array);
+      expect(shelves).toHaveLength(3);
+      expect(shelves[0].index).toBe(0);
+      expect(shelves[1].index).toBe(1);
+      expect(shelves[2].index).toBe(2);
+      expect(shelves[0].title).toEqual(titleSecondTest);
+      expect(shelves[1].title).toEqual(titleFirstTest);
+      expect(shelves[2].title).toEqual(initialShelfTitle);
+    });
+
+    it('should delete shelf with [index 1]', async () => {
+      const cupboardResponse = await request(app_url_full)
+        .get('/aggregate/cupboard')
+        .auth(userToken, { type: 'bearer' });
+      // await dropCards();
+      shelvesData = cupboardResponse.body.shelves;
+      const shelfIds = shelvesData.map((shelf) => shelf.id);
+      const shelfIndexToUse = 1;
+
+      const response = await request(app_url_full)
+        .delete(`/shelves/${shelfIds[shelfIndexToUse]}`)
+        .send({ index: shelfIndexToUse })
+        .auth(userToken, { type: 'bearer' });
+
+      expect(response.status).toBe(200);
+
+      const cupboardResponseAfterDeletion = await request(app_url_full)
+        .get('/aggregate/cupboard')
+        .auth(userToken, { type: 'bearer' });
+
+      const { shelves } = cupboardResponseAfterDeletion.body;
+      expect(response.status).toBe(200);
+      expect(shelves).toBeInstanceOf(Array);
+      expect(shelves).toHaveLength(2);
+      expect(shelves[0].index).toBe(0);
+      expect(shelves[1].index).toBe(1);
+      expect(shelves[0].title).toEqual(titleSecondTest);
+      expect(shelves[1].title).toEqual(initialShelfTitle);
+    });
+
+    it('should delete shelf with [index 0]', async () => {
+      const cupboardResponse = await request(app_url_full)
+        .get('/aggregate/cupboard')
+        .auth(userToken, { type: 'bearer' });
+      // await dropCards();
+      shelvesData = cupboardResponse.body.shelves;
+      const shelfIds = shelvesData.map((shelf) => shelf.id);
+      const shelfIndexToUse = 0;
+
+      const response = await request(app_url_full)
+        .delete(`/shelves/${shelfIds[shelfIndexToUse]}`)
+        .send({ index: shelfIndexToUse })
+        .auth(userToken, { type: 'bearer' });
+
+      expect(response.status).toBe(200);
+
+      const cupboardResponseAfterDeletion = await request(app_url_full)
+        .get('/aggregate/cupboard')
+        .auth(userToken, { type: 'bearer' });
+
+      const { shelves } = cupboardResponseAfterDeletion.body;
+      expect(response.status).toBe(200);
+      expect(shelves).toBeInstanceOf(Array);
+      expect(shelves).toHaveLength(1);
+      expect(shelves[0].index).toBe(0);
+      expect(shelves[0].title).toEqual(initialShelfTitle);
     });
   });
 };
