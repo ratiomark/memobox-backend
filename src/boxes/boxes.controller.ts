@@ -14,7 +14,8 @@ import { CreateBoxDto } from './dto/create-box.dto';
 import { UpdateBoxDto } from './dto/update-box.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { Box } from '@prisma/client';
-import { BoxId, ShelfId } from '@/common/types/prisma-entities';
+import { BoxId, ShelfId, UserId } from '@/common/types/prisma-entities';
+import { GetCurrentUser } from '@/common/decorators';
 
 @ApiTags('Boxes')
 @Controller({
@@ -51,7 +52,15 @@ export class BoxesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  remove(@Param('id') id: BoxId) {
-    return this.boxesService.deleteSoftByBoxId(id);
+  deleteSoftById(
+    @GetCurrentUser('id') userId: UserId,
+    @Param('id') boxId: BoxId,
+    @Body() boxIndex: number,
+  ) {
+    return this.boxesService.deleteSoftByBoxIdAndUpdateIndexes(
+      userId,
+      boxId,
+      boxIndex,
+    );
   }
 }
