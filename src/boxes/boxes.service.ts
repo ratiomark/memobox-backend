@@ -120,4 +120,11 @@ export class BoxesService {
   remove(id: number) {
     return `This action removes a #${id} box`;
   }
+
+  restoreBoxesDeletedByShelfId(shelfId: ShelfId) {
+    return this.prisma.box.updateMany({
+      where: { shelfId },
+      data: { isDeleted: false, deletedAt: null },
+    });
+  }
 }

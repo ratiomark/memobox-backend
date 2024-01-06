@@ -6,12 +6,15 @@ import {
   Patch,
   Delete,
   Param,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { BoxesService } from './boxes.service';
 import { CreateBoxDto } from './dto/create-box.dto';
 import { UpdateBoxDto } from './dto/update-box.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { Box } from '@prisma/client';
+import { BoxId, ShelfId } from '@/common/types/prisma-entities';
 
 @ApiTags('Boxes')
 @Controller({
@@ -26,6 +29,11 @@ export class BoxesController {
     return this.boxesService.create(createBoxDto);
   }
 
+  @Post('restore-boxes-deleted-by-shelf-id/:shelfId')
+  restoreBoxesDeleted(@Param('shelfId') shelfId: ShelfId) {
+    return this.boxesService.restoreBoxesDeletedByShelfId(shelfId);
+  }
+
   @Get()
   findAll() {
     return this.boxesService.findAll();
@@ -37,12 +45,13 @@ export class BoxesController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: Box['id'], @Body() updateBoxDto: UpdateBoxDto) {
+  update(@Param('id') id: BoxId, @Body() updateBoxDto: UpdateBoxDto) {
     return this.boxesService.update(id, updateBoxDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.boxesService.remove(+id);
+  @HttpCode(HttpStatus.OK)
+  remove(@Param('id') id: BoxId) {
+    return this.boxesService.deleteSoftByBoxId(id);
   }
 }
