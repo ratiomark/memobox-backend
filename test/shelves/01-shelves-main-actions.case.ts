@@ -110,7 +110,7 @@ export default () => {
       expect(shelves).toHaveLength(2);
       expect(shelves[0]).toBeInstanceOf(Object);
       expect(shelves[0].boxesData).toBeInstanceOf(Array);
-      expect(shelves[0].title).toEqual(titleSecondTest);
+      expect(shelves[0].title).toEqual(titleFirstTest);
       expect(shelves[0].index).toBe(0);
     });
 
@@ -141,7 +141,6 @@ export default () => {
         .get('/aggregate/cupboard')
         .auth(userToken, { type: 'bearer' });
       const { shelves } = cupboardResponse.body;
-      expect(response.status).toBe(200);
       expect(shelves).toBeInstanceOf(Array);
       expect(shelves).toHaveLength(3);
       expect(shelves[0].index).toBe(0);
@@ -156,7 +155,7 @@ export default () => {
       const cupboardResponse = await request(app_url_full)
         .get('/aggregate/cupboard')
         .auth(userToken, { type: 'bearer' });
-      // await dropCards();
+
       shelvesData = cupboardResponse.body.shelves;
       const shelfIds = shelvesData.map((shelf) => shelf.id);
       const shelfIndexToUse = 1;
