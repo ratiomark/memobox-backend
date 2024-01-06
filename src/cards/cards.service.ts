@@ -161,6 +161,20 @@ export class CardsService {
     });
   }
 
+  restoreByBoxId(boxId: BoxId) {
+    return this.prisma.card.updateMany({
+      where: { boxId },
+      data: { isDeleted: false, deletedAt: null },
+    });
+  }
+
+  restoreByShelfId(shelfId: ShelfId) {
+    return this.prisma.card.updateMany({
+      where: { shelfId },
+      data: { isDeleted: false, deletedAt: null },
+    });
+  }
+
   async findTrainingCardsByShelfIdAndBoxId(
     userId: UserId,
     shelfId: ShelfId | 'all',

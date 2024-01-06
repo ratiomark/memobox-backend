@@ -121,10 +121,15 @@ export class BoxesService {
     return `This action removes a #${id} box`;
   }
 
-  restoreBoxesDeletedByShelfId(shelfId: ShelfId) {
-    return this.prisma.box.updateMany({
-      where: { shelfId },
-      data: { isDeleted: false, deletedAt: null },
-    });
+  async restoreBoxesDeletedByShelfId(shelfId: ShelfId) {
+    const [box, cards] = await Promise.all([
+      this.prisma.box.updateMany({
+        where: { shelfId },
+        data: { isDeleted: false, deletedAt: null },
+      }),
+      this.cardsService.restoreByShelfId(shelfId),
+    ]);
+    return { box, cards };
   }
+  // restoreByBoxId;
 }
