@@ -87,14 +87,17 @@ export default () => {
         .delete(`/boxes/${sortedBoxesIds[indexToDelete]}`)
         .auth(userToken, { type: 'bearer' });
 
-      const { box } = response.body;
-      console.log('XXXXXXXXXX');
-      console.log(box);
+      // const { box } = response.body;
+      // console.log('XXXXXXXXXX');
+      // console.log(box);
       expect(response.status).toBe(200);
-      expect(box).toBeInstanceOf(Object);
-      expect(box.index).toBe(indexToDelete);
-      expect(box.isDeleted).toBe(true);
+      const boxesUpdated = response.body;
+      expect(boxesUpdated).toBeInstanceOf(Array);
+      // expect(box).toBeInstanceOf(Object);
+      // expect(box.index).toBe(indexToDelete);
+      // expect(box.isDeleted).toBe(true);
       updatedShelfBoxCount = updatedShelfBoxCount - 1;
+      expect(boxesUpdated).toHaveLength(updatedShelfBoxCount);
 
       const cupboardResponseAfterDeletion = await request(app_url_full)
         .get('/aggregate/cupboard')
@@ -120,12 +123,20 @@ export default () => {
         .delete(`/boxes/${sortedBoxesIds[indexToDelete]}`)
         .auth(userToken, { type: 'bearer' });
 
-      const { box } = response.body;
       expect(response.status).toBe(200);
-      expect(box).toBeInstanceOf(Object);
-      expect(box.index).toBe(indexToDelete);
-      expect(box.isDeleted).toBe(true);
+      const boxesUpdated = response.body;
+      expect(boxesUpdated).toBeInstanceOf(Array);
+      // expect(box).toBeInstanceOf(Object);
+      // expect(box.index).toBe(indexToDelete);
+      // expect(box.isDeleted).toBe(true);
       updatedShelfBoxCount = updatedShelfBoxCount - 1;
+      expect(boxesUpdated).toHaveLength(updatedShelfBoxCount);
+      // const { box } = response.body;
+      // expect(response.status).toBe(200);
+      // expect(box).toBeInstanceOf(Object);
+      // expect(box.index).toBe(indexToDelete);
+      // expect(box.isDeleted).toBe(true);
+      // updatedShelfBoxCount = updatedShelfBoxCount - 1;
 
       const cupboardResponseAfterDeletion = await request(app_url_full)
         .get('/aggregate/cupboard')
@@ -145,7 +156,7 @@ export default () => {
     });
 
     it('should validate cupboard state after restoring boxes and cards', async () => {
-      const restoreResponse = await request(app_url_full)
+      await request(app_url_full)
         .post(`boxes/restore-boxes-deleted-by-shelf-id/${shelfId}`)
         .auth(userToken, { type: 'bearer' });
 
