@@ -15,6 +15,7 @@ export default () => {
     let userToken;
     let shelvesData;
     let shelfId;
+    let userId;
     let isSeedInInitialState = true;
     let sortedBoxesIds;
     let initialShelfTitle;
@@ -30,6 +31,7 @@ export default () => {
         .send({ email: TESTER_EMAIL, password: TESTER_PASSWORD });
 
       userToken = loginResponse.body.token;
+      userId = loginResponse.body.user.userId;
 
       // Получение данных о полках и коробках
       const cupboardResponse = await request(app_url_full)
@@ -85,6 +87,7 @@ export default () => {
       const indexToDelete = 1;
       const response = await request(app_url_full)
         .delete(`/boxes/${sortedBoxesIds[indexToDelete]}`)
+        .send({ index: indexToDelete })
         .auth(userToken, { type: 'bearer' });
 
       // const { box } = response.body;
@@ -121,6 +124,7 @@ export default () => {
       const indexToDelete = 2;
       const response = await request(app_url_full)
         .delete(`/boxes/${sortedBoxesIds[indexToDelete]}`)
+        .send({ index: indexToDelete })
         .auth(userToken, { type: 'bearer' });
 
       expect(response.status).toBe(200);
