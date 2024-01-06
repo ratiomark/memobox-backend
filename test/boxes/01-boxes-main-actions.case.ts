@@ -84,7 +84,7 @@ export default () => {
       // @Post('restore-boxes-deleted-by-shelf-id/:shelfId')
       const indexToDelete = 1;
       const response = await request(app_url_full)
-        .post(`/boxes/${sortedBoxesIds[indexToDelete]}`)
+        .delete(`/boxes/${sortedBoxesIds[indexToDelete]}`)
         .auth(userToken, { type: 'bearer' });
 
       const { box } = response.body;
@@ -117,7 +117,7 @@ export default () => {
       // @Post('restore-boxes-deleted-by-shelf-id/:shelfId')
       const indexToDelete = 2;
       const response = await request(app_url_full)
-        .post(`/boxes/${sortedBoxesIds[indexToDelete]}`)
+        .delete(`/boxes/${sortedBoxesIds[indexToDelete]}`)
         .auth(userToken, { type: 'bearer' });
 
       const { box } = response.body;
@@ -146,7 +146,7 @@ export default () => {
 
     it('should validate cupboard state after restoring boxes and cards', async () => {
       const restoreResponse = await request(app_url_full)
-        .get(`restore-boxes-deleted-by-shelf-id/${shelfId}`)
+        .post(`boxes/restore-boxes-deleted-by-shelf-id/${shelfId}`)
         .auth(userToken, { type: 'bearer' });
 
       const response = await request(app_url_full)
