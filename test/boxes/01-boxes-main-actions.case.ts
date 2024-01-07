@@ -118,34 +118,30 @@ export default () => {
         expect(box.index).toEqual(index);
       });
     });
-    it(`should delete box [index 2]`, async () => {
-      // добавить тест на удаление коробки с индексом 0, не должен рабоать?
-      // @Post('restore-boxes-deleted-by-shelf-id/:shelfId')
-      const indexToDelete = 2;
+    it(`should restore box to [index 2]`, async () => {
+      const indexToRestore = 2;
       const response = await request(app_url_full)
-        .delete(`/boxes/${sortedBoxesIds[indexToDelete]}`)
-        .send({ index: indexToDelete })
+        .patch(`/boxes/restore`)
+        .send({
+          index: indexToRestore,
+          boxId: sortedBoxesIds[indexToRestore],
+          shelfId,
+        })
         .auth(userToken, { type: 'bearer' });
 
       expect(response.status).toBe(200);
-      const boxesUpdated = response.body;
-      expect(boxesUpdated).toBeInstanceOf(Array);
-      // expect(box).toBeInstanceOf(Object);
-      // expect(box.index).toBe(indexToDelete);
-      // expect(box.isDeleted).toBe(true);
-      updatedShelfBoxCount = updatedShelfBoxCount - 1;
-      expect(boxesUpdated).toHaveLength(updatedShelfBoxCount);
-      // const { box } = response.body;
-      // expect(response.status).toBe(200);
-      // expect(box).toBeInstanceOf(Object);
-      // expect(box.index).toBe(indexToDelete);
-      // expect(box.isDeleted).toBe(true);
-      // updatedShelfBoxCount = updatedShelfBoxCount - 1;
+      const boxRestored = response.body;
+      expect(boxRestored).toBeInstanceOf(Object);
+      expect(boxRestored.index).toEqual(indexToRestore);
+      expect(boxRestored.specialType).toEqual('none');
+      expect(boxRestored.isDeleted).toBe(false);
+      expect(boxRestored.deletedAt).toBeNull();
+      updatedShelfBoxCount = updatedShelfBoxCount + 1;
 
-      const cupboardResponseAfterDeletion = await request(app_url_full)
+      const cupboardResponseAfterRestoring = await request(app_url_full)
         .get('/aggregate/cupboard')
         .auth(userToken, { type: 'bearer' });
-      const { shelves } = cupboardResponseAfterDeletion.body;
+      const { shelves } = cupboardResponseAfterRestoring.body;
       expect(shelves[0].boxesData).toHaveLength(updatedShelfBoxCount);
       shelves[0].boxesData.forEach((box, index) => {
         if (index === 0) {
@@ -158,12 +154,48 @@ export default () => {
         expect(box.index).toEqual(index);
       });
     });
+    // it(`should delete box [index 2]`, async () => {
+    //   // добавить тест на удаление коробки с индексом 0, не должен рабоать?
+    //   // @Post('restore-boxes-deleted-by-shelf-id/:shelfId')
+    //   const indexToDelete = 2;
+    //   const response = await request(app_url_full)
+    //     .delete(`/boxes/${sortedBoxesIds[indexToDelete]}`)
+    //     .send({ index: indexToDelete })
+    //     .auth(userToken, { type: 'bearer' });
 
-    it('should validate cupboard state after restoring boxes and cards', async () => {
-      await request(app_url_full)
-        .post(`boxes/restore-boxes-deleted-by-shelf-id/${shelfId}`)
-        .auth(userToken, { type: 'bearer' });
+    //   expect(response.status).toBe(200);
+    //   const boxesUpdated = response.body;
+    //   expect(boxesUpdated).toBeInstanceOf(Array);
+    //   // expect(box).toBeInstanceOf(Object);
+    //   // expect(box.index).toBe(indexToDelete);
+    //   // expect(box.isDeleted).toBe(true);
+    //   updatedShelfBoxCount = updatedShelfBoxCount - 1;
+    //   expect(boxesUpdated).toHaveLength(updatedShelfBoxCount);
+    //   // const { box } = response.body;
+    //   // expect(response.status).toBe(200);
+    //   // expect(box).toBeInstanceOf(Object);
+    //   // expect(box.index).toBe(indexToDelete);
+    //   // expect(box.isDeleted).toBe(true);
+    //   // updatedShelfBoxCount = updatedShelfBoxCount - 1;
 
+    //   const cupboardResponseAfterDeletion = await request(app_url_full)
+    //     .get('/aggregate/cupboard')
+    //     .auth(userToken, { type: 'bearer' });
+    //   const { shelves } = cupboardResponseAfterDeletion.body;
+    //   expect(shelves[0].boxesData).toHaveLength(updatedShelfBoxCount);
+    //   shelves[0].boxesData.forEach((box, index) => {
+    //     if (index === 0) {
+    //       expect(box.specialType).toEqual('new');
+    //     } else if (index === updatedShelfBoxCount - 1) {
+    //       expect(box.specialType).toEqual('learnt');
+    //     } else {
+    //       expect(box.specialType).toEqual('none');
+    //     }
+    //     expect(box.index).toEqual(index);
+    //   });
+    // });
+
+    it('should validate cupboard state after deleting and restoring box', async () => {
       const response = await request(app_url_full)
         .get('/aggregate/cupboard')
         .auth(userToken, { type: 'bearer' });

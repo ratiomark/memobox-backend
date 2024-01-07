@@ -8,7 +8,7 @@ import {
 import { commonShelfInitialSeedState } from 'test/mock/initial-seed-state';
 
 export default () => {
-  describe('Test cards training receiving', () => {
+  describe('Test shelf main actions', () => {
     const app = APP_URL;
     const app_url_full = app + API_PREFIX;
     let userToken;
