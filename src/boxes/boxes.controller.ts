@@ -35,6 +35,19 @@ export class BoxesController {
     return this.boxesService.restoreBoxesDeletedByShelfId(shelfId);
   }
 
+  @Patch('restore')
+  restoreBox(
+    @GetCurrentUser('id') userId: UserId,
+    @Body() body: { shelfId: ShelfId; boxId: BoxId; index: number },
+  ) {
+    return this.boxesService.restoreBox(
+      userId,
+      body.boxId,
+      body.shelfId,
+      body.index,
+    );
+  }
+
   @Get()
   findAll() {
     return this.boxesService.findAll();
@@ -55,12 +68,13 @@ export class BoxesController {
   deleteSoftById(
     @GetCurrentUser('id') userId: UserId,
     @Param('id') boxId: BoxId,
-    @Body() boxIndex: number,
+    @Body() body: { index: number; shelfId: ShelfId },
   ) {
     return this.boxesService.deleteSoftByBoxIdAndUpdateIndexes(
       userId,
       boxId,
-      boxIndex,
+      body.shelfId,
+      body.index,
     );
   }
 }

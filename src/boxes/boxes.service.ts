@@ -141,10 +141,12 @@ export class BoxesService {
   async deleteSoftByBoxIdAndUpdateIndexes(
     userId: UserId,
     boxId: BoxId,
+    shelfId: ShelfId,
     boxIndex: number,
   ) {
-    const [response] = await this.prisma.$queryRawUnsafe<Box[]>(
-      `SELECT * FROM remove_box_and_update_indexes('${userId}', '${boxId}', '${boxIndex}') ;`,
+    // возвращает массив обновленных коробок, без удаленной
+    const boxesUpdated = await this.prisma.$queryRawUnsafe<Box[]>(
+      `SELECT * FROM remove_box_and_update_indexes('${userId}', '${boxId}', '${shelfId}', '${boxIndex}') ;`,
     );
     //     this.boxesService.deleteSoftByShelfId(shelfId),
     //     this.cardsService.deleteSoftByShelfId(shelfId),
@@ -159,13 +161,54 @@ export class BoxesService {
     // const updateBoxesFromIndex = box.index
     // [0,1 ,2,3,4,5,6,7,]
     // 4
-    // const boxes = await Promise.all()
-    return response;
+    // const boxes = await Promise.all()remove_box_and_update_indexes
+    return boxesUpdated;
   }
 
   async findAllDeletedBoxes(userId: User['id']) {
     return this.prisma.box.findMany({
       where: { userId, isDeleted: true, shelf: { isDeleted: false } },
+    });
+  }
+
+  async restoreBox(
+    userId: UserId,
+    boxId: BoxId,
+    shelfIdTo: ShelfId,
+    restoreToIndex: number,
+  ) {
+    return await this.prisma.$transaction(async (prisma) => {
+      // Обновление данных восстанавливаемой коробки
+      const restoredBox = await prisma.box.update({
+        where: { id: boxId },
+        data: {
+          isDeleted: false,
+          deletedAt: null,
+          shelfId: shelfIdTo,
+          index: restoreToIndex,
+        },
+      });
+
+      // Обновление индексов для остальных коробок на полке
+      await prisma.box.updateMany({
+        where: {
+          userId: userId,
+          shelfId: shelfIdTo,
+          index: {
+            gte: restoreToIndex,
+          },
+          id: {
+            not: boxId,
+          },
+        },
+        data: {
+          index: {
+            increment: 1,
+          },
+        },
+      });
+
+      return restoredBox;
     });
   }
 
