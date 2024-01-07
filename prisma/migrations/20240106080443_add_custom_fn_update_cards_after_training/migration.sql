@@ -5,7 +5,7 @@ DECLARE
 BEGIN
     FOREACH card_update IN ARRAY card_updates
     LOOP
-        UPDATE "Card"
+        UPDATE card
         SET
             "boxId" = (card_update ->> 'boxId')::uuid,
             "nextTraining" = (card_update ->> 'nextTraining')::timestamp

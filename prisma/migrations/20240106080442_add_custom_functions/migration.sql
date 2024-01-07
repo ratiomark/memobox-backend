@@ -9,7 +9,7 @@ BEGIN
     WHERE "userId" = _userId AND shelf.index >= 0;
 
     -- Добавить новую полку и вернуть ее данные
- 	RETURN QUERY
+ 	  RETURN QUERY
     INSERT INTO shelf ("userId", title, index, "isCollapsed")
     VALUES (_userId, _title, 0, true)
     RETURNING *;
@@ -21,8 +21,6 @@ END;
 CREATE OR REPLACE FUNCTION remove_shelf_and_update_indexes(_userId UUID, _shelfId UUID, _index INT)
 RETURNS SETOF shelf AS '
 BEGIN
---    DELETE FROM shelf
---    WHERE shelf.id = _shelfId AND shelf."userId" = _userId;
 	  UPDATE shelf
 	  SET "isDeleted" = true
 	  WHERE shelf.id = _shelfId;
