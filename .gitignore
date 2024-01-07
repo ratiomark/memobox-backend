@@ -47,6 +47,7 @@ seed.log.ts
 # 
 GPT.*
 gpt.*
+*.gpt
 
 # scripts
 bash_aliases.sh
