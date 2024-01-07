@@ -1,4 +1,4 @@
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { CreateBoxDto } from './dto/create-box.dto';
 import { UpdateBoxDto } from './dto/update-box.dto';
 import { PrismaService } from 'nestjs-prisma';
@@ -19,6 +19,7 @@ type GenerateBoxesFromTemplateArg = {
 
 @Injectable()
 export class BoxesService {
+  private readonly logger = new Logger(BoxesService.name);
   constructor(
     private readonly prisma: PrismaService,
     // @Inject(forwardRef(() => CardsService))
@@ -146,7 +147,7 @@ export class BoxesService {
   ) {
     // возвращает массив обновленных коробок, без удаленной
     const boxesUpdated = await this.prisma.$queryRawUnsafe<Box[]>(
-      `SELECT * FROM remove_box_and_update_indexes('${userId}', '${boxId}', '${shelfId}', '${boxIndex}') ;`,
+      `SELECT * FROM remove_box_and_update_indexes('${userId}', '${boxId}', '${shelfId}', '${boxIndex}');`,
     );
     //     this.boxesService.deleteSoftByShelfId(shelfId),
     //     this.cardsService.deleteSoftByShelfId(shelfId),
@@ -162,6 +163,7 @@ export class BoxesService {
     // [0,1 ,2,3,4,5,6,7,]
     // 4
     // const boxes = await Promise.all()remove_box_and_update_indexes
+    this.logger.debug(boxesUpdated);
     return boxesUpdated;
   }
 
@@ -177,10 +179,10 @@ export class BoxesService {
     shelfIdTo: ShelfId,
     restoreToIndex: number,
   ) {
-    return await this.prisma.$transaction(async (prisma) => {
+    const restoredBox = await this.prisma.$transaction(async (prisma) => {
       // Обновление данных восстанавливаемой коробки
       const restoredBox = await prisma.box.update({
-        where: { id: boxId },
+        where: { id: boxId, userId },
         data: {
           isDeleted: false,
           deletedAt: null,
@@ -210,6 +212,9 @@ export class BoxesService {
 
       return restoredBox;
     });
+
+    this.logger.debug(restoredBox);
+    return restoredBox;
   }
 
   async restoreBoxesDeletedByShelfId(shelfId: ShelfId) {
