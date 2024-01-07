@@ -83,6 +83,7 @@ export class ShelvesService {
               },
             },
           },
+          orderBy: { index: 'asc' },
         },
       },
       orderBy: { index: 'asc' },
