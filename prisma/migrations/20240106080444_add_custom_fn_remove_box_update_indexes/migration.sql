@@ -11,20 +11,38 @@ RETURNS TABLE(
     "shelfId" UUID
 ) AS $$
 BEGIN
-    CREATE TEMP TABLE temp_box ON COMMIT DROP AS
-    SELECT * FROM box WHERE box."userId" = _userId AND box."shelfId" = _shelfId;
-
-    UPDATE temp_box
+    UPDATE box
     SET "isDeleted" = true, "deletedAt" = NOW()
-    WHERE temp_box.id = _boxId;
+    WHERE 
+      box.id = _boxId AND
+      box."userId" = _userId AND
+      box."shelfId" = _shelfId;
+    
+    UPDATE box
+    SET "index" = box."index" - 1
+    WHERE 
+      box."userId" = _userId AND 
+      box."shelfId" = _shelfId AND 
+      box."index" > _index;
+    -- WHERE box.id = _boxId AND box."userId" = _userId AND box."shelfId" = _shelfId;
 
-    UPDATE temp_box
-    SET "index" = temp_box."index" - 1
-    WHERE temp_box."userId" = _userId AND temp_box."shelfId" = _shelfId AND temp_box."index" > _index;
+    CREATE TEMP TABLE temp_box ON COMMIT DROP AS
+    SELECT * FROM box 
+    WHERE 
+      box."userId" = _userId AND
+      box."shelfId" = _shelfId AND
+      box."isDeleted" != true;
+
+    -- UPDATE temp_box
+    -- SET "isDeleted" = true, "deletedAt" = NOW()
+    -- WHERE temp_box.id = _boxId;
+
+    -- UPDATE temp_box
+    -- SET "index" = temp_box."index" - 1
+    -- WHERE temp_box."userId" = _userId AND temp_box."shelfId" = _shelfId AND temp_box."index" > _index;
 
     RETURN QUERY 
     SELECT * FROM temp_box 
-    WHERE temp_box."isDeleted" = false 
     ORDER BY temp_box."index";
 END;
 $$ LANGUAGE plpgsql;
