@@ -36,6 +36,9 @@ export default () => {
 
       userToken = loginResponse.body.token;
 
+      await request(app_url_full)
+        .get('/aggregate/restore-db')
+        .auth(userToken, { type: 'bearer' });
       // Получение данных о полках и коробках
       const cupboardResponse = await request(app_url_full)
         .get('/aggregate/cupboard')
@@ -44,6 +47,8 @@ export default () => {
       shelvesData = cupboardResponse.body.shelves;
       initialShelfTitle = cupboardResponse.body.shelves[0].title;
     });
+
+    afterAll(async () => {});
 
     beforeEach(() => {
       if (!isSeedInInitialState) {
