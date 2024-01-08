@@ -10,6 +10,8 @@ import {
 import { uuid } from '@/utils/helpers/sql';
 import { CardsService } from '@/cards/cards.service';
 import { UserId, ShelfId, BoxId } from '@/common/types/prisma-entities';
+import { EVENT_BOX_DELETED } from '@/common/const/events';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 type GenerateBoxesFromTemplateArg = {
   shelfTemplate: Prisma.JsonArray;
@@ -24,6 +26,7 @@ export class BoxesService {
     private readonly prisma: PrismaService,
     // @Inject(forwardRef(() => CardsService))
     private readonly cardsService: CardsService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
   create(createBoxDto: CreateBoxDto) {
     return 'This action adds a new box';
@@ -149,21 +152,11 @@ export class BoxesService {
     const boxesUpdated = await this.prisma.$queryRawUnsafe<Box[]>(
       `SELECT * FROM remove_box_and_update_indexes('${userId}', '${boxId}', '${shelfId}', '${boxIndex}');`,
     );
-    //     this.boxesService.deleteSoftByShelfId(shelfId),
-    //     this.cardsService.deleteSoftByShelfId(shelfId),
-    //   ]);
-    // const [box, cards] = await Promise.all([
-    //   this.prisma.box.update({
-    //     where: { id },
-    //     data: { isDeleted: true, deletedAt: new Date() },
-    //   }),
-    //   this.cardsService.deleteSoftByBoxId(id),
-    // ]);
-    // const updateBoxesFromIndex = box.index
-    // [0,1 ,2,3,4,5,6,7,]
-    // 4
-    // const boxes = await Promise.all()remove_box_and_update_indexes
-    this.logger.debug(boxesUpdated);
+    this.eventEmitter.emit(EVENT_BOX_DELETED, {
+      userId,
+      event: EVENT_BOX_DELETED,
+    });
+    // this.logger.debug(boxesUpdated);
     return boxesUpdated;
   }
 
