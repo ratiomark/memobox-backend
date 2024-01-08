@@ -65,7 +65,7 @@ export class AggregateController {
   @Post('save-db')
   async backupDatabase(): Promise<string> {
     await this.prisma.$disconnect();
-    const [dbName, username, dbPassword, postgresBinPath] = [
+    const [dbName, username, dbPassword, postgresBinPath]: string[] = [
       'name',
       'username',
       'password',
@@ -105,11 +105,11 @@ export class AggregateController {
     const nodeEnv = this.configService.getOrThrow('app.nodeEnv', {
       infer: true,
     });
-    if (nodeEnv === 'production') {
-      throw new Error('Нельзя восстановить базу данных в продакшене');
+    if (nodeEnv === 'production' || nodeEnv === 'testing') {
+      throw new Error('Нельзя восстановить базу данных в продакшене/тестах');
     }
     await this.prisma.$disconnect();
-    const [dbName, username, dbPassword, postgresBinPath] = [
+    const [dbName, username, dbPassword, postgresBinPath]: string[] = [
       'name',
       'username',
       'password',
