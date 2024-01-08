@@ -51,6 +51,7 @@ export class ShelvesService {
       );
     this.eventEmitter.emit(EVENT_SHELF_CREATED, {
       userId,
+      event: EVENT_SHELF_CREATED,
     });
     return shelfCreated;
   }
@@ -120,6 +121,7 @@ export class ShelvesService {
     // );
     this.eventEmitter.emit(EVENT_SHELF_DELETED, {
       userId,
+      event: EVENT_SHELF_DELETED,
     });
     return response;
   }
