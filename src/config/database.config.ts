@@ -45,6 +45,7 @@ class EnvironmentVariablesValidator {
   DATABASE_USERNAME: string;
 
   @ValidateIf((envValues) => !envValues.DATABASE_BIN_PATH)
+  @IsOptional()
   @IsString()
   DATABASE_BIN_PATH: string;
 
