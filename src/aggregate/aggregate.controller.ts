@@ -45,11 +45,14 @@ export class AggregateController {
 
   @Get('cupboard')
   @WaitForUnlock(LOCK_KEYS.updateCardsAfterTraining)
+  @WaitForUnlock(LOCK_KEYS.removingShelfToTrash)
+  @WaitForUnlock(LOCK_KEYS.removingBoxFromShelfToTrash)
   async getCupboardPageData(@GetCurrentUser('id') userId: User['id']) {
     return this.userDataStorageService.getCupboardPageData(userId);
   }
 
   @Get('trash')
+  @WaitForUnlock(LOCK_KEYS.removingShelfToTrash)
   @WaitForUnlock(LOCK_KEYS.removingBoxFromShelfToTrash)
   getTrashPageData(@GetCurrentUser('id') userId: User['id']) {
     return this.userDataStorageService.getTrashPageData(userId);
