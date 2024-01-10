@@ -150,6 +150,7 @@ export class ShelvesService {
           orderBy: {
             index: 'asc',
           },
+          where: { isDeleted: false },
         },
       },
       orderBy: {
