@@ -16,6 +16,8 @@ import { ApiTags } from '@nestjs/swagger';
 import { Box } from '@prisma/client';
 import { BoxId, ShelfId, UserId } from '@/common/types/prisma-entities';
 import { GetCurrentUser } from '@/common/decorators';
+import { LOCK_KEYS } from '@/common/const/lock-keys-patterns';
+import { Lock } from '@/common/decorators/lock.decorator';
 
 @ApiTags('Boxes')
 @Controller({
@@ -64,6 +66,7 @@ export class BoxesController {
   }
 
   @Delete(':id')
+  @Lock(LOCK_KEYS.removingBoxFromShelfToTrash)
   @HttpCode(HttpStatus.OK)
   deleteSoftById(
     @GetCurrentUser('id') userId: UserId,
