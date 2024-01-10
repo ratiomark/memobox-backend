@@ -10,6 +10,8 @@ import { promisify } from 'util';
 import { AllConfigType } from '@/config/config.type';
 import { ConfigService, PathImpl2 } from '@nestjs/config';
 import { PrismaService } from 'nestjs-prisma';
+import { EVENT_BOX_DELETED } from '@/common/const/events';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 const execAsync = promisify(exec);
 
@@ -23,11 +25,13 @@ export class AggregateController {
     private readonly userDataStorageService: UserDataStorageService,
     private readonly configService: ConfigService<AllConfigType>,
     private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   @Get('view')
   @WaitForUnlock(LOCK_KEYS.creatingNewShelf)
   @WaitForUnlock(LOCK_KEYS.removingShelfToTrash)
+  @WaitForUnlock(LOCK_KEYS.removingBoxFromShelfToTrash)
   async getViewPageData(@GetCurrentUser('id') userId: User['id']) {
     return this.userDataStorageService.getViewPageData(userId);
   }
@@ -46,6 +50,7 @@ export class AggregateController {
   }
 
   @Get('trash')
+  @WaitForUnlock(LOCK_KEYS.removingBoxFromShelfToTrash)
   getTrashPageData(@GetCurrentUser('id') userId: User['id']) {
     return this.userDataStorageService.getTrashPageData(userId);
   }
@@ -101,7 +106,7 @@ export class AggregateController {
   }
 
   @Post('restore-db')
-  async restoreDatabase(): Promise<string> {
+  async restoreDatabase(@GetCurrentUser('id') userId: string): Promise<string> {
     const nodeEnv = this.configService.getOrThrow('app.nodeEnv', {
       infer: true,
     });
@@ -140,6 +145,10 @@ export class AggregateController {
       console.error('Ошибка при восстановлении базы данных:', error);
       throw error;
     } finally {
+      this.eventEmitter.emit(EVENT_BOX_DELETED, {
+        userId,
+        event: EVENT_BOX_DELETED,
+      });
       await this.prisma.$connect();
     }
   }
