@@ -22,7 +22,7 @@ CREATE OR REPLACE FUNCTION remove_shelf_and_update_indexes(_userId UUID, _shelfI
 RETURNS SETOF shelf AS '
 BEGIN
 	  UPDATE shelf
-	  SET "isDeleted" = true
+	  SET "isDeleted" = true, "deletedAt" = NOW()
 	  WHERE shelf.id = _shelfId;
 
     -- Обновляем индексы для оставшихся полок
@@ -38,14 +38,26 @@ BEGIN
 END;
 ' LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION update_shelf_order(shelf_data jsonb)
+
+CREATE OR REPLACE FUNCTION update_shelf_order(_userId UUID, shelf_data jsonb)
 RETURNS void AS '
 DECLARE
     item record;
 BEGIN
     FOR item IN SELECT * FROM jsonb_to_recordset(shelf_data) AS x(id uuid, index int)
     LOOP
-        UPDATE shelf SET "index" = item.index WHERE id = item.id;
+        UPDATE shelf SET "index" = item.index WHERE id = item.id AND "userId" = _userId;
     END LOOP;
 END;
 ' LANGUAGE plpgsql;
+-- CREATE OR REPLACE FUNCTION update_shelf_order(shelf_data jsonb)
+-- RETURNS void AS '
+-- DECLARE
+--     item record;
+-- BEGIN
+--     FOR item IN SELECT * FROM jsonb_to_recordset(shelf_data) AS x(id uuid, index int)
+--     LOOP
+--         UPDATE shelf SET "index" = item.index WHERE id = item.id;
+--     END LOOP;
+-- END;
+-- ' LANGUAGE plpgsql;
