@@ -58,10 +58,10 @@ RUN npm run build
 # testing
 ###################
 # Этап запуска
-FROM node:18
-# FROM node:16-alpine
+# FROM node:18
+FROM node:16-alpine
 RUN apk add --no-cache bash
-RUN apk add --no-cache postgresql-client
+# RUN apk add --no-cache postgresql-client
 # RUN exit 0
 WORKDIR /app
 
