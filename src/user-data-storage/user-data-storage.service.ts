@@ -1,4 +1,10 @@
-import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnModuleInit,
+  forwardRef,
+} from '@nestjs/common';
 import { BoxSpecialType, MissedTrainingValue, User } from '@prisma/client';
 import { CommonShelfFrontedResponse } from '@/aggregate/entities/types';
 import { CardsService } from '@/cards/cards.service';
@@ -23,10 +29,17 @@ import { ShelvesProcessorService } from '@/shelves/services/shelves-data-process
 import { cacheOrFetchData } from '@/utils/helpers/cache-or-fetch';
 import { addMinutes, addHours, addDays, addWeeks, addMonths } from 'date-fns';
 import { PrismaService } from 'nestjs-prisma';
+import { AllConfigType } from '@/config/config.type';
+import { ConfigService, PathImpl2 } from '@nestjs/config';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 @Injectable()
-export class UserDataStorageService {
+export class UserDataStorageService implements OnModuleInit {
   // private cardsService: CardsService;
+  private nodeEnv: string;
   private readonly logger = new Logger(UserDataStorageService.name);
   // private cupboards = new Map<string, CupboardObject>();
   constructor(
@@ -44,10 +57,18 @@ export class UserDataStorageService {
     private readonly i18n: I18nService,
     private readonly redisService: RedisService,
     private readonly prisma: PrismaService,
+    private readonly configService: ConfigService<AllConfigType>,
   ) {}
-  // onModuleInit() {
-  //   this.cardsService = this.moduleRef.get(CardsService, { strict: false });
-  // }
+  async onModuleInit() {
+    const nodeEnv = this.configService.getOrThrow('app.nodeEnv', {
+      infer: true,
+    });
+    this.nodeEnv = nodeEnv;
+    if (this.nodeEnv === 'testing') {
+      this.logger.warn('Testing mode [on init] - ');
+      await this.saveDb();
+    }
+  }
   // private get cardsService() {
   //   if (!this._cardsService) {
   //     this._cardsService = this.cardsServiceGetter();
@@ -233,6 +254,94 @@ export class UserDataStorageService {
       shelvesAndBoxesData,
     };
     // return getTrashPageDataFromDbData(deletedShelvesAndShelvesData);
+  }
+
+  async saveDb() {
+    if (this.nodeEnv === 'production') {
+      throw new Error('You can not restore database in production mode');
+    }
+    const isTesting = this.nodeEnv === 'testing';
+    const isDevelopment = this.nodeEnv === 'development';
+    await this.prisma.$disconnect();
+    const [dbName, username, dbPassword, dbHost, postgresBinPath]: string[] = [
+      'name',
+      'username',
+      'password',
+      'host',
+      'postgresBinPath',
+    ].map((key) =>
+      this.configService.getOrThrow(
+        `database.${key}` as PathImpl2<AllConfigType>,
+        {
+          infer: true,
+        },
+      ),
+    );
+    try {
+      if (isDevelopment && !postgresBinPath) {
+        throw new Error('No path to postgres binaries specified');
+      }
+      const dumpCommand = isDevelopment
+        ? `${postgresBinPath}\\pg_dump -U ${username} --clean ${dbName} > ${postgresBinPath}\\db_backup.dump`
+        : `pg_dump -U ${username} -h ${dbHost} --clean ${dbName} > /var/backup/db_backup.dump`;
+
+      const { stdout } = await execAsync(dumpCommand, {
+        env: {
+          PGPASSWORD: dbPassword,
+        },
+      });
+      console.log('Бд сохраненна');
+      await this.prisma.$connect();
+      return stdout;
+    } catch (error) {
+      console.error('Ошибка при создании резервной копии:', error);
+      await this.prisma.$connect();
+      return error;
+    }
+  }
+
+  async restoreDb() {
+    if (this.nodeEnv === 'production') {
+      throw new Error('You can not restore database in production mode');
+    }
+    const isTesting = this.nodeEnv === 'testing';
+    const isDevelopment = this.nodeEnv === 'development';
+    await this.prisma.$disconnect();
+    const [dbName, username, dbPassword, dbHost, postgresBinPath]: string[] = [
+      'name',
+      'username',
+      'password',
+      'host',
+      'postgresBinPath',
+    ].map((key) =>
+      this.configService.getOrThrow(
+        `database.${key}` as PathImpl2<AllConfigType>,
+        {
+          infer: true,
+        },
+      ),
+    );
+    try {
+      if (isDevelopment && !postgresBinPath) {
+        throw new Error('No path to postgres binaries specified');
+      }
+      const restoreCommand = isDevelopment
+        ? `${postgresBinPath}\\psql -U ${username} -d ${dbName} -f ${postgresBinPath}\\db_backup.dump`
+        : `psql -U ${username} -d ${dbName} -h ${dbHost} -f /var/backup/db_backup.dump`;
+
+      const { stdout } = await execAsync(restoreCommand, {
+        env: {
+          PGPASSWORD: dbPassword,
+        },
+      });
+      console.log('Бд восстановлена');
+      await this.prisma.$connect();
+      return stdout;
+    } catch (error) {
+      console.error('Ошибка при восстановлении базы данных:', error);
+      await this.prisma.$connect();
+      throw error;
+    }
   }
 }
 
