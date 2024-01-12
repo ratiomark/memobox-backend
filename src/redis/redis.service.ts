@@ -8,9 +8,11 @@ import { ShelfIncBoxes } from '@/aggregate/entities/types';
 import {
   EVENT_BOX_DELETED,
   EVENT_BOX_RESTORED,
+  EVENT_DB_RESTORED,
   EVENT_SHELF_BOXES_UPDATE,
   EVENT_SHELF_CREATED,
   EVENT_SHELF_DELETED,
+  EVENT_SHELF_ORDER_CHANGED,
 } from '@/common/const/events';
 import { OnEvent } from '@nestjs/event-emitter';
 
@@ -105,9 +107,11 @@ export class RedisService {
 
   @OnEvent(EVENT_SHELF_CREATED)
   @OnEvent(EVENT_SHELF_DELETED)
+  @OnEvent(EVENT_SHELF_ORDER_CHANGED)
   @OnEvent(EVENT_SHELF_BOXES_UPDATE)
   @OnEvent(EVENT_BOX_DELETED)
   @OnEvent(EVENT_BOX_RESTORED)
+  @OnEvent(EVENT_DB_RESTORED)
   async updateRedisAfterDeletion(payload: { userId: UserId; event: string }) {
     this.logger.debug(`fire event - ${payload.event}`);
     const key = createKeyWithPrefix(REDIS_KEY_SHELVES, payload.userId);
