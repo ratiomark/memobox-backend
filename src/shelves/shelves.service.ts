@@ -19,6 +19,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   EVENT_SHELF_CREATED,
   EVENT_SHELF_DELETED,
+  EVENT_SHELF_ORDER_CHANGED,
 } from '@/common/const/events';
 
 @Injectable()
@@ -56,10 +57,14 @@ export class ShelvesService {
     return shelfCreated;
   }
 
-  async orderShelves(shelfOrder: ShelfOrderRequest) {
+  async orderShelves(userId: UserId, shelfOrder: ShelfOrderRequest) {
     await this.prisma.$executeRawUnsafe(
-      `SELECT update_shelf_order('${JSON.stringify(shelfOrder)}')`,
+      `SELECT update_shelf_order('${userId}', '${JSON.stringify(shelfOrder)}')`,
     );
+    this.eventEmitter.emit(EVENT_SHELF_ORDER_CHANGED, {
+      userId,
+      event: EVENT_SHELF_ORDER_CHANGED,
+    });
   }
 
   findAll(params: Prisma.ShelfFindManyArgs): Promise<Shelf[]> {
