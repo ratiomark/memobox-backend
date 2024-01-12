@@ -8,6 +8,8 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV}
       - DATABASE_URL=${DATABASE_URL}
+    volumes:
+      - db-backup:/app/db-backup # Добавляем том для хранения бэкапов
 
   db-test:
     image: postgres:16.0-alpine
@@ -16,7 +18,12 @@ services:
       - POSTGRES_DB=${DATABASE_NAME}
       - POSTGRES_USER=${DATABASE_USERNAME}
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+    volumes:
+      - db-backup:/app/db-backup # Используем тот же том для доступа к бэкапам
 
   redis-test:
     image: redis:6-alpine
     container_name: ${REDIS_CONTAINER_NAME}
+
+volumes:
+  db-backup: # Объявляем том
