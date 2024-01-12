@@ -256,6 +256,13 @@ export class UserDataStorageService implements OnModuleInit {
     // return getTrashPageDataFromDbData(deletedShelvesAndShelvesData);
   }
 
+  // D:\Programs\PostgreSQL\bin\pg_dump -U postgres memobox > D:\Programs\PostgreSQL\bin\db_backup.sql
+  // D:\Programs\PostgreSQL\bin\psql -U postgres -d memobox -f D:\Programs\PostgreSQL\bin\db_backup.sql
+
+  // D:\Programs\PostgreSQL\bin\psql -U postgres -d memobox
+  // show client_encoding;
+  // set client_encoding to 'UTF8';
+
   async saveDb() {
     if (this.nodeEnv === 'production') {
       throw new Error('You can not restore database in production mode');
