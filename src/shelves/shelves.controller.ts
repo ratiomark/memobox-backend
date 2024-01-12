@@ -40,9 +40,12 @@ export class ShelvesController {
   }
 
   @Patch('update-order')
-  async updateOrder(@Body() shelfOrder: ShelfOrderRequest) {
+  async updateOrder(
+    @GetCurrentUser('id') userId: User['id'],
+    @Body() shelfOrder: ShelfOrderRequest,
+  ) {
     console.log(shelfOrder);
-    return await this.shelvesService.orderShelves(shelfOrder);
+    return await this.shelvesService.orderShelves(userId, shelfOrder);
   }
 
   // @Patch('collapse')
