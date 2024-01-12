@@ -5,15 +5,6 @@ import { GetCurrentUser } from '@/common/decorators';
 import { UserDataStorageService } from '@/user-data-storage/user-data-storage.service';
 import { WaitForUnlock } from '@/common/decorators/wait-for-unlock.decorator';
 import { LOCK_KEYS } from '@/common/const/lock-keys-patterns';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { AllConfigType } from '@/config/config.type';
-import { ConfigService, PathImpl2 } from '@nestjs/config';
-import { PrismaService } from 'nestjs-prisma';
-import { EVENT_BOX_DELETED } from '@/common/const/events';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-
-const execAsync = promisify(exec);
 
 @ApiTags('Aggregate')
 @Controller({
@@ -23,9 +14,6 @@ const execAsync = promisify(exec);
 export class AggregateController {
   constructor(
     private readonly userDataStorageService: UserDataStorageService,
-    private readonly configService: ConfigService<AllConfigType>,
-    private readonly prisma: PrismaService,
-    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   @Get('view')
@@ -63,96 +51,13 @@ export class AggregateController {
     return new Date();
   }
 
-  // D:\Programs\PostgreSQL\bin\pg_dump -U postgres memobox > D:\Programs\PostgreSQL\bin\db_backup.sql
-  // D:\Programs\PostgreSQL\bin\psql -U postgres -d memobox -f D:\Programs\PostgreSQL\bin\db_backup.sql
-
-  // D:\Programs\PostgreSQL\bin\psql -U postgres -d memobox
-  // show client_encoding;
-  // set client_encoding to 'UTF8';
-
   @Post('save-db')
   async backupDatabase(): Promise<string> {
-    await this.prisma.$disconnect();
-    const [dbName, username, dbPassword, postgresBinPath]: string[] = [
-      'name',
-      'username',
-      'password',
-      'postgresBinPath',
-    ].map((key) =>
-      this.configService.getOrThrow(
-        `database.${key}` as PathImpl2<AllConfigType>,
-        {
-          infer: true,
-        },
-      ),
-    );
-    try {
-      if (!postgresBinPath) {
-        throw new Error('Не указан путь к бинарникам postgres');
-      }
-      const { stdout } = await execAsync(
-        `${postgresBinPath}\\pg_dump -U ${username} --clean ${dbName} > ${postgresBinPath}\\db_backup.dump`,
-        {
-          env: {
-            PGPASSWORD: dbPassword,
-          },
-        },
-      );
-      console.log('Бд сохраненна');
-      return stdout;
-    } catch (error) {
-      console.error('Ошибка при создании резервной копии:', error);
-      return error;
-    } finally {
-      await this.prisma.$connect();
-    }
+    return await this.userDataStorageService.saveDb();
   }
 
   @Post('restore-db')
-  async restoreDatabase(@GetCurrentUser('id') userId: string): Promise<string> {
-    const nodeEnv = this.configService.getOrThrow('app.nodeEnv', {
-      infer: true,
-    });
-    if (nodeEnv === 'production' || nodeEnv === 'testing') {
-      throw new Error('Нельзя восстановить базу данных в продакшене/тестах');
-    }
-    await this.prisma.$disconnect();
-    const [dbName, username, dbPassword, postgresBinPath]: string[] = [
-      'name',
-      'username',
-      'password',
-      'postgresBinPath',
-    ].map((key) =>
-      this.configService.getOrThrow(
-        `database.${key}` as PathImpl2<AllConfigType>,
-        {
-          infer: true,
-        },
-      ),
-    );
-    try {
-      if (!postgresBinPath) {
-        throw new Error('Не указан путь к бинарникам postgres');
-      }
-      const { stdout } = await execAsync(
-        `${postgresBinPath}\\psql -U ${username} -d ${dbName} -f ${postgresBinPath}\\db_backup.dump`,
-        {
-          env: {
-            PGPASSWORD: dbPassword,
-          },
-        },
-      );
-      console.log('Бд восстановлена');
-      return stdout;
-    } catch (error) {
-      console.error('Ошибка при восстановлении базы данных:', error);
-      throw error;
-    } finally {
-      this.eventEmitter.emit(EVENT_BOX_DELETED, {
-        userId,
-        event: EVENT_BOX_DELETED,
-      });
-      await this.prisma.$connect();
-    }
+  async restoreDatabase(): Promise<string> {
+    return await this.userDataStorageService.restoreDb();
   }
 }
