@@ -33,7 +33,7 @@ import { AllConfigType } from '@/config/config.type';
 import { ConfigService, PathImpl2 } from '@nestjs/config';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import fetch from 'node-fetch';
+import axios from 'axios';
 
 const execAsync = promisify(exec);
 
@@ -299,7 +299,7 @@ export class UserDataStorageService implements OnModuleInit {
         });
         result = 'Database saved successfully';
       } else {
-        result = await fetch(`http://${dbHost}:3001/save-db`);
+        result = await axios.get(`http://${dbHost}:3001/save-db`);
       }
 
       await this.prisma.$connect();
@@ -348,7 +348,7 @@ export class UserDataStorageService implements OnModuleInit {
         });
         result = 'Database restored successfully';
       } else {
-        result = await fetch(`http://${dbHost}:3001/restore-db`);
+        result = await axios.get(`http://${dbHost}:3001/restore-db`);
       }
       // console.log('Бд восстановлена');
       await this.prisma.$connect();
