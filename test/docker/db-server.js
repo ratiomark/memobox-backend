@@ -17,41 +17,41 @@ const dbName = process.env.DATABASE_NAME;
 const execAsync = promisify(exec);
 
 app.get('/save-db', async (req, res) => {
-  try {
-    console.log(dbHost, dbPort, username, dbPassword, dbName);
-    const saveCommand = `/usr/local/bin/pg_dump -U ${username} --clean ${dbName} > /backups/db_backup`;
+	try {
+		console.log(dbHost, dbPort, username, dbPassword, dbName);
+		const saveCommand = `/usr/local/bin/pg_dump -U ${username} --clean ${dbName} > /backups/db_backup`;
 
-    const { stdout } = await execAsync(saveCommand, {
-      env: {
-        PGPASSWORD: dbPassword,
-      },
-    });
+		const { stdout } = await execAsync(saveCommand, {
+			env: {
+				PGPASSWORD: dbPassword,
+			},
+		});
 
-    return res.send('Database saved successfully');
-  } catch (error) {
-    console.error('Ошибка при сохранении базы данных:', error);
-    return res.status(500).send(error);
-  }
+		return res.send({ data: 'Database saved successfully' });
+	} catch (error) {
+		console.error('Ошибка при сохранении базы данных:', error);
+		return res.status(500).send(error);
+	}
 });
 
 app.get('/restore-db', async (req, res) => {
-  try {
-    const restoreCommand = `/usr/local/bin/psql -U ${username} -d ${dbName} < /backups/db_backup.dump`;
+	try {
+		const restoreCommand = `/usr/local/bin/psql -U ${username} -d ${dbName} < /backups/db_backup.dump`;
 
-    const { stdout } = await execAsync(restoreCommand, {
-      env: {
-        PGPASSWORD: dbPassword,
-      },
-    });
+		const { stdout } = await execAsync(restoreCommand, {
+			env: {
+				PGPASSWORD: dbPassword,
+			},
+		});
 
-    return res.send('Database restored successfully');
-  } catch (error) {
-    console.error('Ошибка при восстановлении базы данных:', error);
-    return res.status(500).send(error);
-  }
+		return res.send({ data: 'Database restored successfully' });
+	} catch (error) {
+		console.error('Ошибка при восстановлении базы данных:', error);
+		return res.status(500).send(error);
+	}
 });
 
 app.listen(port, () => {
-  console.log(dbHost, dbPort, username, dbPassword, dbName);
-  console.log(`DB server listening at http://localhost:${port}`);
+	console.log(dbHost, dbPort, username, dbPassword, dbName);
+	console.log(`DB server listening at http://localhost:${port}`);
 });
