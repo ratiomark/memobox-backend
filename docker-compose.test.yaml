@@ -10,17 +10,16 @@ services:
       - DATABASE_URL=${DATABASE_URL}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - db-backup:/app/db-backup # Добавляем том для хранения бэкапов
 
   db-test:
-    image: postgres:15.5-alpine
+    image: postgres:16-alpine
     container_name: ${DATABASE_CONTAINER_NAME}
     environment:
       - POSTGRES_DB=${DATABASE_NAME}
       - POSTGRES_USER=${DATABASE_USERNAME}
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
     volumes:
-      - db-backup:/app/db-backup # Используем тот же том для доступа к бэкапам
+      - db-backups:/backups # Используем тот же том для доступа к бэкапам
 
   redis-test:
     image: redis:6-alpine
