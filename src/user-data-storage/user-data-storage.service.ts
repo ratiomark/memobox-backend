@@ -33,6 +33,7 @@ import { AllConfigType } from '@/config/config.type';
 import { ConfigService, PathImpl2 } from '@nestjs/config';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import fetch from 'node-fetch';
 
 const execAsync = promisify(exec);
 
