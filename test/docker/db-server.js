@@ -17,6 +17,7 @@ const execAsync = promisify(exec);
 
 app.get('/save-db', async (req, res) => {
 	try {
+		console.log(dbHost, dbPort, username, dbPassword, dbName);
 		const saveCommand = `pg_dump -U ${username} -h ${dbHost} --clean ${dbName} > /backups/db_backup`;
 
 		const { stdout } = await execAsync(saveCommand, {
