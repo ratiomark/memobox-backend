@@ -46,7 +46,6 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { RedisModule } from './redis/redis.module';
-import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
@@ -136,7 +135,6 @@ import { HttpModule } from '@nestjs/axios';
     UserDataStorageModule,
     SettingsModule,
     NotificationModule,
-    HttpModule,
   ],
   providers: [
     {
