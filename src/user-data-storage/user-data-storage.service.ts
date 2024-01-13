@@ -33,7 +33,7 @@ import { AllConfigType } from '@/config/config.type';
 import { ConfigService, PathImpl2 } from '@nestjs/config';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import axios from 'axios';
+import { HttpService } from '@nestjs/axios';
 
 const execAsync = promisify(exec);
 
@@ -45,6 +45,7 @@ export class UserDataStorageService implements OnModuleInit {
   // private cupboards = new Map<string, CupboardObject>();
   constructor(
     private readonly moduleRef: ModuleRef,
+    private readonly httpService: HttpService,
     // @Inject(forwardRef(() => CardsService))
     private readonly cardsService: CardsService,
     // @Inject(forwardRef(() => BoxesService))
@@ -299,7 +300,7 @@ export class UserDataStorageService implements OnModuleInit {
         });
         result = 'Database saved successfully';
       } else {
-        result = await axios.get(`http://${dbHost}:3001/save-db`);
+        result = await this.httpService.get(`http://${dbHost}:3001/save-db`);
       }
 
       await this.prisma.$connect();
@@ -348,7 +349,7 @@ export class UserDataStorageService implements OnModuleInit {
         });
         result = 'Database restored successfully';
       } else {
-        result = await axios.get(`http://${dbHost}:3001/restore-db`);
+        result = await this.httpService.get(`http://${dbHost}:3001/restore-db`);
       }
       // console.log('Бд восстановлена');
       await this.prisma.$connect();

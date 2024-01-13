@@ -55,6 +55,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.456.0",
+    "@nestjs/axios": "^3.0.1",
     "@nestjs/cli": "10.2.1",
     "@nestjs/common": "10.2.10",
     "@nestjs/config": "3.1.1",
