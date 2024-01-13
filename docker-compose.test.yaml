@@ -14,7 +14,7 @@ services:
   db-test:
     build:
       context: .
-      dockerfile: test.db.Dockerfile
+      dockerfile: testing.db.Dockerfile
     container_name: ${DATABASE_CONTAINER_NAME}
     environment:
       - POSTGRES_DB=${DATABASE_NAME}
