@@ -172,8 +172,15 @@ export default () => {
       response = await request(app_url_full)
         .get('/aggregate/cupboard')
         .auth(userToken, { type: 'bearer' });
+      const shelvesUpdate = response.body.shelves;
 
-      expect(response.body.shelves).toEqual(expect.arrayContaining(newOrder));
+      // Создаем новый порядок, перемещая первую полку в конец
+      const orderUpdated = shelvesUpdate.map((shelf, index) => ({
+        id: shelf.id,
+        index: index,
+      }));
+
+      expect(newOrder).toEqual(orderUpdated);
     });
 
     it('should reverse the order of shelves', async () => {
@@ -202,8 +209,15 @@ export default () => {
       response = await request(app_url_full)
         .get('/aggregate/cupboard')
         .auth(userToken, { type: 'bearer' });
+      const shelvesUpdate = response.body.shelves;
 
-      expect(response.body.shelves).toEqual(expect.arrayContaining(newOrder));
+      // Создаем новый порядок, перемещая первую полку в конец
+      const orderUpdated = shelvesUpdate.map((shelf, index) => ({
+        id: shelf.id,
+        index: index,
+      }));
+
+      expect(newOrder).toEqual(orderUpdated);
     });
 
     it('should swap the first and second shelves', async () => {
@@ -215,8 +229,8 @@ export default () => {
 
       // Создаем новый порядок, перемещая первую полку в конец
       const newOrder = [
-        { ...shelves[1], index: 0 }, // Поменять местами первую и вторую полки
-        { ...shelves[0], index: 1 },
+        { id: shelves[1].id, index: 0 }, // Поменять местами первую и вторую полки
+        { id: shelves[0].id, index: 1 },
         ...shelves.slice(2).map((shelf, index) => ({
           // Оставить остальные полки без изменений
           id: shelf.id,
@@ -235,7 +249,15 @@ export default () => {
         .get('/aggregate/cupboard')
         .auth(userToken, { type: 'bearer' });
 
-      expect(response.body.shelves).toEqual(expect.arrayContaining(newOrder));
+      const shelvesUpdate = response.body.shelves;
+
+      // Создаем новый порядок, перемещая первую полку в конец
+      const orderUpdated = shelvesUpdate.map((shelf, index) => ({
+        id: shelf.id,
+        index: index,
+      }));
+
+      expect(newOrder).toEqual(orderUpdated);
     });
 
     it('should validate initial cupboard state', async () => {
