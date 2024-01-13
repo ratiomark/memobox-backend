@@ -269,6 +269,7 @@ export class UserDataStorageService implements OnModuleInit {
     }
     const isTesting = this.nodeEnv === 'testing';
     const isDevelopment = this.nodeEnv === 'development';
+    let result;
     await this.prisma.$disconnect();
     const [dbName, username, dbPassword, dbHost, postgresBinPath]: string[] = [
       'name',
@@ -288,19 +289,20 @@ export class UserDataStorageService implements OnModuleInit {
       if (isDevelopment && !postgresBinPath) {
         throw new Error('No path to postgres binaries specified');
       }
-      const dumpCommand = isDevelopment
-        ? `${postgresBinPath}\\pg_dump -U ${username} --clean ${dbName} > ${postgresBinPath}\\db_backup.dump`
-        : `docker exec ${dbHost} sh -c "pg_dump -U ${username} -h ${dbHost} --clean ${dbName} > /backups/db_backup.dump"`;
-      // : `pg_dump -U ${username} -h ${dbHost} --clean ${dbName} > /tmp/db_backup.dump`;
+      if (isDevelopment) {
+        const dumpCommand = `${postgresBinPath}\\pg_dump -U ${username} --clean ${dbName} > ${postgresBinPath}\\db_backup.dump`;
+        await execAsync(dumpCommand, {
+          env: {
+            PGPASSWORD: dbPassword,
+          },
+        });
+        result = 'Database saved successfully';
+      } else {
+        result = await fetch(`http://${dbHost}:3001/save-db`);
+      }
 
-      const { stdout } = await execAsync(dumpCommand, {
-        env: {
-          PGPASSWORD: dbPassword,
-        },
-      });
-      console.log('Бд сохраненна');
       await this.prisma.$connect();
-      return stdout;
+      return result;
     } catch (error) {
       console.error('Ошибка при создании резервной копии:', error);
       await this.prisma.$connect();
@@ -314,6 +316,7 @@ export class UserDataStorageService implements OnModuleInit {
     }
     const isTesting = this.nodeEnv === 'testing';
     const isDevelopment = this.nodeEnv === 'development';
+    let result;
     await this.prisma.$disconnect();
     const [dbName, username, dbPassword, dbHost, postgresBinPath]: string[] = [
       'name',
@@ -333,18 +336,22 @@ export class UserDataStorageService implements OnModuleInit {
       if (isDevelopment && !postgresBinPath) {
         throw new Error('No path to postgres binaries specified');
       }
-      const restoreCommand = isDevelopment
-        ? `${postgresBinPath}\\psql -U ${username} -d ${dbName} -f ${postgresBinPath}\\db_backup.dump`
-        : `docker exec ${dbHost} sh -c "psql -U ${username} -d ${dbName} < /backups/db_backup.dump"`;
 
-      const { stdout } = await execAsync(restoreCommand, {
-        env: {
-          PGPASSWORD: dbPassword,
-        },
-      });
-      console.log('Бд восстановлена');
+      if (isDevelopment) {
+        const restoreCommand = `${postgresBinPath}\\psql -U ${username} -d ${dbName} -f ${postgresBinPath}\\db_backup.dump`;
+
+        const { stdout } = await execAsync(restoreCommand, {
+          env: {
+            PGPASSWORD: dbPassword,
+          },
+        });
+        result = 'Database restored successfully';
+      } else {
+        result = await fetch(`http://${dbHost}:3001/restore-db`);
+      }
+      // console.log('Бд восстановлена');
       await this.prisma.$connect();
-      return stdout;
+      return result;
     } catch (error) {
       console.error('Ошибка при восстановлении базы данных:', error);
       await this.prisma.$connect();
