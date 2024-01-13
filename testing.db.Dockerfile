@@ -1,6 +1,8 @@
 # Используем базовый образ PostgreSQL
 FROM postgres:16-alpine
 
+# ENV PGDATA /var/lib/postgresql/data
+
 # Устанавливаем Node.js и npm
 RUN apk add --no-cache nodejs npm
 
@@ -10,7 +12,7 @@ WORKDIR /db-server
 # Копируем файлы сервера
 COPY /test/docker/db-server.js ./
 COPY /test/docker/package.json ./
-COPY .env ./
+COPY /.env.testing ./.env
 # Устанавливаем зависимости сервера
 RUN npm install
 
@@ -21,4 +23,5 @@ EXPOSE 3001
 COPY start-test-db-server.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/start-test-db-server.sh
 
-ENTRYPOINT ["start-test-db-server.sh"]
+# ENTRYPOINT ["postgres"]
+ENTRYPOINT ["/usr/local/bin/start-test-db-server.sh"]

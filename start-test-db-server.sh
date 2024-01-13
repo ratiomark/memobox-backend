@@ -11,12 +11,8 @@ else
   exit 1
 fi
 
+/usr/local/bin/docker-entrypoint.sh postgres &
 
-# Запускаем PostgreSQL
-pg_ctl start -D /var/lib/postgresql/data -l /var/log/postgresql.log &
+sleep 5
 
-# Ждем запуска PostgreSQL
-sleep 10
-
-# Запускаем Node.js сервер
 node /db-server/db-server.js
