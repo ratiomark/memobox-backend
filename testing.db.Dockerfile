@@ -10,7 +10,7 @@ WORKDIR /db-server
 # Копируем файлы сервера
 COPY /test/docker/db-server.js ./
 COPY /test/docker/package.json ./
-
+COPY .env ./
 # Устанавливаем зависимости сервера
 RUN npm install
 
