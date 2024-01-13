@@ -301,9 +301,9 @@ export class UserDataStorageService implements OnModuleInit {
         });
         result = 'Database saved successfully';
       } else {
-        result = await firstValueFrom(
-          this.httpService.get(`http://${dbHost}:3001/save-db`),
-        );
+        // result = await firstValueFrom(
+        //   this.httpService.get(`http://${dbHost}:3001/save-db`),
+        // );
       }
 
       await this.prisma.$connect();
@@ -352,9 +352,9 @@ export class UserDataStorageService implements OnModuleInit {
         });
         result = 'Database restored successfully';
       } else {
-        result = await firstValueFrom(
-          this.httpService.get(`http://${dbHost}:3001/restore-db`),
-        );
+        // result = await firstValueFrom(
+        //   this.httpService.get(`http://${dbHost}:3001/restore-db`),
+        // );
       }
       // console.log('Бд восстановлена');
       await this.prisma.$connect();
