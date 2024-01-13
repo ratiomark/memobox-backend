@@ -26,4 +26,4 @@ services:
     container_name: ${REDIS_CONTAINER_NAME}
 
 volumes:
-  db-backup: # Объявляем том
+  db-backups: # Объявляем том
