@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package.json ./
 
 RUN sed -i '/\"prepare\":/d' package.json
-# RUN npm install --package-lock-only
+RUN npm install --package-lock-only
 
 ##################
 # PREBUILD 
@@ -42,7 +42,7 @@ COPY . .
 COPY --from=dependencies /app/package*.json ./
 # COPY --from=prebuild /app/node_modules ./node_modules
 # COPY --from=prebuild /app/package.json ./package.json
-RUN npm i
+RUN npm ci
 # Копируем свежий и синхронизированный package-lock.json
 
 # ENV NODE_ENV testing
