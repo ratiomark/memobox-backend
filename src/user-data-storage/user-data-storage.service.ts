@@ -290,7 +290,7 @@ export class UserDataStorageService implements OnModuleInit {
       }
       const dumpCommand = isDevelopment
         ? `${postgresBinPath}\\pg_dump -U ${username} --clean ${dbName} > ${postgresBinPath}\\db_backup.dump`
-        : `docker exec ${dbHost} pg_dump -U ${username} -h ${dbHost} --clean ${dbName} > /backups/db_backup.dump`;
+        : `docker exec ${dbHost} sh -c "pg_dump -U ${username} -h ${dbHost} --clean ${dbName} > /backups/db_backup.dump"`;
       // : `pg_dump -U ${username} -h ${dbHost} --clean ${dbName} > /tmp/db_backup.dump`;
 
       const { stdout } = await execAsync(dumpCommand, {
@@ -335,7 +335,7 @@ export class UserDataStorageService implements OnModuleInit {
       }
       const restoreCommand = isDevelopment
         ? `${postgresBinPath}\\psql -U ${username} -d ${dbName} -f ${postgresBinPath}\\db_backup.dump`
-        : `docker exec ${dbHost} psql -U ${username} -d ${dbName} -h ${dbHost} -f /backups/db_backup.dump`;
+        : `docker exec ${dbHost} sh -c "psql -U ${username} -d ${dbName} < /backups/db_backup.dump"`;
 
       const { stdout } = await execAsync(restoreCommand, {
         env: {
