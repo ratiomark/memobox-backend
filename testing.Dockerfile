@@ -8,13 +8,13 @@ WORKDIR /app
 COPY package.json ./
 
 RUN sed -i '/\"prepare\":/d' package.json
-RUN npm install --package-lock-only
+# RUN npm install --package-lock-only
 
 ##################
 # PREBUILD 
 ##################
-FROM node:16-alpine as prebuild
-WORKDIR /app
+# FROM node:16-alpine as prebuild
+# WORKDIR /app
 
 
 # COPY . . 
@@ -22,9 +22,9 @@ WORKDIR /app
 # COPY prisma ./
 # COPY test ./
 # COPY --from=dependencies /app/ ./
-COPY --from=dependencies /app/package.json ./
-COPY --from=dependencies /app/package-lock.json ./
-RUN npm ci
+# COPY --from=dependencies /app/package*.json ./
+# COPY --from=dependencies /app/package-lock.json ./
+# RUN npm ci
 # RUN npm i
 
 ###################
@@ -39,8 +39,10 @@ COPY . .
 # COPY /src ./
 # COPY prisma ./
 # COPY test ./
-COPY --from=prebuild /app/node_modules ./node_modules
-COPY --from=prebuild /app/package.json ./package.json
+COPY --from=dependencies /app/package*.json ./
+# COPY --from=prebuild /app/node_modules ./node_modules
+# COPY --from=prebuild /app/package.json ./package.json
+RUN npm i
 # Копируем свежий и синхронизированный package-lock.json
 
 # ENV NODE_ENV testing
