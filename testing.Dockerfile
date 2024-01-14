@@ -34,37 +34,29 @@ FROM node:16-alpine as build
 
 
 WORKDIR /app
-COPY . .
-# COPY --from=prebuild /app ./
-# COPY /src ./
-# COPY prisma ./
-# COPY test ./
-COPY --from=dependencies /app/package*.json ./
-# COPY --from=prebuild /app/node_modules ./node_modules
-# COPY --from=prebuild /app/package.json ./package.json
-RUN npm ci
-# Копируем свежий и синхронизированный package-lock.json
 
-# ENV NODE_ENV testing
+COPY --from=dependencies /app/package*.json ./
+RUN npm ci
+
+COPY /wait-for-it.sh  ./wait-for-it.sh 
+COPY /tsconfig.build.json  ./tsconfig.build.json
+COPY /tsconfig.json  ./tsconfig.json
+COPY /prisma ./
+COPY /src ./
+COPY /test ./
+COPY /startup.test.sh ./startup.test.sh
 COPY /.env.testing ./.env
-# Установка зависимостей и сборка приложения
-# RUN npm ci --only=testing
-# RUN npm install
+
 RUN npx prisma generate
 RUN npm run build
-# RUN sleep 180
-# RUN exit 0
 
 
 ###################
 # testing
 ###################
-# Этап запуска
-# FROM node:18
 FROM node:16-alpine
 RUN apk add --no-cache bash
-# RUN apk add --no-cache postgresql-client
-# RUN exit 0
+
 WORKDIR /app
 
 # Копирование собранного приложения и зависимостей из этапа сборки
