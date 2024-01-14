@@ -267,6 +267,13 @@ export class UserDataStorageService implements OnModuleInit {
   // set client_encoding to 'UTF8';
 
   async saveDb() {
+    // if (this.nodeEnv === 'development') {
+    //   const { data } = await firstValueFrom(
+    //     this.httpService.get(`https://jsonplaceholder.typicode.com/posts`),
+    //   );
+    //   this.logger.debug(data);
+    //   return data;
+    // }
     if (this.nodeEnv === 'production') {
       throw new Error('You can not restore database in production mode');
     }
@@ -301,9 +308,10 @@ export class UserDataStorageService implements OnModuleInit {
         });
         result = 'Database saved successfully';
       } else {
-        result = await firstValueFrom(
+        const { data } = await firstValueFrom(
           this.httpService.get(`http://${dbHost}:3001/save-db`),
         );
+        result = data;
       }
 
       // await this.prisma.$connect();
@@ -352,9 +360,10 @@ export class UserDataStorageService implements OnModuleInit {
         });
         result = 'Database restored successfully';
       } else {
-        result = await firstValueFrom(
+        const { data } = await firstValueFrom(
           this.httpService.get(`http://${dbHost}:3001/restore-db`),
         );
+        result = data;
       }
       // console.log('Бд восстановлена');
       // await this.prisma.$connect();
