@@ -28,10 +28,10 @@ app.get('/save-db', async (req, res) => {
 		});
 		console.log('Database saved successfully');
 
-		return res.send({ data: 'Database saved successfully' });
+		res.send({ data: 'Database saved successfully' });
 	} catch (error) {
 		console.error('Ошибка при сохранении базы данных:', error);
-		return res.status(500).send(error);
+		res.status(500).send(error);
 	}
 });
 
@@ -45,10 +45,10 @@ app.get('/restore-db', async (req, res) => {
 			},
 		});
 
-		return res.send({ data: 'Database restored successfully' });
+		res.send({ data: 'Database restored successfully' });
 	} catch (error) {
 		console.error('Ошибка при восстановлении базы данных:', error);
-		return res.status(500).send(error);
+		res.status(500).send(error);
 	}
 });
 
