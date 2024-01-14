@@ -20,7 +20,7 @@ const execAsync = promisify(exec);
 
 app.get('/save-db', async (req, res) => {
 	try {
-		const saveCommand = `${dbBinPath}/pg_dump -U ${username} --clean ${dbName} > /backups/db_backup.dump`;
+		const saveCommand = `${dbBinPath}/pg_dump -U ${username} --clean ${dbName} > ${dbBinPath}/db_backup.dump`;
 
 		const { stdout } = await execAsync(saveCommand, {
 			env: {
@@ -38,7 +38,7 @@ app.get('/save-db', async (req, res) => {
 
 app.get('/restore-db', async (req, res) => {
 	try {
-		const restoreCommand = `${dbBinPath}/psql -U ${username} -d ${dbName} < /backups/db_backup.dump`;
+		const restoreCommand = `${dbBinPath}/psql -U ${username} -d ${dbName} < ${dbBinPath}/db_backup.dump`;
 
 		const { stdout } = await execAsync(restoreCommand, {
 			env: {
