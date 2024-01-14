@@ -24,11 +24,13 @@ RUN npm ci
 COPY /wait-for-it.sh  ./wait-for-it.sh 
 COPY /tsconfig.build.json  ./tsconfig.build.json
 COPY /tsconfig.json  ./tsconfig.json
+COPY /nest-cli.json  ./nest-cli.json
 COPY /prisma ./
 COPY /src ./
 COPY /test ./
 COPY /startup.test.sh ./startup.test.sh
 COPY /.env.testing ./.env
+COPY /.swcrc ./.swcrc
 
 RUN npx prisma generate
 RUN npm run build
