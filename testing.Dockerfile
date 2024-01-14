@@ -19,18 +19,19 @@ FROM node:16-alpine as build
 WORKDIR /app
 
 COPY --from=dependencies /app/package*.json ./
+RUN npm ci
+
 COPY /wait-for-it.sh  ./wait-for-it.sh 
 COPY /tsconfig.build.json  ./tsconfig.build.json
 COPY /tsconfig.json  ./tsconfig.json
 COPY /nest-cli.json  ./nest-cli.json
-COPY /prisma ./
-COPY /src ./
-COPY /test ./
+COPY /prisma ./prisma
+COPY /src ./src
+COPY /test ./test
 COPY /startup.test.sh ./startup.test.sh
 COPY /.env.testing ./.env
 COPY /.swcrc ./.swcrc
 
-RUN npm ci
 RUN npx prisma generate
 RUN npm run build
 
