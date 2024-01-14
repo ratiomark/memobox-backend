@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-var-requires */
 require('dotenv').config();
 
@@ -18,7 +19,6 @@ const execAsync = promisify(exec);
 
 app.get('/save-db', async (req, res) => {
 	try {
-		console.log(dbHost, dbPort, username, dbPassword, dbName);
 		const saveCommand = `/usr/local/bin/pg_dump -U ${username} --clean ${dbName} > /backups/db_backup`;
 
 		const { stdout } = await execAsync(saveCommand, {
@@ -26,6 +26,7 @@ app.get('/save-db', async (req, res) => {
 				PGPASSWORD: dbPassword,
 			},
 		});
+		console.log('Database saved successfully');
 
 		return res.send({ data: 'Database saved successfully' });
 	} catch (error) {

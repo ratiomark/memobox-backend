@@ -273,7 +273,7 @@ export class UserDataStorageService implements OnModuleInit {
     const isTesting = this.nodeEnv === 'testing';
     const isDevelopment = this.nodeEnv === 'development';
     let result;
-    await this.prisma.$disconnect();
+    // await this.prisma.$disconnect();
     const [dbName, username, dbPassword, dbHost, postgresBinPath]: string[] = [
       'name',
       'username',
@@ -301,16 +301,16 @@ export class UserDataStorageService implements OnModuleInit {
         });
         result = 'Database saved successfully';
       } else {
-        // result = await firstValueFrom(
-        //   this.httpService.get(`http://${dbHost}:3001/save-db`),
-        // );
+        result = await firstValueFrom(
+          this.httpService.get(`http://${dbHost}:3001/save-db`),
+        );
       }
 
-      await this.prisma.$connect();
+      // await this.prisma.$connect();
       return result;
     } catch (error) {
       console.error('Ошибка при создании резервной копии:', error);
-      await this.prisma.$connect();
+      // await this.prisma.$connect();
       return error;
     }
   }
@@ -322,7 +322,7 @@ export class UserDataStorageService implements OnModuleInit {
     const isTesting = this.nodeEnv === 'testing';
     const isDevelopment = this.nodeEnv === 'development';
     let result;
-    await this.prisma.$disconnect();
+    // await this.prisma.$disconnect();
     const [dbName, username, dbPassword, dbHost, postgresBinPath]: string[] = [
       'name',
       'username',
@@ -352,16 +352,16 @@ export class UserDataStorageService implements OnModuleInit {
         });
         result = 'Database restored successfully';
       } else {
-        // result = await firstValueFrom(
-        //   this.httpService.get(`http://${dbHost}:3001/restore-db`),
-        // );
+        result = await firstValueFrom(
+          this.httpService.get(`http://${dbHost}:3001/restore-db`),
+        );
       }
       // console.log('Бд восстановлена');
-      await this.prisma.$connect();
+      // await this.prisma.$connect();
       return result;
     } catch (error) {
       console.error('Ошибка при восстановлении базы данных:', error);
-      await this.prisma.$connect();
+      // await this.prisma.$connect();
       throw error;
     }
   }
