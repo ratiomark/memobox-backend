@@ -14,12 +14,13 @@ const dbPort = process.env.DATABASE_PORT;
 const username = process.env.DATABASE_USERNAME;
 const dbPassword = process.env.DATABASE_PASSWORD;
 const dbName = process.env.DATABASE_NAME;
+const dbBinPath = process.env.DATABASE_BIN_PATH;
 
 const execAsync = promisify(exec);
 
 app.get('/save-db', async (req, res) => {
 	try {
-		const saveCommand = `/usr/local/bin/pg_dump -U ${username} --clean ${dbName} > /backups/db_backup`;
+		const saveCommand = `${dbBinPath}/pg_dump -U ${username} --clean ${dbName} > /backups/db_backup.dump`;
 
 		const { stdout } = await execAsync(saveCommand, {
 			env: {
@@ -28,7 +29,7 @@ app.get('/save-db', async (req, res) => {
 		});
 		console.log('Database saved successfully');
 
-		res.send({ data: 'Database saved successfully' });
+		res.send('Database saved successfully');
 	} catch (error) {
 		console.error('Ошибка при сохранении базы данных:', error);
 		res.status(500).send(error);
@@ -37,7 +38,7 @@ app.get('/save-db', async (req, res) => {
 
 app.get('/restore-db', async (req, res) => {
 	try {
-		const restoreCommand = `/usr/local/bin/psql -U ${username} -d ${dbName} < /backups/db_backup.dump`;
+		const restoreCommand = `${dbBinPath}/psql -U ${username} -d ${dbName} < /backups/db_backup.dump`;
 
 		const { stdout } = await execAsync(restoreCommand, {
 			env: {
@@ -45,7 +46,7 @@ app.get('/restore-db', async (req, res) => {
 			},
 		});
 
-		res.send({ data: 'Database restored successfully' });
+		res.send('Database restored successfully');
 	} catch (error) {
 		console.error('Ошибка при восстановлении базы данных:', error);
 		res.status(500).send(error);
