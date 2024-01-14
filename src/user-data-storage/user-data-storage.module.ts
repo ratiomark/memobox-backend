@@ -14,7 +14,9 @@ import { HttpModule } from '@nestjs/axios';
   exports: [UserDataStorageService],
   // exports: [UserDataStorageService, UserDataStorageProxyService],
   imports: [
-    HttpModule,
+    HttpModule.register({
+      baseURL: 'api.tech/data/2.5/weather',
+    }),
     forwardRef(() => CardsModule),
     forwardRef(() => ShelvesModule),
     forwardRef(() => BoxesModule),
