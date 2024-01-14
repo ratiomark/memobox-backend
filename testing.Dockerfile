@@ -10,23 +10,6 @@ COPY package.json ./
 RUN sed -i '/\"prepare\":/d' package.json
 RUN npm install --package-lock-only
 
-##################
-# PREBUILD 
-##################
-# FROM node:16-alpine as prebuild
-# WORKDIR /app
-
-
-# COPY . . 
-# COPY src ./src
-# COPY prisma ./
-# COPY test ./
-# COPY --from=dependencies /app/ ./
-# COPY --from=dependencies /app/package*.json ./
-# COPY --from=dependencies /app/package-lock.json ./
-# RUN npm ci
-# RUN npm i
-
 ###################
 # BUILD 
 ###################
@@ -60,7 +43,6 @@ RUN apk add --no-cache bash
 WORKDIR /app
 
 # Копирование собранного приложения и зависимостей из этапа сборки
-# COPY /app ./
 COPY --from=dependencies /app/package.json ./package.json
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
