@@ -1,8 +1,8 @@
 version: '3.8'
 services:
   backend-test:
-    # tty: true
-    stdin_open: true
+    tty: true
+    # stdin_open: true
     container_name: ${APP_CONTAINER_NAME}
     build:
       context: .
