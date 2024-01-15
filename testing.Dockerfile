@@ -7,7 +7,7 @@ WORKDIR /app
 
 COPY package.json ./
 
-RUN sed -i '/\"prepare\":/d' package.json
+# RUN sed -i '/\"prepare\":/d' package.json
 RUN npm install --package-lock-only
 
 ###################
