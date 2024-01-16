@@ -20,6 +20,7 @@ import {
   EVENT_SHELF_CREATED,
   EVENT_SHELF_DELETED,
   EVENT_SHELF_ORDER_CHANGED,
+  EVENT_SHELF_RESTORED,
 } from '@/common/const/events';
 
 @Injectable()
@@ -117,6 +118,7 @@ export class ShelvesService {
       this.boxesService.deleteSoftByShelfId(shelfId),
       this.cardsService.deleteSoftByShelfId(shelfId),
     ]);
+    // `SELECT * FROM remove_shelf_and_update_indexes('${userId}', '${shelfId}', '${shelfIndex}', '${date}') ;`,
     // // console.log(userId, shelfId, shelfIndex);
     // const response = await this.prisma.$queryRawUnsafe<Shelf[]>(
     //   // `SELECT * FROM add_shelf_and_update_indexes($1, $2);`,
@@ -127,6 +129,48 @@ export class ShelvesService {
     this.eventEmitter.emit(EVENT_SHELF_DELETED, {
       userId,
       event: EVENT_SHELF_DELETED,
+    });
+    return response;
+  }
+
+  async restore(userId: UserId, shelfId: ShelfId) {
+    const response = await this.prisma.$transaction(async (prisma) => {
+      await prisma.box.updateMany({
+        where: { shelfId, userId },
+        data: {
+          isDeleted: false,
+          deletedAt: null,
+        },
+      });
+      await prisma.card.updateMany({
+        where: { shelfId, userId },
+        data: {
+          isDeleted: false,
+          deletedAt: null,
+        },
+      });
+      await prisma.shelf.updateMany({
+        where: {
+          userId: userId,
+        },
+        data: {
+          index: {
+            increment: 1,
+          },
+        },
+      });
+      return await prisma.shelf.update({
+        where: { id: shelfId, userId },
+        data: {
+          index: 0,
+          isDeleted: false,
+          deletedAt: null,
+        },
+      });
+    });
+    this.eventEmitter.emit(EVENT_SHELF_RESTORED, {
+      userId,
+      event: EVENT_SHELF_RESTORED,
     });
     return response;
   }
