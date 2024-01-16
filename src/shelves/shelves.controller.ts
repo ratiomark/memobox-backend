@@ -48,24 +48,21 @@ export class ShelvesController {
     return await this.shelvesService.orderShelves(userId, shelfOrder);
   }
 
-  // @Patch('collapse')
-  // async updateCollapse(@Body() shelfOrder: ShelfOrderRequest) {
-  //   console.log(shelfOrder);
-  //   return await this.shelvesService.orderShelves(shelfOrder);
-  // }
-
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.shelvesService.findOne(+id);
-  // }
-
   @Patch(':id')
   async update(
     @Param('id') shelfId: Shelf['id'],
     @Body() updateShelfDto: UpdateShelfDto,
   ) {
-    console.log(updateShelfDto);
     return await this.shelvesService.update(shelfId, updateShelfDto);
+  }
+
+  @Patch('restore/:id')
+  @Lock(LOCK_KEYS.restoringEntityFromTrash)
+  restoreShelf(
+    @GetCurrentUser('id') userId: User['id'],
+    @Param('id') shelfId: Shelf['id'],
+  ) {
+    return this.shelvesService.restore(userId, shelfId);
   }
 
   @Delete(':id')
