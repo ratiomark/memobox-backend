@@ -13,6 +13,7 @@ import {
   EVENT_SHELF_CREATED,
   EVENT_SHELF_DELETED,
   EVENT_SHELF_ORDER_CHANGED,
+  EVENT_SHELF_RESTORED,
 } from '@/common/const/events';
 import { OnEvent } from '@nestjs/event-emitter';
 
@@ -52,7 +53,10 @@ export class RedisService {
     userId: UserId,
   ): Promise<CupboardObject | null> {
     const key = createKeyWithPrefix(REDIS_KEY_CUPBOARD, userId);
-    return await this.getWithLogger(key, 'достаю cupboardData из redis ');
+    return await this.getWithLogger(
+      key,
+      `достаю cupboardData из redis ${REDIS_KEY_CUPBOARD}`,
+    );
     // this.logger.log(`достаю cupboardData из redis `);
     // return await this.redisRepository.get(key);
   }
@@ -65,7 +69,7 @@ export class RedisService {
     return await this.saveWithLogger(
       key,
       cupboardObject,
-      'сохраняю shelves в redis ',
+      `сохраняю shelves в redis ${REDIS_KEY_CUPBOARD}`,
     );
     // this.logger.log(`сохраняю cupboardData из redis `);
     // return await this.redisRepository.set(key, cupboardObject);
@@ -73,7 +77,10 @@ export class RedisService {
 
   async getShelvesByUserId(userId: UserId): Promise<ShelfIncBoxes[] | null> {
     const key = createKeyWithPrefix(REDIS_KEY_SHELVES, userId);
-    return await this.getWithLogger(key, 'достаю shelves из redis ');
+    return await this.getWithLogger(
+      key,
+      `достаю shelves из redis ${REDIS_KEY_SHELVES}`,
+    );
     // this.logger.log(`достаю shelves из redis `);
     // return await this.redisRepository.get(key);
   }
@@ -83,7 +90,11 @@ export class RedisService {
     shelves: ShelfIncBoxes[],
   ): Promise<void> {
     const key = createKeyWithPrefix(REDIS_KEY_SHELVES, userId);
-    return this.saveWithLogger(key, shelves, 'сохраняю shelves в redis ');
+    return this.saveWithLogger(
+      key,
+      shelves,
+      `сохраняю shelves в redis ${REDIS_KEY_SHELVES}`,
+    );
     // return await this.redisRepository.set(key, shelves);
   }
 
@@ -112,6 +123,7 @@ export class RedisService {
   @OnEvent(EVENT_BOX_DELETED)
   @OnEvent(EVENT_BOX_RESTORED)
   @OnEvent(EVENT_DB_RESTORED)
+  @OnEvent(EVENT_SHELF_RESTORED)
   async updateRedisAfterDeletion(payload: { userId: UserId; event: string }) {
     this.logger.debug(`fire event - ${payload.event}`);
     const key = createKeyWithPrefix(REDIS_KEY_SHELVES, payload.userId);
