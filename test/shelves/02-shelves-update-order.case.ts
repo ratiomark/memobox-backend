@@ -7,6 +7,7 @@ import {
 } from '../utils/constants';
 import { commonShelfInitialSeedState } from 'test/mock/initial-seed-state';
 import { sleep } from '@/utils/common/sleep';
+import { generateRandomString } from 'test/utils/getRandomString';
 
 export default () => {
   describe('Test shelf update order', () => {
@@ -17,8 +18,8 @@ export default () => {
     let isSeedInInitialState = true;
     let sortedBoxesIds;
     let initialShelfTitle;
-    const titleFirstTest = 'shelf_name_test_1';
-    const titleSecondTest = 'shelf_name_test_2';
+    const titleFirstTest = generateRandomString();
+    const titleSecondTest = generateRandomString();
     // const dropCards = async () => {
     //   await request(app_url_full)
     //     .post('/cards/drop')
@@ -260,7 +261,7 @@ export default () => {
       expect(newOrder).toEqual(orderUpdated);
     });
 
-    it('should validate initial cupboard state', async () => {
+    it('[clearing] should validate initial cupboard state', async () => {
       const loginResponse = await request(app_url_full)
         .post('/auth/email/login')
         .send({ email: TESTER_EMAIL, password: TESTER_PASSWORD });
@@ -281,24 +282,9 @@ export default () => {
       expect(shelves[0]).toBeInstanceOf(Object);
       expect(shelves[0].boxesData).toBeInstanceOf(Array);
       expect(shelves[0].boxesData).toHaveLength(6);
-      // Обратите внимание, что если commonShelf содержит дополнительные ключи и значения, не указанные в commonShelfInitialSeedState, тест всё равно будет успешным. Если вам нужно точное соответствие без дополнительных ключей, используйте expect(commonShelf).toEqual(commonShelfInitialSeedState);.
       expect(commonShelf).toEqual(
         expect.objectContaining(commonShelfInitialSeedState),
       );
     });
-
-    // it('should correctly update shelves order', async () => {
-    //   const response = await request(app_url_full)
-    //     .get('/aggregate/cupboard')
-    //     .auth(userToken, { type: 'bearer' });
-    //   const { shelves, commonShelf } = response.body;
-    //   const shelvesDndRepresentation = shelves.map((shelf) => ({
-    //     id: shelf.id,
-    //     index: shelf.index,
-    //   }));
-
-    // 	// это текущий порядок полок. Используй его для создание нового порядка, отправь, потом проверь результаты aggregate/cupboard, соответвуют ли они новому порядку
-
-    // });
   });
 };

@@ -6,6 +6,7 @@ import {
   TESTER_PASSWORD,
 } from '../utils/constants';
 import { commonShelfInitialSeedState } from 'test/mock/initial-seed-state';
+import { generateRandomString } from 'test/utils/getRandomString';
 
 export default () => {
   describe('Test shelf main actions', () => {
@@ -16,8 +17,8 @@ export default () => {
     let isSeedInInitialState = true;
     let sortedBoxesIds;
     let initialShelfTitle;
-    const titleFirstTest = 'shelf_name_test_1';
-    const titleSecondTest = 'shelf_name_test_2';
+    const titleFirstTest = generateRandomString();
+    const titleSecondTest = generateRandomString();
     // const dropCards = async () => {
     //   await request(app_url_full)
     //     .post('/cards/drop')
@@ -212,6 +213,32 @@ export default () => {
       expect(shelves).toHaveLength(1);
       expect(shelves[0].index).toBe(0);
       expect(shelves[0].title).toEqual(initialShelfTitle);
+    });
+
+    it('[clearing] should validate initial cupboard state', async () => {
+      const loginResponse = await request(app_url_full)
+        .post('/auth/email/login')
+        .send({ email: TESTER_EMAIL, password: TESTER_PASSWORD });
+
+      userToken = loginResponse.body.token;
+
+      await request(app_url_full)
+        .post('/aggregate/restore-db')
+        .auth(userToken, { type: 'bearer' });
+
+      const response = await request(app_url_full)
+        .get('/aggregate/cupboard')
+        .auth(userToken, { type: 'bearer' });
+      const { shelves, commonShelf } = response.body;
+      expect(response.status).toBe(200);
+      expect(shelves).toBeInstanceOf(Array);
+      expect(shelves).toHaveLength(1);
+      expect(shelves[0]).toBeInstanceOf(Object);
+      expect(shelves[0].boxesData).toBeInstanceOf(Array);
+      expect(shelves[0].boxesData).toHaveLength(6);
+      expect(commonShelf).toEqual(
+        expect.objectContaining(commonShelfInitialSeedState),
+      );
     });
   });
 };
