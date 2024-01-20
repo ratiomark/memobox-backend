@@ -22,6 +22,7 @@ import {
   EVENT_SHELF_ORDER_CHANGED,
   EVENT_SHELF_RESTORED,
 } from '@/common/const/events';
+import { ShelvesTrashResponse } from '@/user-data-storage/types/fronted-responses';
 
 @Injectable()
 export class ShelvesService {
@@ -249,21 +250,38 @@ export class ShelvesService {
   //   return shelvesData;
   // }
 
-  async findAllDeletedShelves(
-    userId: UserId,
-  ): Promise<ShelfIncBoxesIncCards[]> {
+  async findAllDeletedShelves(userId: UserId): Promise<ShelvesTrashResponse[]> {
     const shelves = await this.prisma.shelf.findMany({
       where: { userId, isDeleted: true },
       include: {
-        box: true,
-        card: true,
+        box: {
+          select: {
+            _count: {
+              select: { card: true },
+            },
+            card: true,
+            specialType: true,
+            index: true,
+            deletedAt: true,
+            timing: true,
+          },
+          orderBy: {
+            index: 'asc',
+          },
+        },
+        _count: {
+          select: { card: true, box: true },
+        },
+      },
+      orderBy: {
+        deletedAt: 'desc',
       },
     });
 
     return shelves.map((shelf) => ({
       ...shelf,
-      boxesCount: shelf.box.length,
-      cardsCount: shelf.card.length,
+      boxesCount: shelf._count.box,
+      cardsCount: shelf._count.card,
     }));
   }
 
