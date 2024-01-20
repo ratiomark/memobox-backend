@@ -1,0 +1,1 @@
+ALTER DATABASE memobox SET timezone TO 'UTC';
