@@ -67,20 +67,12 @@ export class UserDataStorageService implements OnModuleInit {
       infer: true,
     });
     this.nodeEnv = nodeEnv;
-    if (this.nodeEnv === 'testing') {
+    if (this.nodeEnv === 'testing' || this.nodeEnv === 'development') {
       this.logger.warn('Testing mode [on init] - ');
       await this.saveDb();
     }
   }
-  // private get cardsService() {
-  //   if (!this._cardsService) {
-  //     this._cardsService = this.cardsServiceGetter();
-  //   }
-  //   return this._cardsService;
-  // }
-  async getDbTimeZone() {
-    return await this.prisma.$queryRaw`SHOW timezone;`;
-  }
+
   async getCupboardClass(userId: UserId): Promise<CupboardClass> {
     const cupboardData = await cacheOrFetchData<CupboardObject>(
       userId,
@@ -267,13 +259,6 @@ export class UserDataStorageService implements OnModuleInit {
   // set client_encoding to 'UTF8';
 
   async saveDb() {
-    // if (this.nodeEnv === 'development') {
-    //   const { data } = await firstValueFrom(
-    //     this.httpService.get(`https://jsonplaceholder.typicode.com/posts`),
-    //   );
-    //   this.logger.debug(data);
-    //   return data;
-    // }
     if (this.nodeEnv === 'production') {
       throw new Error('You can not restore database in production mode');
     }
