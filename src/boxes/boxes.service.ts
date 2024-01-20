@@ -148,7 +148,7 @@ export class BoxesService {
     shelfId: ShelfId,
     boxIndex: number,
   ) {
-    // возвращает массив обновленных коробок, без удаленной
+    // возвращает массив обновленных коробок, без удаленной. Я ничего не делаю с поле isDeleted  у cards
     const boxesUpdated = await this.prisma.$queryRawUnsafe<Box[]>(
       `SELECT * FROM remove_box_and_update_indexes('${userId}', '${boxId}', '${shelfId}', '${boxIndex}');`,
     );
@@ -162,7 +162,27 @@ export class BoxesService {
 
   async findAllDeletedBoxes(userId: User['id']) {
     return this.prisma.box.findMany({
-      where: { userId, isDeleted: true, shelf: { isDeleted: false } },
+      where: {
+        userId,
+        isDeleted: true,
+        shelf: {
+          isDeleted: false,
+        },
+      },
+      include: {
+        card: true,
+        shelf: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+        _count: {
+          select: {
+            card: true,
+          },
+        },
+      },
     });
   }
 
@@ -211,14 +231,33 @@ export class BoxesService {
   }
 
   async restoreBoxesDeletedByShelfId(shelfId: ShelfId) {
-    const [box, cards] = await Promise.all([
-      this.prisma.box.updateMany({
+    const [box, cards] = await this.prisma.$transaction(async (prisma) => {
+      // Обновление данных восстанавливаемой коробки
+      const box = await prisma.box.updateMany({
         where: { shelfId, isDeleted: true },
         data: { isDeleted: false, deletedAt: null },
-      }),
-      this.cardsService.restoreByShelfId(shelfId),
-    ]);
+      });
+
+      // Обновление индексов для остальных коробок на полке
+      const cards = await prisma.card.updateMany({
+        where: { shelfId },
+        data: { isDeleted: false, deletedAt: null },
+      });
+
+      return [box, cards];
+    });
+
     return { box, cards };
   }
+
+  //   const [box, cards] = await Promise.all([
+  //     this.prisma.box.updateMany({
+  //       where: { shelfId, isDeleted: true },
+  //       data: { isDeleted: false, deletedAt: null },
+  //     }),
+  //     this.cardsService.restoreByShelfId(shelfId),
+  //   ]);
+  //   return { box, cards };
+  // }
   // restoreByBoxId;
 }
