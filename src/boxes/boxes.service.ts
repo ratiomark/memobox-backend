@@ -126,7 +126,6 @@ export class BoxesService {
   //   return response;
   // }
 
-  // async deleteSoftByBoxId(id: BoxId) {
   async deleteSoftByBoxId(id: BoxId) {
     const [box, cards] = await Promise.all([
       this.prisma.box.update({
@@ -135,10 +134,6 @@ export class BoxesService {
       }),
       this.cardsService.deleteSoftByBoxId(id),
     ]);
-    // const updateBoxesFromIndex = box.index
-    // [0,1 ,2,3,4,5,6,7,]
-    // 4
-    // const boxes = await Promise.all()
     return { box, cards };
   }
 
