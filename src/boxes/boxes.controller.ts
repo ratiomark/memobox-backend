@@ -37,14 +37,15 @@ export class BoxesController {
     return this.boxesService.restoreBoxesDeletedByShelfId(shelfId);
   }
 
-  @Patch('restore')
+  @Patch('restore/:boxId')
   restoreBox(
     @GetCurrentUser('id') userId: UserId,
-    @Body() body: { shelfId: ShelfId; boxId: BoxId; index: number },
+    @Param('id') boxId: BoxId,
+    @Body() body: { shelfId: ShelfId; index: number },
   ) {
     return this.boxesService.restoreBox(
       userId,
-      body.boxId,
+      boxId,
       body.shelfId,
       body.index,
     );
