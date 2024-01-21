@@ -107,10 +107,9 @@ export default () => {
 
     it(`should restore box to [index ${indexToRestore}]`, async () => {
       const response = await request(app_url_full)
-        .patch(`/boxes/restore/${boxIdDeleted}}`)
+        .patch(`/boxes/restore/${boxIdDeleted}`)
         .send({
           index: indexToRestore,
-          // boxId: boxIdDeleted,
           shelfId,
         })
         .auth(userToken, { type: 'bearer' });
@@ -196,10 +195,9 @@ export default () => {
 
     it(`should restore box to [index ${indexToRestore}]`, async () => {
       const response = await request(app_url_full)
-        .patch(`/boxes/restore/${boxIdDeleted}}`)
+        .patch(`/boxes/restore/${boxIdDeleted}`)
         .send({
           index: indexToRestore,
-          // boxId: boxIdDeleted,
           shelfId,
         })
         .auth(userToken, { type: 'bearer' });
