@@ -40,7 +40,7 @@ export class BoxesController {
   @Patch('restore/:boxId')
   restoreBox(
     @GetCurrentUser('id') userId: UserId,
-    @Param('id') boxId: BoxId,
+    @Param('boxId') boxId: BoxId,
     @Body() body: { shelfId: ShelfId; index: number },
   ) {
     return this.boxesService.restoreBox(
