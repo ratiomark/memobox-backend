@@ -178,6 +178,16 @@ export class BoxesService {
           },
         },
       },
+      orderBy: [
+        {
+          shelf: {
+            index: 'asc',
+          },
+        },
+        {
+          deletedAt: 'asc',
+        },
+      ],
     });
   }
 
