@@ -262,7 +262,6 @@ export class UserDataStorageService implements OnModuleInit {
     if (this.nodeEnv === 'production') {
       throw new Error('You can not restore database in production mode');
     }
-    const isTesting = this.nodeEnv === 'testing';
     const isDevelopment = this.nodeEnv === 'development';
     let result;
     // await this.prisma.$disconnect();
@@ -312,9 +311,8 @@ export class UserDataStorageService implements OnModuleInit {
     if (this.nodeEnv === 'production') {
       throw new Error('You can not restore database in production mode');
     }
-    const isTesting = this.nodeEnv === 'testing';
     const isDevelopment = this.nodeEnv === 'development';
-    let result;
+    let result: string;
     // await this.prisma.$disconnect();
     const [dbName, username, dbPassword, dbHost, postgresBinPath]: string[] = [
       'name',
@@ -345,7 +343,7 @@ export class UserDataStorageService implements OnModuleInit {
         });
         result = 'Database restored successfully';
       } else {
-        const { data } = await firstValueFrom(
+        const { data } = await firstValueFrom<{ data: string }>(
           this.httpService.get(`http://${dbHost}:3001/restore-db`),
         );
         result = data;
