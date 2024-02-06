@@ -6,12 +6,18 @@ import {
   Patch,
   Delete,
   Param,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { BoxesService } from './boxes.service';
 import { CreateBoxDto } from './dto/create-box.dto';
 import { UpdateBoxDto } from './dto/update-box.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { Box } from '@prisma/client';
+import { BoxId, ShelfId, UserId } from '@/common/types/prisma-entities';
+import { GetCurrentUser } from '@/common/decorators';
+import { LOCK_KEYS } from '@/common/const/lock-keys-patterns';
+import { Lock } from '@/common/decorators/lock.decorator';
 
 @ApiTags('Boxes')
 @Controller({
@@ -26,6 +32,25 @@ export class BoxesController {
     return this.boxesService.create(createBoxDto);
   }
 
+  @Post('restore-boxes-deleted-by-shelf-id/:shelfId')
+  restoreBoxesDeleted(@Param('shelfId') shelfId: ShelfId) {
+    return this.boxesService.restoreBoxesDeletedByShelfId(shelfId);
+  }
+
+  @Patch('restore/:boxId')
+  restoreBox(
+    @GetCurrentUser('id') userId: UserId,
+    @Param('boxId') boxId: BoxId,
+    @Body() body: { shelfId: ShelfId; index: number },
+  ) {
+    return this.boxesService.restoreBox(
+      userId,
+      boxId,
+      body.shelfId,
+      body.index,
+    );
+  }
+
   @Get()
   findAll() {
     return this.boxesService.findAll();
@@ -37,12 +62,31 @@ export class BoxesController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: Box['id'], @Body() updateBoxDto: UpdateBoxDto) {
+  update(@Param('id') id: BoxId, @Body() updateBoxDto: UpdateBoxDto) {
     return this.boxesService.update(id, updateBoxDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.boxesService.remove(+id);
+  @Lock(LOCK_KEYS.removingBoxFromShelfToTrash)
+  @HttpCode(HttpStatus.OK)
+  deleteSoftById(
+    @GetCurrentUser('id') userId: UserId,
+    @Param('id') boxId: BoxId,
+    @Body() body: { index: number; shelfId: ShelfId },
+  ) {
+    return this.boxesService.deleteSoftByBoxIdAndUpdateIndexes(
+      userId,
+      boxId,
+      body.shelfId,
+      body.index,
+    );
+  }
+
+  @Delete('final/:id')
+  deletePermanently(
+    @GetCurrentUser('id') userId: UserId,
+    @Param('id') boxId: BoxId,
+  ) {
+    return this.boxesService.deletePermanently(userId, boxId);
   }
 }

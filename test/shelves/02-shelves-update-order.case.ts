@@ -6,10 +6,11 @@ import {
   TESTER_PASSWORD,
 } from '../utils/constants';
 import { commonShelfInitialSeedState } from 'test/mock/initial-seed-state';
+import { sleep } from '@/utils/common/sleep';
 import { generateRandomString } from 'test/utils/getRandomString';
 
 export default () => {
-  describe('Test shelf main actions', () => {
+  describe('Test shelf update order', () => {
     const app = APP_URL;
     const app_url_full = app + API_PREFIX;
     let userToken;
@@ -41,6 +42,7 @@ export default () => {
         .post('/aggregate/restore-db')
         .auth(userToken, { type: 'bearer' });
       // Получение данных о полках и коробках
+      await sleep(3);
       const cupboardResponse = await request(app_url_full)
         .get('/aggregate/cupboard')
         .auth(userToken, { type: 'bearer' });
@@ -105,21 +107,6 @@ export default () => {
         expect.objectContaining({ wait: 0, all: 0, train: 0 }),
       );
     });
-
-    it('should return cupboard updated', async () => {
-      const response = await request(app_url_full)
-        .get('/aggregate/cupboard')
-        .auth(userToken, { type: 'bearer' });
-      const { shelves, commonShelf } = response.body;
-      expect(response.status).toBe(200);
-      expect(shelves).toBeInstanceOf(Array);
-      expect(shelves).toHaveLength(2);
-      expect(shelves[0]).toBeInstanceOf(Object);
-      expect(shelves[0].boxesData).toBeInstanceOf(Array);
-      expect(shelves[0].title).toEqual(titleFirstTest);
-      expect(shelves[0].index).toBe(0);
-    });
-
     it(`should create new shelf [${titleSecondTest}]`, async () => {
       const response = await request(app_url_full)
         .post('/shelves')
@@ -142,77 +129,136 @@ export default () => {
       expect(data).toEqual(
         expect.objectContaining({ wait: 0, all: 0, train: 0 }),
       );
+    });
 
-      const cupboardResponse = await request(app_url_full)
+    it('should return cupboard updated', async () => {
+      const response = await request(app_url_full)
         .get('/aggregate/cupboard')
         .auth(userToken, { type: 'bearer' });
-      const { shelves } = cupboardResponse.body;
+      const { shelves } = response.body;
+      expect(response.status).toBe(200);
       expect(shelves).toBeInstanceOf(Array);
       expect(shelves).toHaveLength(3);
+      expect(shelves[0]).toBeInstanceOf(Object);
+      expect(shelves[0].boxesData).toBeInstanceOf(Array);
+      expect(shelves[0].title).toEqual(titleSecondTest);
+      expect(shelves[1].title).toEqual(titleFirstTest);
       expect(shelves[0].index).toBe(0);
       expect(shelves[1].index).toBe(1);
       expect(shelves[2].index).toBe(2);
-      expect(shelves[0].title).toEqual(titleSecondTest);
-      expect(shelves[1].title).toEqual(titleFirstTest);
-      expect(shelves[2].title).toEqual(initialShelfTitle);
     });
 
-    it('should delete shelf with [index 1]', async () => {
-      const cupboardResponse = await request(app_url_full)
+    it('should move the first shelf to the end', async () => {
+      // Получаем текущий порядок полок
+      let response = await request(app_url_full)
         .get('/aggregate/cupboard')
         .auth(userToken, { type: 'bearer' });
+      const { shelves } = response.body;
 
-      shelvesData = cupboardResponse.body.shelves;
-      const shelfIds = shelvesData.map((shelf) => shelf.id);
-      const shelfIndexToUse = 1;
+      // Создаем новый порядок, перемещая первую полку в конец
+      const newOrder = [...shelves.slice(1), shelves[0]].map(
+        (shelf, index) => ({
+          id: shelf.id,
+          index: index,
+        }),
+      );
 
-      const response = await request(app_url_full)
-        .delete(`/shelves/${shelfIds[shelfIndexToUse]}`)
-        .send({ index: shelfIndexToUse })
+      // Отправляем обновленный порядок
+      await request(app_url_full)
+        .patch('/shelves/update-order')
+        .send(newOrder)
         .auth(userToken, { type: 'bearer' });
 
-      expect(response.status).toBe(200);
-
-      const cupboardResponseAfterDeletion = await request(app_url_full)
+      // Проверяем, обновился ли порядок полок
+      response = await request(app_url_full)
         .get('/aggregate/cupboard')
         .auth(userToken, { type: 'bearer' });
+      const shelvesUpdate = response.body.shelves;
 
-      const { shelves } = cupboardResponseAfterDeletion.body;
-      expect(response.status).toBe(200);
-      expect(shelves).toBeInstanceOf(Array);
-      expect(shelves).toHaveLength(2);
-      expect(shelves[0].index).toBe(0);
-      expect(shelves[1].index).toBe(1);
-      expect(shelves[0].title).toEqual(titleSecondTest);
-      expect(shelves[1].title).toEqual(initialShelfTitle);
+      // Создаем новый порядок, перемещая первую полку в конец
+      const orderUpdated = shelvesUpdate.map((shelf, index) => ({
+        id: shelf.id,
+        index: index,
+      }));
+
+      expect(newOrder).toEqual(orderUpdated);
     });
 
-    it('should delete shelf with [index 0]', async () => {
-      const cupboardResponse = await request(app_url_full)
+    it('should reverse the order of shelves', async () => {
+      // Получаем текущий порядок полок
+      let response = await request(app_url_full)
         .get('/aggregate/cupboard')
         .auth(userToken, { type: 'bearer' });
-      // await dropCards();
-      shelvesData = cupboardResponse.body.shelves;
-      const shelfIds = shelvesData.map((shelf) => shelf.id);
-      const shelfIndexToUse = 0;
+      const { shelves } = response.body;
 
-      const response = await request(app_url_full)
-        .delete(`/shelves/${shelfIds[shelfIndexToUse]}`)
-        .send({ index: shelfIndexToUse })
+      // Создаем новый порядок, перемещая первую полку в конец
+      const newOrder = shelves
+        .slice()
+        .reverse()
+        .map((shelf, index) => ({
+          id: shelf.id,
+          index: index,
+        }));
+
+      // Отправляем обновленный порядок
+      await request(app_url_full)
+        .patch('/shelves/update-order')
+        .send(newOrder)
         .auth(userToken, { type: 'bearer' });
 
-      expect(response.status).toBe(200);
+      // Проверяем, обновился ли порядок полок
+      response = await request(app_url_full)
+        .get('/aggregate/cupboard')
+        .auth(userToken, { type: 'bearer' });
+      const shelvesUpdate = response.body.shelves;
 
-      const cupboardResponseAfterDeletion = await request(app_url_full)
+      // Создаем новый порядок, перемещая первую полку в конец
+      const orderUpdated = shelvesUpdate.map((shelf, index) => ({
+        id: shelf.id,
+        index: index,
+      }));
+
+      expect(newOrder).toEqual(orderUpdated);
+    });
+
+    it('should swap the first and second shelves', async () => {
+      // Получаем текущий порядок полок
+      let response = await request(app_url_full)
+        .get('/aggregate/cupboard')
+        .auth(userToken, { type: 'bearer' });
+      const { shelves } = response.body;
+
+      // Создаем новый порядок, перемещая первую полку в конец
+      const newOrder = [
+        { id: shelves[1].id, index: 0 }, // Поменять местами первую и вторую полки
+        { id: shelves[0].id, index: 1 },
+        ...shelves.slice(2).map((shelf, index) => ({
+          // Оставить остальные полки без изменений
+          id: shelf.id,
+          index: index + 2,
+        })),
+      ];
+
+      // Отправляем обновленный порядок
+      await request(app_url_full)
+        .patch('/shelves/update-order')
+        .send(newOrder)
+        .auth(userToken, { type: 'bearer' });
+
+      // Проверяем, обновился ли порядок полок
+      response = await request(app_url_full)
         .get('/aggregate/cupboard')
         .auth(userToken, { type: 'bearer' });
 
-      const { shelves } = cupboardResponseAfterDeletion.body;
-      expect(response.status).toBe(200);
-      expect(shelves).toBeInstanceOf(Array);
-      expect(shelves).toHaveLength(1);
-      expect(shelves[0].index).toBe(0);
-      expect(shelves[0].title).toEqual(initialShelfTitle);
+      const shelvesUpdate = response.body.shelves;
+
+      // Создаем новый порядок, перемещая первую полку в конец
+      const orderUpdated = shelvesUpdate.map((shelf, index) => ({
+        id: shelf.id,
+        index: index,
+      }));
+
+      expect(newOrder).toEqual(orderUpdated);
     });
 
     it('[clearing] should validate initial cupboard state', async () => {

@@ -13,6 +13,7 @@ model File {
   id   String @id @default(uuid())
   path String
   user User[]
+  @@map("file")
 }
 
 model Forgot {
@@ -24,6 +25,7 @@ model Forgot {
   user      User?     @relation(fields: [userId], references: [id])
 
   @@index([hash])
+  @@map("forgot")
 }
 
 model Migrations {
@@ -36,6 +38,7 @@ model Role {
   id   Int    @id
   name String
   user User[]
+  @@map("role")
 }
 
 model Session {
@@ -46,12 +49,14 @@ model Session {
   user      User?     @relation(fields: [userId], references: [id])
 
   @@index([userId])
+  @@map("session")
 }
 
 model Status {
   id   Int    @id
   name String
   user User[]
+  @@map("status")
 }
 
 model User {
@@ -92,6 +97,7 @@ model User {
 
   @@index([id])
   @@index([email])
+  @@map("user")
 }
 
 model Shelf {
@@ -135,6 +141,8 @@ model Box {
   shelfId             String               @db.Uuid
   shelf               Shelf                @relation(fields: [shelfId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   card                Card[]
+
+  @@map("box")
 }
 
 model Card {
@@ -163,6 +171,7 @@ model Card {
   @@index([shelfId])
   @@index([boxId])
   @@index([nextTraining])
+  @@map("card")
 }
 
 model ShelfTemplate {

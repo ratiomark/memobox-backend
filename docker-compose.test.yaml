@@ -1,6 +1,8 @@
 version: '3.8'
 services:
   backend-test:
+    # tty: true
+    # stdin_open: true
     container_name: ${APP_CONTAINER_NAME}
     build:
       context: .
@@ -8,15 +10,26 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV}
       - DATABASE_URL=${DATABASE_URL}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
   db-test:
-    image: postgres:16.0-alpine
+    build:
+      context: .
+      dockerfile: testing.db.Dockerfile
     container_name: ${DATABASE_CONTAINER_NAME}
     environment:
       - POSTGRES_DB=${DATABASE_NAME}
       - POSTGRES_USER=${DATABASE_USERNAME}
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+    volumes:
+      - db-backups:/backups
+    ports:
+      - '3001:3001'
 
   redis-test:
     image: redis:6-alpine
     container_name: ${REDIS_CONTAINER_NAME}
+
+volumes:
+  db-backups: # Объявляем том

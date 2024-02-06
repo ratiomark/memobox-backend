@@ -44,6 +44,11 @@ class EnvironmentVariablesValidator {
   @IsString()
   DATABASE_USERNAME: string;
 
+  @ValidateIf((envValues) => !envValues.DATABASE_BIN_PATH)
+  @IsOptional()
+  @IsString()
+  DATABASE_BIN_PATH: string;
+
   @IsBoolean()
   @IsOptional()
   DATABASE_SYNCHRONIZE: boolean;
@@ -83,9 +88,11 @@ export default registerAs<DatabaseConfig>('database', () => {
     port: process.env.DATABASE_PORT
       ? parseInt(process.env.DATABASE_PORT, 10)
       : 5432,
-    password: process.env.DATABASE_PASSWORD,
-    name: process.env.DATABASE_NAME,
-    username: process.env.DATABASE_USERNAME,
+    password: process.env.DATABASE_PASSWORD ?? '1',
+    name: process.env.DATABASE_NAME ?? 'memobox',
+    username: process.env.DATABASE_USERNAME ?? 'postgres',
+    postgresBinPath:
+      process.env.DATABASE_BIN_PATH ?? 'D:\\Programs\\PostgreSQL\\bin\\pg_dump',
     synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
     maxConnections: process.env.DATABASE_MAX_CONNECTIONS
       ? parseInt(process.env.DATABASE_MAX_CONNECTIONS, 10)

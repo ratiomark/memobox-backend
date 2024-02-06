@@ -8,7 +8,7 @@ import {
 import { UsersModule } from './users/users.module';
 import { FilesModule } from './files/files.module';
 import { AuthModule } from './auth/auth.module';
-// import databaseConfig from './config/database.config';
+import databaseConfig from './config/database.config';
 import authConfig from './config/auth.config';
 import appConfig from './config/app.config';
 import EmailConfig from './config/mail.config';
@@ -53,7 +53,7 @@ import { RedisModule } from './redis/redis.module';
     ConfigModule.forRoot({
       isGlobal: true,
       load: [
-        // databaseConfig,
+        databaseConfig,
         authConfig,
         appConfig,
         EmailConfig,
@@ -68,8 +68,6 @@ import { RedisModule } from './redis/redis.module';
         process.env.NODE_ENV === 'production'
           ? '.env'
           : `.env.${process.env.NODE_ENV}`,
-        // '.env.development',
-        // '.env.production',
       ],
     }),
     /**

@@ -1,4 +1,4 @@
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { CreateBoxDto } from './dto/create-box.dto';
 import { UpdateBoxDto } from './dto/update-box.dto';
 import { PrismaService } from 'nestjs-prisma';
@@ -9,7 +9,9 @@ import {
 } from '@/common/const/commonShelfTemplate';
 import { uuid } from '@/utils/helpers/sql';
 import { CardsService } from '@/cards/cards.service';
-import { UserId, ShelfId } from '@/common/types/prisma-entities';
+import { UserId, ShelfId, BoxId } from '@/common/types/prisma-entities';
+import { EVENT_BOX_DELETED, EVENT_BOX_RESTORED } from '@/common/const/events';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 type GenerateBoxesFromTemplateArg = {
   shelfTemplate: Prisma.JsonArray;
@@ -19,10 +21,12 @@ type GenerateBoxesFromTemplateArg = {
 
 @Injectable()
 export class BoxesService {
+  private readonly logger = new Logger(BoxesService.name);
   constructor(
     private readonly prisma: PrismaService,
     // @Inject(forwardRef(() => CardsService))
     private readonly cardsService: CardsService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
   create(createBoxDto: CreateBoxDto) {
     return 'This action adds a new box';
@@ -100,7 +104,29 @@ export class BoxesService {
     });
   }
 
-  async deleteSoftByBoxId(id: Box['id']) {
+  // async deleteSoft(userId: UserId, shelfId: ShelfId, shelfIndex: number) {
+  //   // console.log(userId, shelfId, shelfIndex);
+  //   const [response] = await Promise.all([
+  //     this.prisma.$queryRawUnsafe<Shelf[]>(
+  //       `SELECT * FROM remove_shelf_and_update_indexes('${userId}', '${shelfId}', '${shelfIndex}') ;`,
+  //     ),
+  //     this.boxesService.deleteSoftByShelfId(shelfId),
+  //     this.cardsService.deleteSoftByShelfId(shelfId),
+  //   ]);
+  //   // // console.log(userId, shelfId, shelfIndex);
+  //   // const response = await this.prisma.$queryRawUnsafe<Shelf[]>(
+  //   //   // `SELECT * FROM add_shelf_and_update_indexes($1, $2);`,
+  //   //   // userId,
+  //   //   // createShelfDto.title,
+  //   //   `SELECT * FROM remove_shelf_and_update_indexes('${userId}', '${shelfId}', '${shelfIndex}') ;`,
+  //   // );
+  //   this.eventEmitter.emit(EVENT_SHELF_DELETED, {
+  //     userId,
+  //   });
+  //   return response;
+  // }
+
+  async deleteSoftByBoxId(id: BoxId) {
     const [box, cards] = await Promise.all([
       this.prisma.box.update({
         where: { id },
@@ -111,13 +137,140 @@ export class BoxesService {
     return { box, cards };
   }
 
+  async deleteSoftByBoxIdAndUpdateIndexes(
+    userId: UserId,
+    boxId: BoxId,
+    shelfId: ShelfId,
+    boxIndex: number,
+  ) {
+    // возвращает массив обновленных коробок, без удаленной. Я ничего не делаю с поле isDeleted  у cards
+    const boxesUpdated = await this.prisma.$queryRawUnsafe<Box[]>(
+      `SELECT * FROM remove_box_and_update_indexes('${userId}', '${boxId}', '${shelfId}', '${boxIndex}');`,
+    );
+    this.eventEmitter.emit(EVENT_BOX_DELETED, {
+      userId,
+      event: EVENT_BOX_DELETED,
+    });
+    // this.logger.debug(boxesUpdated);
+    return boxesUpdated;
+  }
+
   async findAllDeletedBoxes(userId: User['id']) {
     return this.prisma.box.findMany({
-      where: { userId, isDeleted: true, shelf: { isDeleted: false } },
+      where: {
+        userId,
+        isDeleted: true,
+        shelf: {
+          isDeleted: false,
+        },
+      },
+      include: {
+        card: true,
+        shelf: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+        _count: {
+          select: {
+            card: true,
+          },
+        },
+      },
+      orderBy: [
+        {
+          shelf: {
+            index: 'asc',
+          },
+        },
+        {
+          deletedAt: 'asc',
+        },
+      ],
     });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} box`;
+  async restoreBox(
+    userId: UserId,
+    boxId: BoxId,
+    shelfIdTo: ShelfId,
+    restoreToIndex: number,
+  ) {
+    const restoredBox = await this.prisma.$transaction(async (prisma) => {
+      // Обновление данных восстанавливаемой коробки
+      const restoredBox = await prisma.box.update({
+        where: { id: boxId, userId },
+        data: {
+          isDeleted: false,
+          deletedAt: null,
+          shelfId: shelfIdTo,
+          index: restoreToIndex,
+        },
+      });
+
+      // Обновление индексов для остальных коробок на полке
+      await prisma.box.updateMany({
+        where: {
+          userId: userId,
+          shelfId: shelfIdTo,
+          index: {
+            gte: restoreToIndex,
+          },
+          id: {
+            not: boxId,
+          },
+        },
+        data: {
+          index: {
+            increment: 1,
+          },
+        },
+      });
+
+      return restoredBox;
+    });
+    this.eventEmitter.emit(EVENT_BOX_RESTORED, {
+      userId,
+      event: EVENT_BOX_RESTORED,
+    });
+    this.logger.debug(restoredBox);
+    return restoredBox;
   }
+
+  async restoreBoxesDeletedByShelfId(shelfId: ShelfId) {
+    const [box, cards] = await this.prisma.$transaction(async (prisma) => {
+      // Обновление данных восстанавливаемой коробки
+      const box = await prisma.box.updateMany({
+        where: { shelfId, isDeleted: true },
+        data: { isDeleted: false, deletedAt: null },
+      });
+
+      // Обновление индексов для остальных коробок на полке
+      const cards = await prisma.card.updateMany({
+        where: { shelfId },
+        data: { isDeleted: false, deletedAt: null },
+      });
+
+      return [box, cards];
+    });
+
+    return { box, cards };
+  }
+
+  async deletePermanently(userId: UserId, boxId: BoxId) {
+    return await this.prisma.box.delete({
+      where: { id: boxId, userId },
+    });
+  }
+  //   const [box, cards] = await Promise.all([
+  //     this.prisma.box.updateMany({
+  //       where: { shelfId, isDeleted: true },
+  //       data: { isDeleted: false, deletedAt: null },
+  //     }),
+  //     this.cardsService.restoreByShelfId(shelfId),
+  //   ]);
+  //   return { box, cards };
+  // }
+  // restoreByBoxId;
 }

@@ -26,9 +26,10 @@ export type DatabaseConfig = {
   type?: string;
   host?: string;
   port?: number;
-  password?: string;
-  name?: string;
-  username?: string;
+  password: string;
+  postgresBinPath: string;
+  name: string;
+  username: string;
   synchronize?: boolean;
   maxConnections: number;
   sslEnabled?: boolean;
@@ -84,7 +85,7 @@ export type AllConfigType = {
   app: AppConfig;
   auth: AuthConfig;
   redis: RedisConfig;
-  // database: DatabaseConfig;
+  database: DatabaseConfig;
   file: FileConfig;
   mail: EmailConfig;
   apple: AppleConfig;

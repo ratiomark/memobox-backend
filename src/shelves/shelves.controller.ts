@@ -34,35 +34,33 @@ export class ShelvesController {
     @GetCurrentUser('id') userId: User['id'],
     @Body() createShelfDto: CreateShelfDto,
   ): Promise<ShelfFrontedResponse> {
-    // console.log(createShelfDto);
-    // console.log('SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS');
     return this.shelvesService.create(userId, createShelfDto);
   }
 
   @Patch('update-order')
-  async updateOrder(@Body() shelfOrder: ShelfOrderRequest) {
+  async updateOrder(
+    @GetCurrentUser('id') userId: User['id'],
+    @Body() shelfOrder: ShelfOrderRequest,
+  ) {
     console.log(shelfOrder);
-    return await this.shelvesService.orderShelves(shelfOrder);
+    return await this.shelvesService.orderShelves(userId, shelfOrder);
   }
-
-  // @Patch('collapse')
-  // async updateCollapse(@Body() shelfOrder: ShelfOrderRequest) {
-  //   console.log(shelfOrder);
-  //   return await this.shelvesService.orderShelves(shelfOrder);
-  // }
-
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.shelvesService.findOne(+id);
-  // }
 
   @Patch(':id')
   async update(
     @Param('id') shelfId: Shelf['id'],
     @Body() updateShelfDto: UpdateShelfDto,
   ) {
-    console.log(updateShelfDto);
     return await this.shelvesService.update(shelfId, updateShelfDto);
+  }
+
+  @Patch('restore/:id')
+  @Lock(LOCK_KEYS.restoringEntityFromTrash)
+  restoreShelf(
+    @GetCurrentUser('id') userId: User['id'],
+    @Param('id') shelfId: Shelf['id'],
+  ) {
+    return this.shelvesService.restore(userId, shelfId);
   }
 
   @Delete(':id')
@@ -77,5 +75,13 @@ export class ShelvesController {
       shelfId,
       removeShelfDto.index,
     );
+  }
+
+  @Delete('final/:id')
+  deletePermanently(
+    @GetCurrentUser('id') userId: User['id'],
+    @Param('id') shelfId: Shelf['id'],
+  ) {
+    return this.shelvesService.deletePermanently(userId, shelfId);
   }
 }

@@ -43,18 +43,18 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "lint:fix": "eslint --fix prisma/dataFromDb.ts",
-    "test": "cross-env NODE_ENV=testing jest --config test/jest-e2e.ts  --verbose -T --detectOpenHandles",
+    "test": "cross-env NODE_ENV=testing jest --config test/jest-e2e.ts  --verbose -T --detectOpenHandles --colors",
     "test:pipe": "powershell ./test-pipe.ps1",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "env-cmd jest --config ./test/jest-e2e.json",
-    "postinstall": "",
-    "prepare": "is-ci || husky install",
     "update-package-lock": "powershell ./update-package-lock.ps1"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.456.0",
+    "@nestjs/axios": "^3.0.1",
+    "@nestjs/cli": "10.2.1",
     "@nestjs/common": "10.2.10",
     "@nestjs/config": "3.1.1",
     "@nestjs/core": "10.2.10",
@@ -68,6 +68,7 @@
     "@nestjs/typeorm": "10.0.1",
     "@types/multer-s3": "3.0.3",
     "apple-signin-auth": "1.7.5",
+    "axios": "^1.6.5",
     "bcryptjs": "2.4.3",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.0",
@@ -95,7 +96,6 @@
     "source-map-support": "0.5.21",
     "swagger-ui-express": "5.0.0",
     "twitter": "1.7.1",
-    "@nestjs/cli": "10.2.1",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

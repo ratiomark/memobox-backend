@@ -36,7 +36,7 @@ export class CardsTestService {
     });
     const trainingCardsEnhanced =
       this.cardDataProcessor.enhanceCardListTrainingPage(trainingCards);
-    this.logger.debug(trainingCards);
+    // this.logger.debug(trainingCards);
     return trainingCardsEnhanced;
     // const cards = await this.prisma.card.findMany({
     //   where: { shelfId, boxId },
