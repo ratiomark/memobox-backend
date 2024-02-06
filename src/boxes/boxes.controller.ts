@@ -81,4 +81,12 @@ export class BoxesController {
       body.index,
     );
   }
+
+  @Delete('final/:id')
+  deletePermanently(
+    @GetCurrentUser('id') userId: UserId,
+    @Param('id') boxId: BoxId,
+  ) {
+    return this.boxesService.deletePermanently(userId, boxId);
+  }
 }

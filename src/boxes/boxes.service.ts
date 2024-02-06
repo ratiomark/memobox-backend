@@ -10,7 +10,7 @@ import {
 import { uuid } from '@/utils/helpers/sql';
 import { CardsService } from '@/cards/cards.service';
 import { UserId, ShelfId, BoxId } from '@/common/types/prisma-entities';
-import { EVENT_BOX_DELETED } from '@/common/const/events';
+import { EVENT_BOX_DELETED, EVENT_BOX_RESTORED } from '@/common/const/events';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 type GenerateBoxesFromTemplateArg = {
@@ -230,7 +230,10 @@ export class BoxesService {
 
       return restoredBox;
     });
-
+    this.eventEmitter.emit(EVENT_BOX_RESTORED, {
+      userId,
+      event: EVENT_BOX_RESTORED,
+    });
     this.logger.debug(restoredBox);
     return restoredBox;
   }
@@ -255,6 +258,11 @@ export class BoxesService {
     return { box, cards };
   }
 
+  async deletePermanently(userId: UserId, boxId: BoxId) {
+    return await this.prisma.box.delete({
+      where: { id: boxId, userId },
+    });
+  }
   //   const [box, cards] = await Promise.all([
   //     this.prisma.box.updateMany({
   //       where: { shelfId, isDeleted: true },
