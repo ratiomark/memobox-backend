@@ -34,8 +34,6 @@ export class ShelvesController {
     @GetCurrentUser('id') userId: User['id'],
     @Body() createShelfDto: CreateShelfDto,
   ): Promise<ShelfFrontedResponse> {
-    // console.log(createShelfDto);
-    // console.log('SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS');
     return this.shelvesService.create(userId, createShelfDto);
   }
 
@@ -77,5 +75,13 @@ export class ShelvesController {
       shelfId,
       removeShelfDto.index,
     );
+  }
+
+  @Delete('final/:id')
+  deletePermanently(
+    @GetCurrentUser('id') userId: User['id'],
+    @Param('id') shelfId: Shelf['id'],
+  ) {
+    return this.shelvesService.deletePermanently(userId, shelfId);
   }
 }

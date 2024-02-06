@@ -110,6 +110,12 @@ export class ShelvesService {
     return shelfUpdated;
   }
 
+  async deletePermanently(userId: UserId, shelfId: ShelfId) {
+    return await this.prisma.shelf.delete({
+      where: { id: shelfId, userId },
+    });
+  }
+
   async deleteSoft(userId: UserId, shelfId: ShelfId, shelfIndex: number) {
     const [shelves] = await this.prisma.$transaction(async (prisma) => {
       // Обновление данных восстанавливаемой коробки
