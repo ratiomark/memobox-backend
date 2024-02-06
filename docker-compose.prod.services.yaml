@@ -1,19 +1,17 @@
 version: '3.8'
 services:
-  postgres:
-    container_name: db
+  postgres-prod:
+    container_name: ${DATABASE_CONTAINER_NAME}
     image: postgres:16-alpine
-    # networks:
-    #   - memobox-swarm
-    ports:
-      - "${DATABASE_PORT}:5432"
     restart: unless-stopped
     environment:
-      - POSTGRES_DB=${DATABASE_NAME}
       - POSTGRES_USER=${DATABASE_USERNAME}
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_NAME}
+    ports:
+      - '${DATABASE_HOST_PORT}:${DATABASE_PORT}'
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U user -d dbname']
+      test: ['CMD-SHELL', 'pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -21,20 +19,15 @@ services:
       - postgres-data:/var/lib/postgresql/data
 
   redis-prod:
-    container_name: redis
+    container_name: ${REDIS_CONTAINER_NAME}
     image: redis:6-alpine
     restart: unless-stopped
-    # networks:
-    #   - memobox-swarm
     ports:
-      - '6379:6379'
+      - '${REDIS_HOST_PORT}:${REDIS_PORT}'
     volumes:
       - redis-data:/data
-
-# networks:
-#   memobox-swarm:
-#     external: true
 
 volumes:
   postgres-data:
   redis-data:
+
