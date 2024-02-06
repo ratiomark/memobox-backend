@@ -18,6 +18,8 @@ echo "Ожидание Редиса..."
 /app/wait-for-it.sh ${REDIS_CONTAINER_NAME}:${REDIS_PORT} -t 60
 echo "БД и РЕДИС доступны."
 
+npx prisma migrate deploy
+npx prisma db seed
 # npm run start:db
 
 echo "Запуск сервера..."
