@@ -118,15 +118,36 @@ export class ShelvesService {
 
   async deleteSoft(userId: UserId, shelfId: ShelfId, shelfIndex: number) {
     const [shelves] = await this.prisma.$transaction(async (prisma) => {
-      // Обновление данных восстанавливаемой коробки
       const now = new Date();
       const shelves = await this.prisma.$queryRawUnsafe<Shelf[]>(
         `SELECT * FROM remove_shelf_and_update_indexes('${userId}', '${shelfId}', '${shelfIndex}') ;`,
       );
-      await prisma.box.updateMany({
-        where: { shelfId, userId },
-        data: { isDeleted: true, deletedAt: now },
+
+      const boxes = await this.prisma.box.findMany({
+        where: { userId, shelfId },
       });
+      // [ '{ boxId: 'c78455b1-25c8-4f72-a60a-e00ff29c6e53', index: 0 }', '...', ...]
+      const boxSortedIds = boxes
+        .sort((a, b) => {
+          if (a.specialType === 'new' && b.specialType !== 'new') return -1;
+          if (a.specialType !== 'new' && b.specialType === 'new') return 1;
+          if (a.specialType === 'learnt' && b.specialType !== 'learnt')
+            return 1;
+          if (a.specialType !== 'learnt' && b.specialType === 'learnt')
+            return -1;
+          return a.index - b.index;
+        })
+        .map((box, index) => JSON.stringify({ boxId: box.id, index }));
+
+      const query = `SELECT update_box_indexes($1::UUID, $2::UUID, $3::jsonb[], $4::TIMESTAMP)`;
+      await this.prisma.$executeRawUnsafe(
+        query,
+        userId,
+        shelfId,
+        boxSortedIds,
+        now,
+      );
+
       await prisma.card.updateMany({
         where: { shelfId, userId },
         data: { isDeleted: true, deletedAt: now },
@@ -134,22 +155,6 @@ export class ShelvesService {
       return shelves;
     });
 
-    // console.log(userId, shelfId, shelfIndex);
-    // const [shelves] = await Promise.all([
-    //   this.prisma.$queryRawUnsafe<Shelf[]>(
-    //     `SELECT * FROM remove_shelf_and_update_indexes('${userId}', '${shelfId}', '${shelfIndex}') ;`,
-    //   ),
-    //   this.boxesService.deleteSoftByShelfId(shelfId),
-    //   this.cardsService.deleteSoftByShelfId(shelfId),
-    // ]);
-    // `SELECT * FROM remove_shelf_and_update_indexes('${userId}', '${shelfId}', '${shelfIndex}', '${date}') ;`,
-    // // console.log(userId, shelfId, shelfIndex);
-    // const response = await this.prisma.$queryRawUnsafe<Shelf[]>(
-    //   // `SELECT * FROM add_shelf_and_update_indexes($1, $2);`,
-    //   // userId,
-    //   // createShelfDto.title,
-    //   `SELECT * FROM remove_shelf_and_update_indexes('${userId}', '${shelfId}', '${shelfIndex}') ;`,
-    // );
     this.eventEmitter.emit(EVENT_SHELF_DELETED, {
       userId,
       event: EVENT_SHELF_DELETED,
