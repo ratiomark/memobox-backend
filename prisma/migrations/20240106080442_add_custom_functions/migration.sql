@@ -18,11 +18,11 @@ END;
 ' LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION remove_shelf_and_update_indexes(_userId UUID, _shelfId UUID, _index INT)
+CREATE OR REPLACE FUNCTION remove_shelf_and_update_indexes(_userId UUID, _shelfId UUID, _index INT, _now TIMESTAMP DEFAULT NULL)
 RETURNS SETOF shelf AS '
 BEGIN
 	  UPDATE shelf
-	  SET "isDeleted" = true, "deletedAt" = NOW()
+	  SET "isDeleted" = true, "deletedAt" = COALESCE(_now, NOW()) 
 	  WHERE shelf.id = _shelfId;
 
     -- Обновляем индексы для оставшихся полок
@@ -39,7 +39,7 @@ END;
 ' LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION update_box_indexes(_userId UUID, _shelfId UUID, box_updates jsonb[])
+CREATE OR REPLACE FUNCTION update_box_indexes(_userId UUID, _shelfId UUID, box_updates jsonb[], _now TIMESTAMP DEFAULT NULL)
 RETURNS void AS $$
 DECLARE
     box_update jsonb;
@@ -50,13 +50,35 @@ BEGIN
         SET
             "index" = (box_update ->> 'index')::INT,
             "isDeleted" = true,
-            "deletedAt" = NOW()
+            -- Используем _now, если он не NULL; иначе NOW()
+            "deletedAt" = COALESCE(_now, NOW())
         WHERE "userId" = _userId 
           AND "shelfId" = _shelfId 
           AND "id" = (box_update ->>'boxId')::UUID;
     END LOOP;
 END;
 $$ LANGUAGE plpgsql;
+-- CREATE OR REPLACE FUNCTION update_box_indexes(
+--     _userId UUID,
+--     _shelfId UUID,
+--     box_updates JSONB[],
+--     _now TIMESTAMP DEFAULT NULL -- Задаем значение по умолчанию NULL для _now
+-- )
+-- RETURNS void AS $$
+-- BEGIN
+--     FOREACH box_update IN ARRAY box_updates
+--     LOOP
+--         UPDATE box
+--         SET
+--             "index" = (box_update ->> 'index')::INT,
+--             "isDeleted" = true,
+--             "deletedAt" = COALESCE(_now, NOW()) -- Используем _now, если он не NULL; иначе NOW()
+--         WHERE "userId" = _userId 
+--           AND "shelfId" = _shelfId 
+--           AND "id" = (box_update->>'boxId')::UUID;
+--     END LOOP;
+-- END;
+-- $$ LANGUAGE plpgsql;
 
 -- CREATE OR REPLACE FUNCTION update_box_indexes(_userId UUID, _shelfId UUID, _boxes JSONB[])
 -- RETURNS VOID AS $$
@@ -88,14 +110,3 @@ BEGIN
     END LOOP;
 END;
 ' LANGUAGE plpgsql;
--- CREATE OR REPLACE FUNCTION update_shelf_order(shelf_data jsonb)
--- RETURNS void AS '
--- DECLARE
---     item record;
--- BEGIN
---     FOR item IN SELECT * FROM jsonb_to_recordset(shelf_data) AS x(id uuid, index int)
---     LOOP
---         UPDATE shelf SET "index" = item.index WHERE id = item.id;
---     END LOOP;
--- END;
--- ' LANGUAGE plpgsql;
