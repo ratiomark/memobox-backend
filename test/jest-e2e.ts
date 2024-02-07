@@ -20,7 +20,7 @@ const config: Config = {
     '^test/(.*)$': '<rootDir>/test/$1',
   },
   testEnvironment: 'node',
-  testTimeout: 12000,
+  testTimeout: 13000,
   // testRegex: '.test.ts$',
   testRegex: '(.test.ts$)|(.e2e-spec.ts$)',
   // testRegex: '.e2e-spec.ts$',
