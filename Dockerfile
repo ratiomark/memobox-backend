@@ -7,7 +7,7 @@ FROM node:16-alpine as dependencies
 WORKDIR /app
 
 COPY app/package.json ./
-
+RUN rm -r prisma/migrations/20240106080448_add_utc_time_zone
 # Удаляем husky из скрипта prepare
 # RUN sed -i '/\"prepare\":/d' package.json
 
