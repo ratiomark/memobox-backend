@@ -53,3 +53,4 @@ gpt.*
 bash_aliases.sh
 start-dev.sh
 update-package-lock.ps1
+copy-scripts-from-vps.ps1
