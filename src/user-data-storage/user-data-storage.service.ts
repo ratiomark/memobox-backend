@@ -5,7 +5,7 @@ import {
   OnModuleInit,
   forwardRef,
 } from '@nestjs/common';
-import { BoxSpecialType, MissedTrainingValue, User } from '@prisma/client';
+import { Box, BoxSpecialType, MissedTrainingValue, User } from '@prisma/client';
 import { CommonShelfFrontedResponse } from '@/aggregate/entities/types';
 import { CardsService } from '@/cards/cards.service';
 import { commonShelfTemplate } from '@/common/const/commonShelfTemplate';
@@ -237,10 +237,13 @@ export class UserDataStorageService implements OnModuleInit {
         this.shelvesService.getShelvesAndBoxesData(userId),
       ]);
 
+    // this.logger.debug(boxes);
+
     return {
       shelves: shelvesDeleted,
-      boxes,
+      boxes: this.sortTrashBoxesBeforeResponse(boxes),
       cards,
+      boxesTest: this.sortTrashBoxesBeforeResponse(boxes, true),
       entitiesCount: {
         shelves: shelvesDeleted.length,
         boxes: boxes.length,
@@ -251,6 +254,94 @@ export class UserDataStorageService implements OnModuleInit {
     // return getTrashPageDataFromDbData(deletedShelvesAndShelvesData);
   }
 
+  sortTrashBoxesBeforeResponse(
+    boxes: Box[],
+    test: boolean = false,
+  ): Box[] | Box[][] {
+    // Сначала сортируем объекты по полю shelfId
+    boxes.sort((a, b) => {
+      if (a.shelfId < b.shelfId) return -1;
+      if (a.shelfId > b.shelfId) return 1;
+      return 0;
+    });
+    const testResponse: Box[][] = [];
+    // Затем внутри каждой полки сортируем объекты
+    for (let i = 0; i < boxes.length; i++) {
+      const shelfId = boxes[i].shelfId;
+      const shelfObjects: Box[] = [];
+      let j = i;
+      // Находим все объекты для текущей полки
+      while (j < boxes.length && boxes[j].shelfId === shelfId) {
+        shelfObjects.push(boxes[j]);
+        j++;
+      }
+      // Сортируем объекты внутри полки
+      shelfObjects.sort(this.sortTrashBoxes);
+      // this.logger.debug(shelfObjects);
+      // Заменяем отсортированные объекты в исходном массиве
+      if (test) {
+        testResponse.push(shelfObjects);
+        // вариант где собирается массив с массивами
+      } else {
+        boxes.splice(i, shelfObjects.length, ...shelfObjects);
+      }
+      i += shelfObjects.length - 1;
+    }
+
+    return test ? testResponse : boxes;
+  }
+
+  sortTrashBoxes(a: Box, b: Box) {
+    if (a.specialType === 'new' && b.specialType !== 'new') return -1;
+    if (a.specialType !== 'new' && b.specialType === 'new') return 1;
+    if (a.specialType === 'learnt' && b.specialType !== 'learnt') return 1;
+    if (a.specialType !== 'learnt' && b.specialType === 'learnt') return -1;
+    return a.index - b.index;
+  }
+  // sortTrashBoxes(boxes: Box[], test: boolean = false): Box[] | Box[][] {
+  //   boxes.sort((a, b) => {
+  //     if (a.shelfId < b.shelfId) return -1;
+  //     if (a.shelfId > b.shelfId) return 1;
+  //     return 0;
+  //   });
+
+  //   const result: Box[][] = [];
+  //   let currentShelfId: string | null = null;
+  //   let shelfBoxes: Box[] = [];
+
+  //   boxes.forEach((box) => {
+  //     // Если это первая итерация или начало новой полки
+  //     if (box.shelfId !== currentShelfId) {
+  //       if (shelfBoxes.length > 0) {
+  //         // Сохраняем предыдущую полку, если она не пуста
+  //         result.push(shelfBoxes);
+  //       }
+  //       shelfBoxes = []; // Начинаем собирать новую полку
+  //       currentShelfId = box.shelfId;
+  //     }
+
+  //     shelfBoxes.push(box);
+  //   });
+
+  //   // Не забываем добавить последнюю полку
+  //   if (shelfBoxes.length > 0) {
+  //     result.push(shelfBoxes);
+  //   }
+
+  //   // Сортировка каждой полки
+  //   result.forEach((shelf) => {
+  //     shelf.sort((a, b) => {
+  //       if (a.specialType === 'new' && b.specialType !== 'new') return -1;
+  //       if (a.specialType !== 'new' && b.specialType === 'new') return 1;
+  //       if (a.specialType === 'learnt' && b.specialType !== 'learnt') return 1;
+  //       if (a.specialType !== 'learnt' && b.specialType === 'learnt') return -1;
+  //       return a.index - b.index;
+  //     });
+  //   });
+
+  //   // Возвращаем либо исходный отсортированный массив, либо массив массивов в зависимости от флага test
+  //   return test ? result : boxes;
+  // }
   // D:\Programs\PostgreSQL\bin\pg_dump -U postgres memobox > D:\Programs\PostgreSQL\bin\db_backup.sql
   // D:\Programs\PostgreSQL\bin\psql -U postgres -d memobox -f D:\Programs\PostgreSQL\bin\db_backup.sql
 
