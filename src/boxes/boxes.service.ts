@@ -159,10 +159,14 @@ export class BoxesService {
     return this.prisma.box.findMany({
       where: {
         userId,
-        isDeleted: true,
-        shelf: {
-          isDeleted: false,
-        },
+        OR: [
+          { isDeleted: true },
+          {
+            shelf: {
+              isDeleted: true,
+            },
+          },
+        ],
       },
       include: {
         card: true,
@@ -184,9 +188,10 @@ export class BoxesService {
             index: 'asc',
           },
         },
-        {
-          deletedAt: 'asc',
-        },
+        // { index: 'asc' },
+        // {
+        //   deletedAt: 'asc',
+        // },
       ],
     });
   }
