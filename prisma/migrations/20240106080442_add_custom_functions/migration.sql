@@ -39,6 +39,44 @@ END;
 ' LANGUAGE plpgsql;
 
 
+CREATE OR REPLACE FUNCTION update_box_indexes(_userId UUID, _shelfId UUID, box_updates jsonb[])
+RETURNS void AS $$
+DECLARE
+    box_update jsonb;
+BEGIN
+    FOREACH box_update IN ARRAY box_updates
+    LOOP
+        UPDATE box
+        SET
+            "index" = (box_update ->> 'index')::INT,
+            "isDeleted" = true,
+            "deletedAt" = NOW()
+        WHERE "userId" = _userId 
+          AND "shelfId" = _shelfId 
+          AND "id" = (box_update ->>'boxId')::UUID;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- CREATE OR REPLACE FUNCTION update_box_indexes(_userId UUID, _shelfId UUID, _boxes JSONB[])
+-- RETURNS VOID AS $$
+-- DECLARE
+--     _box JSONB; -- Здесь изменено объявление на JSONB
+-- BEGIN
+--     -- Перебор массива JSON объектов, обновление индексов и флага isDeleted для каждой коробки
+--     FOR _box IN SELECT jsonb_array_elements(_boxes) LOOP
+--         -- Обновление индекса и установка флага isDeleted в true и deletedAt в NOW() для каждой коробки
+--         UPDATE box
+--         SET "index" = (_box->>'index')::INT,
+--             "isDeleted" = true,
+--             "deletedAt" = NOW()
+--         WHERE "userId" = _userId 
+--           AND "shelfId" = _shelfId 
+--           AND "id" = (_box->>'boxId')::UUID;
+--     END LOOP;
+-- END;
+-- $$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION update_shelf_order(_userId UUID, shelf_data jsonb)
 RETURNS void AS '
 DECLARE
