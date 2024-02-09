@@ -39,7 +39,28 @@ END;
 ' LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION update_box_indexes(_userId UUID, _shelfId UUID, box_updates jsonb[], _now TIMESTAMP DEFAULT NULL)
+CREATE OR REPLACE FUNCTION restore_update_box_indexes(_userId UUID, _shelfId UUID, box_updates jsonb[])
+RETURNS void AS $$
+DECLARE
+    box_update jsonb;
+BEGIN
+    FOREACH box_update IN ARRAY box_updates
+    LOOP
+        UPDATE box
+        SET
+            "index" = (box_update ->> 'index')::INT,
+            "isDeleted" = false,
+            -- Используем _now, если он не NULL; иначе NOW()
+            "deletedAt" = NULL
+        WHERE "userId" = _userId 
+          AND "shelfId" = _shelfId 
+          AND "id" = (box_update ->>'boxId')::UUID;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION delete_update_box_indexes(_userId UUID, _shelfId UUID, box_updates jsonb[], _now TIMESTAMP DEFAULT NULL)
 RETURNS void AS $$
 DECLARE
     box_update jsonb;
