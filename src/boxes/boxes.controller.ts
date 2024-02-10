@@ -51,9 +51,25 @@ export class BoxesController {
     );
   }
 
-  @Get()
-  findAll() {
-    return this.boxesService.findAll();
+  //NOTE: не меняет isDeleted на false, а просто меняет индекс коробки
+  @Patch('move-all-cards')
+  moveAllCardsFromBoxToBox(
+    @GetCurrentUser('id') userId: UserId,
+    @Body() body: { fromBoxId: BoxId; toBoxId: BoxId },
+  ) {
+    return this.boxesService.moveAllCardsFromBoxToBox(
+      userId,
+      body.fromBoxId,
+      body.toBoxId,
+    );
+  }
+
+  @Delete('final/:id')
+  deletePermanently(
+    @GetCurrentUser('id') userId: UserId,
+    @Param('id') boxId: BoxId,
+  ) {
+    return this.boxesService.deletePermanently(userId, boxId);
   }
 
   @Get(':id')
@@ -65,6 +81,17 @@ export class BoxesController {
   update(@Param('id') id: BoxId, @Body() updateBoxDto: UpdateBoxDto) {
     return this.boxesService.update(id, updateBoxDto);
   }
+
+  // 	moveAllCardsFromBoxToBox: build.mutation<string, { fromBoxId: string, toBoxId: string }>({
+  // 	query: ({ fromBoxId, toBoxId }) => ({
+  // 		url: 'boxes/move-all-cards',
+  // 		method: 'PATCH',
+  // 		body: {
+  // 			fromBoxId,
+  // 			toBoxId,
+  // 		}
+  // 	}),
+  // }),
 
   @Delete(':id')
   @Lock(LOCK_KEYS.removingBoxFromShelfToTrash)
@@ -80,13 +107,5 @@ export class BoxesController {
       body.shelfId,
       body.index,
     );
-  }
-
-  @Delete('final/:id')
-  deletePermanently(
-    @GetCurrentUser('id') userId: UserId,
-    @Param('id') boxId: BoxId,
-  ) {
-    return this.boxesService.deletePermanently(userId, boxId);
   }
 }
