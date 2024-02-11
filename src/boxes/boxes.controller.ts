@@ -51,9 +51,26 @@ export class BoxesController {
     );
   }
 
-  @Get()
-  findAll() {
-    return this.boxesService.findAll();
+  // использую для восстановления карточек новой и изученной коробки
+  @Patch('move-all-cards-and-restore')
+  moveAllCardsFromBoxToBoxAndRestore(
+    @GetCurrentUser('id') userId: UserId,
+    @Body() body: { fromBoxId: BoxId; toBoxId: BoxId; toShelfId: ShelfId },
+  ) {
+    return this.boxesService.moveAllCardsFromBoxToBoxAndRestore(
+      userId,
+      body.toShelfId,
+      body.fromBoxId,
+      body.toBoxId,
+    );
+  }
+
+  @Delete('final/:id')
+  deletePermanently(
+    @GetCurrentUser('id') userId: UserId,
+    @Param('id') boxId: BoxId,
+  ) {
+    return this.boxesService.deletePermanently(userId, boxId);
   }
 
   @Get(':id')
@@ -80,13 +97,5 @@ export class BoxesController {
       body.shelfId,
       body.index,
     );
-  }
-
-  @Delete('final/:id')
-  deletePermanently(
-    @GetCurrentUser('id') userId: UserId,
-    @Param('id') boxId: BoxId,
-  ) {
-    return this.boxesService.deletePermanently(userId, boxId);
   }
 }

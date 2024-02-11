@@ -13,20 +13,30 @@ import { Lock } from '@/common/decorators/lock.decorator';
 import { sleep } from '@/utils/common/sleep';
 import { LOCK_KEYS } from '@/common/const/lock-keys-patterns';
 import { appendTimeToFile } from '@/utils/helpers/append-data-to-file';
+import { AllConfigType } from '@/config/config.type';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class CardsService {
+  // private nodeEnv: string;
   private readonly logger = new Logger(CardsService.name);
   constructor(
     private readonly prisma: PrismaService,
     // private readonly cardDataProcessor: CardProcessorService,
     // @Inject(forwardRef(() => CardProcessorService))
     private readonly cardDataProcessor: CardProcessorService,
+    private readonly configService: ConfigService<AllConfigType>,
     // @Inject(forwardRef(() => UserDataStorageService))
     // private readonly userDataStorageService: UserDataStorageService,
   ) {}
 
   async drop(userId: UserId) {
+    const nodeEnv = this.configService.getOrThrow('app.nodeEnv', {
+      infer: true,
+    });
+    if (nodeEnv === 'production') {
+      throw new Error('You can not drop cards in production mode');
+    }
     const allCards = await this.prisma.card.findMany();
     const allBoxes = await this.prisma.box.findMany({
       orderBy: { index: 'asc' },
@@ -52,19 +62,6 @@ export class CardsService {
       });
     }
   }
-  // async drop(userId: UserId) {
-  //   const boxNew = await this.prisma.box.findFirst({ where: { index: 0 } });
-  //   // const box1 = await this.prisma.box.findFirst({ where: { index: 1 } });
-  //   // const cardsToDrop = cards.filter((card) => {
-  //   //   return card.box.index === 1;
-  //   // });
-  //   // const cardsToDropIds = cardsToDrop.map((card) => card.id);
-  //   await this.prisma.card.updateMany({
-  //     where: { userId, box: { index: 1 } },
-  //     // where: { id: { in: cardsToDropIds } },
-  //     data: { boxId: boxNew!.id, nextTraining: null },
-  //   });
-  // }
 
   async create(userId: UserId, createCardDto: CreateCardDto): Promise<Card> {
     const card = await this.prisma.card.create({
@@ -160,17 +157,29 @@ export class CardsService {
     });
   }
 
-  restoreByBoxId(boxId: BoxId) {
-    return this.prisma.card.updateMany({
-      where: { boxId },
-      data: { isDeleted: false, deletedAt: null },
-    });
-  }
+  // restoreByBoxId(boxId: BoxId) {
+  //   return this.prisma.card.updateMany({
+  //     where: { boxId },
+  //     data: { isDeleted: false, deletedAt: null },
+  //   });
+  // }
 
-  restoreByShelfId(shelfId: ShelfId) {
-    return this.prisma.card.updateMany({
-      where: { shelfId },
-      data: { isDeleted: false, deletedAt: null },
+  // restoreByShelfId(shelfId: ShelfId) {
+  //   return this.prisma.card.updateMany({
+  //     where: { shelfId },
+  //     data: { isDeleted: false, deletedAt: null },
+  //   });
+  // }
+
+  restoreByCardId(
+    userId: UserId,
+    shelfId: ShelfId,
+    boxId: BoxId,
+    cardId: CardId,
+  ) {
+    return this.prisma.card.update({
+      where: { id: cardId, userId },
+      data: { isDeleted: false, deletedAt: null, shelfId, boxId },
     });
   }
 
@@ -224,6 +233,18 @@ export class CardsService {
     });
   }
 
+  async restoreSeveralCards(moveCardsDto: MoveCardsDto) {
+    return await this.prisma.card.updateMany({
+      where: { id: { in: moveCardsDto.cardIds } },
+      data: {
+        shelfId: moveCardsDto.shelfId,
+        boxId: moveCardsDto.boxId,
+        isDeleted: false,
+        deletedAt: null,
+      },
+    });
+  }
+
   async moveCards(moveCardsDto: MoveCardsDto) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [_, cardsUpdated] = await this.prisma.$transaction([
@@ -240,9 +261,9 @@ export class CardsService {
     return this.cardDataProcessor.enhanceCardListViewPage(cardsUpdated);
   }
 
-  async deleteSoftByCardIdList(cardIds: CardId[]) {
-    const deletedCards = this.prisma.card.updateMany({
-      where: { id: { in: cardIds } },
+  async deleteSoftByCardIdList(cardIdList: CardId[]) {
+    const deletedCards = await this.prisma.card.updateMany({
+      where: { id: { in: cardIdList } },
       data: { isDeleted: true, deletedAt: new Date() },
     });
 
@@ -253,6 +274,18 @@ export class CardsService {
     return this.prisma.card.update({
       where: { id: cardId },
       data: { isDeleted: true, deletedAt: new Date() },
+    });
+  }
+
+  deletePermanentlyByCardIdList(userId: UserId, cardIdList: CardId[]) {
+    return this.prisma.card.deleteMany({
+      where: { id: { in: cardIdList }, userId },
+    });
+  }
+
+  deletePermanentlyByCardId(userId: UserId, cardId: CardId) {
+    return this.prisma.card.delete({
+      where: { id: cardId, userId },
     });
   }
 

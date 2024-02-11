@@ -8,11 +8,13 @@ import {
 import { commonShelfInitialSeedState } from 'test/mock/initial-seed-state';
 import { sleep } from '@/utils/common/sleep';
 import { generateRandomString } from 'test/utils/getRandomString';
+import { getFullUrl } from 'test/utils/helpers/getFullUrl';
+import { restoreDb } from 'test/utils/helpers/restoreDb';
+import { loginAndGetToken } from 'test/utils/helpers/loginAndGetToken';
 // @Patch('restore/:id')
 export default () => {
   describe('Test shelf delete/restore', () => {
-    const app = APP_URL;
-    const app_url_full = app + API_PREFIX;
+    const app_url_full = getFullUrl();
     let userToken;
     let shelvesData;
     let isSeedInInitialState = true;
@@ -26,11 +28,9 @@ export default () => {
         .post('/auth/email/login')
         .send({ email: TESTER_EMAIL, password: TESTER_PASSWORD });
 
-      userToken = loginResponse.body.token;
+      userToken = await loginAndGetToken();
 
-      await request(app_url_full)
-        .post('/aggregate/restore-db')
-        .auth(userToken, { type: 'bearer' });
+      await restoreDb(userToken);
       // Получение данных о полках и коробках
       await sleep(3);
       const cupboardResponse = await request(app_url_full)
@@ -149,11 +149,9 @@ export default () => {
         .post('/auth/email/login')
         .send({ email: TESTER_EMAIL, password: TESTER_PASSWORD });
 
-      userToken = loginResponse.body.token;
+      userToken = await loginAndGetToken();
 
-      await request(app_url_full)
-        .post('/aggregate/restore-db')
-        .auth(userToken, { type: 'bearer' });
+      await restoreDb(userToken);
 
       const response = await request(app_url_full)
         .get('/aggregate/cupboard')

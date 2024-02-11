@@ -11,7 +11,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Box, Card, Shelf, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import { CardsTestService } from './services/cards-test.service';
 import { CardsService } from './cards.service';
 import { CreateCardDto } from './dto/create-card.dto';
@@ -23,6 +23,7 @@ import {
 import { TrainingResponseDto } from './dto/update-cards-after-training.dto';
 import { Lock } from '@/common/decorators/lock.decorator';
 import { LOCK_KEYS } from '@/common/const/lock-keys-patterns';
+import { BoxId, CardId, ShelfId, UserId } from '@/common/types/prisma-entities';
 
 @ApiTags('Cards')
 @Controller({
@@ -38,25 +39,21 @@ export class CardsController {
 
   @Post()
   create(
-    @GetCurrentUser('id') userId: User['id'],
+    @GetCurrentUser('id') userId: UserId,
     @Body() createCardDto: CreateCardDto,
   ) {
     return this.cardsService.create(userId, createCardDto);
   }
 
   @Post('drop')
-  drop(@GetCurrentUser('id') userId: User['id']) {
+  drop(@GetCurrentUser('id') userId: UserId) {
     return this.cardsService.drop(userId);
   }
 
-  // @Get()
-  // getCardsShelvesBoxesData(@GetCurrentUser('id') userId: User['id']) {
-  //   return this.cardsService.getCardsShelvesBoxesData(userId);
-  // }
   @Lock(LOCK_KEYS.updateCardsAfterTraining)
   @Post('training/answers/by-prisma')
   updateCardsAfterTrainingPrisma(
-    @GetCurrentUser('id') userId: User['id'],
+    @GetCurrentUser('id') userId: UserId,
     @Body() body: any,
     // @Body() body: TrainingResponseDto,
   ) {
@@ -66,7 +63,7 @@ export class CardsController {
   @Lock(LOCK_KEYS.updateCardsAfterTraining)
   @Post('training/answers')
   updateCardsAfterTraining(
-    @GetCurrentUser('id') userId: User['id'],
+    @GetCurrentUser('id') userId: UserId,
     @Body() body: any,
     // @Body() body: TrainingResponseDto,
   ) {
@@ -75,9 +72,9 @@ export class CardsController {
 
   @Get('training/:shelfId/:boxId')
   findTrainingCardsByShelfIdAndBoxId(
-    @GetCurrentUser('id') userId: User['id'],
-    @Param('shelfId') shelfId: Shelf['id'],
-    @Param('boxId') boxId: Box['id'],
+    @GetCurrentUser('id') userId: UserId,
+    @Param('shelfId') shelfId: ShelfId,
+    @Param('boxId') boxId: BoxId,
   ) {
     return this.cardsService.findTrainingCardsByShelfIdAndBoxId(
       userId,
@@ -94,9 +91,9 @@ export class CardsController {
 
   @Get('get-by-shelfId-and-boxId/:shelfId/:boxId')
   getCardsByShelfIdAndBoxId(
-    @GetCurrentUser('id') userId: User['id'],
-    @Param('shelfId') shelfId: Shelf['id'],
-    @Param('boxId') boxId: Box['id'],
+    @GetCurrentUser('id') userId: UserId,
+    @Param('shelfId') shelfId: ShelfId,
+    @Param('boxId') boxId: BoxId,
   ) {
     return this.cardsTestService.getCardsByShelfIdAndBoxId(
       userId,
@@ -105,14 +102,32 @@ export class CardsController {
     );
   }
 
+  @Patch('restore-several-cards')
+  restoreSeveralCards(@Body() moveCardsDto: MoveCardsDto) {
+    return this.cardsService.restoreSeveralCards(moveCardsDto);
+  }
+
+  @Patch('restore/:cardId')
+  restoreByCardId(
+    @GetCurrentUser('id') userId: UserId,
+    @Param('cardId') cardId: CardId,
+    @Body() body: { boxId: BoxId; shelfId: ShelfId },
+  ) {
+    return this.cardsService.restoreByCardId(
+      userId,
+      body.shelfId,
+      body.boxId,
+      cardId,
+    );
+  }
+
   @Patch('move-cards')
   moveCards(@Body() moveCardsDto: MoveCardsDto) {
-    console.log(moveCardsDto);
     return this.cardsService.moveCards(moveCardsDto);
   }
 
   @Patch(':id')
-  update(@Param('id') id: Card['id'], @Body() updateCardDto: UpdateCardDto) {
+  update(@Param('id') id: CardId, @Body() updateCardDto: UpdateCardDto) {
     return this.cardsService.update(id, updateCardDto);
   }
 
@@ -121,8 +136,27 @@ export class CardsController {
     return this.cardsService.deleteSoftByCardIdList(removeCardsDto.cardIds);
   }
 
+  @Delete('remove-final-several-cards')
+  deletePermanentlyByCardIdList(
+    @GetCurrentUser('id') userId: UserId,
+    @Body() removeCardsDto: RemoveMultipleCardsDto,
+  ) {
+    return this.cardsService.deletePermanentlyByCardIdList(
+      userId,
+      removeCardsDto.cardIds,
+    );
+  }
+
+  @Delete('final/:id')
+  deletePermanentlyByCardId(
+    @GetCurrentUser('id') userId: UserId,
+    @Param('id') cardId: CardId,
+  ) {
+    return this.cardsService.deletePermanentlyByCardId(userId, cardId);
+  }
+
   @Delete(':id')
-  deleteSoftByCardId(@Param('id') id: Card['id']) {
+  deleteSoftByCardId(@Param('id') id: CardId) {
     return this.cardsService.deleteSoftByCardId(id);
   }
 }

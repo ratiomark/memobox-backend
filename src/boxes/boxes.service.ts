@@ -81,8 +81,16 @@ export class BoxesService {
     return boxesData;
   }
 
-  findAll() {
-    return `This action returns all boxes`;
+  async moveAllCardsFromBoxToBoxAndRestore(
+    userId: UserId,
+    shelfId: ShelfId,
+    fromBoxId: BoxId,
+    toBoxId: BoxId,
+  ) {
+    return await this.prisma.card.updateMany({
+      where: { boxId: fromBoxId, userId },
+      data: { boxId: toBoxId, isDeleted: false, deletedAt: null, shelfId },
+    });
   }
 
   findOne(id: number) {
@@ -159,10 +167,14 @@ export class BoxesService {
     return this.prisma.box.findMany({
       where: {
         userId,
-        isDeleted: true,
-        shelf: {
-          isDeleted: false,
-        },
+        OR: [
+          { isDeleted: true },
+          {
+            shelf: {
+              isDeleted: true,
+            },
+          },
+        ],
       },
       include: {
         card: true,
@@ -184,9 +196,6 @@ export class BoxesService {
             index: 'asc',
           },
         },
-        {
-          deletedAt: 'asc',
-        },
       ],
     });
   }
@@ -198,6 +207,8 @@ export class BoxesService {
     restoreToIndex: number,
   ) {
     const restoredBox = await this.prisma.$transaction(async (prisma) => {
+      const boxTargeted = await prisma.box.findUnique({ where: { id: boxId } });
+
       // Обновление данных восстанавливаемой коробки
       const restoredBox = await prisma.box.update({
         where: { id: boxId, userId },
@@ -208,7 +219,10 @@ export class BoxesService {
           index: restoreToIndex,
         },
       });
-
+      await prisma.card.updateMany({
+        where: { boxId, userId },
+        data: { isDeleted: false, deletedAt: null },
+      });
       // Обновление индексов для остальных коробок на полке
       await prisma.box.updateMany({
         where: {
@@ -220,6 +234,9 @@ export class BoxesService {
           id: {
             not: boxId,
           },
+          specialType: {
+            not: 'new',
+          },
         },
         data: {
           index: {
@@ -227,7 +244,26 @@ export class BoxesService {
           },
         },
       });
-
+      // если коробка была восстановлена, не на свою полку, то нужно обновить индексы на старой полке
+      if (boxTargeted && boxTargeted.shelfId !== shelfIdTo) {
+        await prisma.box.updateMany({
+          where: {
+            userId: userId,
+            shelfId: boxTargeted.shelfId,
+            index: {
+              gte: boxTargeted.index,
+            },
+            specialType: {
+              not: 'new',
+            },
+          },
+          data: {
+            index: {
+              decrement: 1,
+            },
+          },
+        });
+      }
       return restoredBox;
     });
     this.eventEmitter.emit(EVENT_BOX_RESTORED, {

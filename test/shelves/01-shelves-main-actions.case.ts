@@ -7,11 +7,14 @@ import {
 } from '../utils/constants';
 import { commonShelfInitialSeedState } from 'test/mock/initial-seed-state';
 import { generateRandomString } from 'test/utils/getRandomString';
+import { getFullUrl } from 'test/utils/helpers/getFullUrl';
+import { validateInitialCupboardState } from 'test/utils/helpers/validateInitialCupboardState';
+import { restoreDb } from 'test/utils/helpers/restoreDb';
+import { loginAndGetToken } from 'test/utils/helpers/loginAndGetToken';
 
 export default () => {
   describe('Test shelf main actions', () => {
-    const app = APP_URL;
-    const app_url_full = app + API_PREFIX;
+    const app_url_full = getFullUrl();
     let userToken;
     let shelvesData;
     let isSeedInInitialState = true;
@@ -30,16 +33,9 @@ export default () => {
     // });
 
     beforeAll(async () => {
-      // Получение токена пользователя
-      const loginResponse = await request(app_url_full)
-        .post('/auth/email/login')
-        .send({ email: TESTER_EMAIL, password: TESTER_PASSWORD });
+      userToken = await loginAndGetToken();
 
-      userToken = loginResponse.body.token;
-
-      await request(app_url_full)
-        .post('/aggregate/restore-db')
-        .auth(userToken, { type: 'bearer' });
+      await restoreDb(userToken);
       // Получение данных о полках и коробках
       const cupboardResponse = await request(app_url_full)
         .get('/aggregate/cupboard')
@@ -56,28 +52,14 @@ export default () => {
         throw new Error('Seed test failed, skipping...');
       }
     });
+
     it('should validate initial cupboard state', async () => {
       try {
-        const response = await request(app_url_full)
-          .get('/aggregate/cupboard')
-          .auth(userToken, { type: 'bearer' });
-        const { shelves, commonShelf } = response.body;
-        expect(response.status).toBe(200);
-        expect(shelves).toBeInstanceOf(Array);
-        expect(shelves).toHaveLength(1);
-        expect(shelves[0]).toBeInstanceOf(Object);
-        expect(shelves[0].boxesData).toBeInstanceOf(Array);
-        expect(shelves[0].boxesData).toHaveLength(6);
-        // В данном примере, если commonShelf содержит структуру, идентичную commonShelfInitialSeedState (или более широкую, но включающую в себя все ключи и значения из commonShelfInitialSeedState), тест будет успешно пройден.
-        // Обратите внимание, что если commonShelf содержит дополнительные ключи и значения, не указанные в commonShelfInitialSeedState, тест всё равно будет успешным. Если вам нужно точное соответствие без дополнительных ключей, используйте expect(commonShelf).toEqual(commonShelfInitialSeedState);.
-        expect(commonShelf).toEqual(
-          expect.objectContaining(commonShelfInitialSeedState),
-        );
-        // shelfId = shelves[0].id;
-        sortedBoxesIds = shelves[0].boxesData.map((box) => box.id);
-        // newCardsBoxId = sortedBoxesIds[0];
+        const { shelfId, sortedBoxes } =
+          await validateInitialCupboardState(userToken);
+        sortedBoxesIds = sortedBoxes;
       } catch (error) {
-        isSeedInInitialState = false;
+        isSeedInInitialState = false; // Обновляем состояние в случае ошибки
         throw new Error(error);
       }
     });
@@ -220,11 +202,9 @@ export default () => {
         .post('/auth/email/login')
         .send({ email: TESTER_EMAIL, password: TESTER_PASSWORD });
 
-      userToken = loginResponse.body.token;
+      userToken = await loginAndGetToken();
 
-      await request(app_url_full)
-        .post('/aggregate/restore-db')
-        .auth(userToken, { type: 'bearer' });
+      await restoreDb(userToken);
 
       const response = await request(app_url_full)
         .get('/aggregate/cupboard')

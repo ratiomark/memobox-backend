@@ -1,10 +1,10 @@
 # Остановить скрипт при ошибке
 $ErrorActionPreference = "Stop"
 
-# Start-Sleep -Seconds 3
+# $command = ".\terminate-server.ps1 -Param1 'value1'"
+# & $command
 
-# & ".\terminate-server.ps1"
-npx kill-port 3000
+& ".\terminate-server.ps1"
 
 # Start-Sleep -Seconds 3
 

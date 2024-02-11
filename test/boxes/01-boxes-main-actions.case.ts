@@ -1,17 +1,13 @@
 import request from 'supertest';
-import {
-  API_PREFIX,
-  APP_URL,
-  TESTER_EMAIL,
-  TESTER_PASSWORD,
-} from '../utils/constants';
 import { commonShelfInitialSeedState } from 'test/mock/initial-seed-state';
-import { boxes } from 'prisma/mock-data/staticDataFromDb';
-// return { box, cards };
+import { getFullUrl } from 'test/utils/helpers/getFullUrl';
+import { validateInitialCupboardState } from 'test/utils/helpers/validateInitialCupboardState';
+import { loginAndGetToken } from 'test/utils/helpers/loginAndGetToken';
+import { getCupboard } from 'test/utils/helpers/getCupboard';
+
 export default () => {
   describe('Test box main actions', () => {
-    const app = APP_URL;
-    const app_url_full = app + API_PREFIX;
+    const app_url_full = getFullUrl();
     let userToken;
     let shelvesData;
     let shelfId;
@@ -26,22 +22,15 @@ export default () => {
     let boxIdDeleted;
 
     beforeAll(async () => {
-      // Получение токена пользователя
-      const loginResponse = await request(app_url_full)
-        .post('/auth/email/login')
-        .send({ email: TESTER_EMAIL, password: TESTER_PASSWORD });
-
-      userToken = loginResponse.body.token;
-      userId = loginResponse.body.user.userId;
+      const responseBody = await loginAndGetToken(true);
+      userToken = responseBody.token;
+      userId = responseBody.user.userId;
 
       // Получение данных о полках и коробках
-      const cupboardResponse = await request(app_url_full)
-        .get('/aggregate/cupboard')
-        .auth(userToken, { type: 'bearer' });
-      // await dropCards();
-      shelvesData = cupboardResponse.body.shelves;
-      initialShelfTitle = cupboardResponse.body.shelves[0].title;
-      shelfId = cupboardResponse.body.shelves[0].id;
+      const { shelves } = await getCupboard(userToken);
+      shelvesData = shelves;
+      initialShelfTitle = shelves[0].title;
+      shelfId = shelves[0].id;
     });
 
     beforeEach(() => {
@@ -52,24 +41,11 @@ export default () => {
 
     it('should validate initial cupboard state', async () => {
       try {
-        const response = await request(app_url_full)
-          .get('/aggregate/cupboard')
-          .auth(userToken, { type: 'bearer' });
-        const { shelves, commonShelf } = response.body;
-        expect(response.status).toBe(200);
-        expect(shelves).toBeInstanceOf(Array);
-        expect(shelves).toHaveLength(1);
-        expect(shelves[0]).toBeInstanceOf(Object);
-        expect(shelves[0].title).toEqual(initialShelfTitle);
-        expect(shelves[0].boxesData).toBeInstanceOf(Array);
-        expect(shelves[0].boxesData).toHaveLength(initialShelfBoxCountFreeze);
-        expect(commonShelf).toEqual(
-          expect.objectContaining(commonShelfInitialSeedState),
-        );
-        updatedShelfBoxCount = shelves[0].boxesData.length;
-        sortedBoxesIds = shelves[0].boxesData.map((box) => box.id);
+        const { sortedBoxes } = await validateInitialCupboardState(userToken);
+        sortedBoxesIds = sortedBoxes;
+        updatedShelfBoxCount = sortedBoxesIds.length;
       } catch (error) {
-        isSeedInInitialState = false;
+        isSeedInInitialState = false; // Обновляем состояние в случае ошибки
         throw new Error(error);
       }
     });
@@ -88,10 +64,8 @@ export default () => {
       updatedShelfBoxCount = updatedShelfBoxCount - 1;
       expect(boxesUpdated).toHaveLength(updatedShelfBoxCount);
 
-      const cupboardResponseAfterDeletion = await request(app_url_full)
-        .get('/aggregate/cupboard')
-        .auth(userToken, { type: 'bearer' });
-      const { shelves } = cupboardResponseAfterDeletion.body;
+      const cupboardResponseAfterDeletion = await getCupboard(userToken);
+      const { shelves } = cupboardResponseAfterDeletion;
       expect(shelves[0].boxesData).toHaveLength(updatedShelfBoxCount);
       shelves[0].boxesData.forEach((box, index) => {
         if (index === 0) {
@@ -123,11 +97,9 @@ export default () => {
       expect(boxRestored.deletedAt).toBeNull();
       updatedShelfBoxCount = updatedShelfBoxCount + 1;
 
-      const cupboardResponseAfterRestoring = await request(app_url_full)
-        .get('/aggregate/cupboard')
-        .auth(userToken, { type: 'bearer' });
+      const cupboardResponseAfterRestoring = await getCupboard(userToken);
 
-      const { shelves } = cupboardResponseAfterRestoring.body;
+      const { shelves } = cupboardResponseAfterRestoring;
 
       expect(shelves[0].boxesData).toHaveLength(updatedShelfBoxCount);
       shelves[0].boxesData.forEach((box, index) => {
@@ -143,11 +115,8 @@ export default () => {
     });
 
     it('should validate cupboard state after deleting and restoring box', async () => {
-      const response = await request(app_url_full)
-        .get('/aggregate/cupboard')
-        .auth(userToken, { type: 'bearer' });
-      const { shelves, commonShelf } = response.body;
-      expect(response.status).toBe(200);
+      const response = await getCupboard(userToken);
+      const { shelves, commonShelf } = response;
       expect(shelves).toBeInstanceOf(Array);
       expect(shelves).toHaveLength(1);
       expect(shelves[0]).toBeInstanceOf(Object);
@@ -231,20 +200,7 @@ export default () => {
     });
 
     it('should validate cupboard state after deleting and restoring box', async () => {
-      const response = await request(app_url_full)
-        .get('/aggregate/cupboard')
-        .auth(userToken, { type: 'bearer' });
-      const { shelves, commonShelf } = response.body;
-      expect(response.status).toBe(200);
-      expect(shelves).toBeInstanceOf(Array);
-      expect(shelves).toHaveLength(1);
-      expect(shelves[0]).toBeInstanceOf(Object);
-      expect(shelves[0].title).toEqual(initialShelfTitle);
-      expect(shelves[0].boxesData).toBeInstanceOf(Array);
-      expect(shelves[0].boxesData).toHaveLength(initialShelfBoxCountFreeze);
-      expect(commonShelf).toEqual(
-        expect.objectContaining(commonShelfInitialSeedState),
-      );
+      await validateInitialCupboardState(userToken);
     });
   });
 };

@@ -1,1 +1,1 @@
-ALTER DATABASE memobox SET timezone TO 'UTC';
+ALTER DATABASE "memobox" SET timezone TO 'UTC';
