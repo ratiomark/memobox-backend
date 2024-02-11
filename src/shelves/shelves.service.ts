@@ -139,7 +139,7 @@ export class ShelvesService {
         })
         .map((box, index) => JSON.stringify({ boxId: box.id, index }));
 
-      const query = `SELECT update_box_indexes($1::UUID, $2::UUID, $3::jsonb[], $4::TIMESTAMP)`;
+      const query = `SELECT delete_update_box_indexes($1::UUID, $2::UUID, $3::jsonb[], $4::TIMESTAMP)`;
       await this.prisma.$executeRawUnsafe(
         query,
         userId,
@@ -164,13 +164,25 @@ export class ShelvesService {
 
   async restore(userId: UserId, shelfId: ShelfId) {
     const response = await this.prisma.$transaction(async (prisma) => {
-      await prisma.box.updateMany({
-        where: { shelfId, userId },
-        data: {
-          isDeleted: false,
-          deletedAt: null,
-        },
+      const boxes = await this.prisma.box.findMany({
+        where: { userId, shelfId },
       });
+      // [ '{ boxId: 'c78455b1-25c8-4f72-a60a-e00ff29c6e53', index: 0 }', '...', ...]
+      const boxSortedIds = boxes
+        .sort((a, b) => {
+          if (a.specialType === 'new' && b.specialType !== 'new') return -1;
+          if (a.specialType !== 'new' && b.specialType === 'new') return 1;
+          if (a.specialType === 'learnt' && b.specialType !== 'learnt')
+            return 1;
+          if (a.specialType !== 'learnt' && b.specialType === 'learnt')
+            return -1;
+          return a.index - b.index;
+        })
+        .map((box, index) => JSON.stringify({ boxId: box.id, index }));
+
+      const query = `SELECT restore_update_box_indexes($1::UUID, $2::UUID, $3::jsonb[])`;
+      await this.prisma.$executeRawUnsafe(query, userId, shelfId, boxSortedIds);
+
       await prisma.card.updateMany({
         where: { shelfId, userId },
         data: {
