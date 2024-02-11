@@ -22,7 +22,7 @@ foreach ($processId in $processIds) {
     }
 }
 
-Start-Sleep -Seconds 5 
+Start-Sleep -Seconds 2
 
 Write-Host "Stopping db conection(probably)..."
 $processInfo8000 = netstat -ano | Select-String ":8000" | ForEach-Object {
