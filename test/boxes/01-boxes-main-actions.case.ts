@@ -7,11 +7,12 @@ import {
 } from '../utils/constants';
 import { commonShelfInitialSeedState } from 'test/mock/initial-seed-state';
 import { boxes } from 'prisma/mock-data/staticDataFromDb';
+import { getFullUrl } from 'test/utils/helpers/getFullUrl';
+import { validateInitialCupboardState } from 'test/utils/helpers/validateInitialCupboardState';
 // return { box, cards };
 export default () => {
   describe('Test box main actions', () => {
-    const app = APP_URL;
-    const app_url_full = app + API_PREFIX;
+    const app_url_full = getFullUrl();
     let userToken;
     let shelvesData;
     let shelfId;
@@ -52,27 +53,37 @@ export default () => {
 
     it('should validate initial cupboard state', async () => {
       try {
-        const response = await request(app_url_full)
-          .get('/aggregate/cupboard')
-          .auth(userToken, { type: 'bearer' });
-        const { shelves, commonShelf } = response.body;
-        expect(response.status).toBe(200);
-        expect(shelves).toBeInstanceOf(Array);
-        expect(shelves).toHaveLength(1);
-        expect(shelves[0]).toBeInstanceOf(Object);
-        expect(shelves[0].title).toEqual(initialShelfTitle);
-        expect(shelves[0].boxesData).toBeInstanceOf(Array);
-        expect(shelves[0].boxesData).toHaveLength(initialShelfBoxCountFreeze);
-        expect(commonShelf).toEqual(
-          expect.objectContaining(commonShelfInitialSeedState),
-        );
-        updatedShelfBoxCount = shelves[0].boxesData.length;
-        sortedBoxesIds = shelves[0].boxesData.map((box) => box.id);
+        const { sortedBoxes } = await validateInitialCupboardState(userToken);
+        sortedBoxesIds = sortedBoxes;
+        updatedShelfBoxCount = sortedBoxesIds.length;
       } catch (error) {
-        isSeedInInitialState = false;
+        isSeedInInitialState = false; // Обновляем состояние в случае ошибки
         throw new Error(error);
       }
     });
+    // it('should validate initial cupboard state', async () => {
+    //   try {
+    //     const response = await request(app_url_full)
+    //       .get('/aggregate/cupboard')
+    //       .auth(userToken, { type: 'bearer' });
+    //     const { shelves, commonShelf } = response.body;
+    //     expect(response.status).toBe(200);
+    //     expect(shelves).toBeInstanceOf(Array);
+    //     expect(shelves).toHaveLength(1);
+    //     expect(shelves[0]).toBeInstanceOf(Object);
+    //     expect(shelves[0].title).toEqual(initialShelfTitle);
+    //     expect(shelves[0].boxesData).toBeInstanceOf(Array);
+    //     expect(shelves[0].boxesData).toHaveLength(initialShelfBoxCountFreeze);
+    //     expect(commonShelf).toEqual(
+    //       expect.objectContaining(commonShelfInitialSeedState),
+    //     );
+    //     updatedShelfBoxCount = shelves[0].boxesData.length;
+    //     sortedBoxesIds = shelves[0].boxesData.map((box) => box.id);
+    //   } catch (error) {
+    //     isSeedInInitialState = false;
+    //     throw new Error(error);
+    //   }
+    // });
 
     it(`should delete box [index ${indexToDelete}]`, async () => {
       boxIdDeleted = sortedBoxesIds[indexToDelete];

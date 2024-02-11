@@ -8,20 +8,21 @@ import {
 import { addDays, addHours, addMinutes, addMonths, addWeeks } from 'date-fns';
 import { commonShelfInitialSeedState } from 'test/mock/initial-seed-state';
 import { AnswerType } from '@/common/types/frontend/types';
+import { getFullUrl } from 'test/utils/helpers/getFullUrl';
+import { validateInitialCupboardState } from 'test/utils/helpers/validateInitialCupboardState';
 
 export default () => {
   describe('Test cards training responses', () => {
-    const app = APP_URL;
-    const app_url_full = app + API_PREFIX;
+    const app_url_full = getFullUrl();
     let userToken;
-    let shelfId;
+    let initialShelfId;
     let isSeedInInitialState = true;
     let sortedBoxesIds;
 
     const getCardsByBoxIndex = async (boxIndex) => {
       const cardsResponse = await request(app_url_full)
         .get(
-          `/cards/get-by-shelfId-and-boxId/${shelfId}/${sortedBoxesIds[boxIndex]}`,
+          `/cards/get-by-shelfId-and-boxId/${initialShelfId}/${sortedBoxesIds[boxIndex]}`,
         )
         .auth(userToken, { type: 'bearer' });
       return cardsResponse.body;
@@ -29,7 +30,7 @@ export default () => {
 
     const getTrainingCardsByBoxIndex = async (boxIndex) => {
       const cardsResponse = await request(app_url_full)
-        .get(`/cards/training/${shelfId}/${sortedBoxesIds[boxIndex]}`)
+        .get(`/cards/training/${initialShelfId}/${sortedBoxesIds[boxIndex]}`)
         .auth(userToken, { type: 'bearer' });
       return cardsResponse.body;
     };
@@ -90,7 +91,9 @@ export default () => {
 
       userToken = loginResponse.body.token;
 
-      await dropCards();
+      await request(app_url_full)
+        .post('/aggregate/restore-db')
+        .auth(userToken, { type: 'bearer' });
     });
 
     beforeEach(() => {
@@ -98,31 +101,41 @@ export default () => {
         throw new Error('Seed test failed, skipping...');
       }
     });
-
     it('should validate initial cupboard state', async () => {
       try {
-        const response = await request(app_url_full)
-          .get('/aggregate/cupboard')
-          .auth(userToken, { type: 'bearer' });
-        const { shelves, commonShelf } = response.body;
-        expect(response.status).toBe(200);
-        expect(shelves).toBeInstanceOf(Array);
-        expect(shelves).toHaveLength(1); // Проверка на количество элементов в массиве
-        expect(shelves[0]).toBeInstanceOf(Object); // Проверка на то, что элемент массива является объектом
-        expect(shelves[0].boxesData).toBeInstanceOf(Array); // Проверка на то, что элемент массива является объектом
-        expect(shelves[0].boxesData).toHaveLength(6); // Проверка на количество элементов в массиве
-        // В данном примере, если response.body содержит структуру, идентичную expectedObject (или более широкую, но включающую в себя все ключи и значения из expectedObject), тест будет успешно пройден.
-        // Обратите внимание, что если response.body содержит дополнительные ключи и значения, не указанные в expectedObject, тест всё равно будет успешным. Если вам нужно точное соответствие без дополнительных ключей, используйте expect(response.body).toEqual(expectedObject);.
-        expect(commonShelf).toEqual(
-          expect.objectContaining(commonShelfInitialSeedState),
-        );
-        shelfId = shelves[0].id;
-        sortedBoxesIds = shelves[0].boxesData.map((box) => box.id);
+        const { shelfId, sortedBoxes } =
+          await validateInitialCupboardState(userToken);
+        initialShelfId = shelfId;
+        sortedBoxesIds = sortedBoxes;
       } catch (error) {
-        isSeedInInitialState = false;
+        isSeedInInitialState = false; // Обновляем состояние в случае ошибки
         throw new Error(error);
       }
     });
+    // it('should validate initial cupboard state', async () => {
+    //   try {
+    //     const response = await request(app_url_full)
+    //       .get('/aggregate/cupboard')
+    //       .auth(userToken, { type: 'bearer' });
+    //     const { shelves, commonShelf } = response.body;
+    //     expect(response.status).toBe(200);
+    //     expect(shelves).toBeInstanceOf(Array);
+    //     expect(shelves).toHaveLength(1); // Проверка на количество элементов в массиве
+    //     expect(shelves[0]).toBeInstanceOf(Object); // Проверка на то, что элемент массива является объектом
+    //     expect(shelves[0].boxesData).toBeInstanceOf(Array); // Проверка на то, что элемент массива является объектом
+    //     expect(shelves[0].boxesData).toHaveLength(6); // Проверка на количество элементов в массиве
+    //     // В данном примере, если response.body содержит структуру, идентичную expectedObject (или более широкую, но включающую в себя все ключи и значения из expectedObject), тест будет успешно пройден.
+    //     // Обратите внимание, что если response.body содержит дополнительные ключи и значения, не указанные в expectedObject, тест всё равно будет успешным. Если вам нужно точное соответствие без дополнительных ключей, используйте expect(response.body).toEqual(expectedObject);.
+    //     expect(commonShelf).toEqual(
+    //       expect.objectContaining(commonShelfInitialSeedState),
+    //     );
+    //     initialShelfId = shelves[0].id;
+    //     sortedBoxesIds = shelves[0].boxesData.map((box) => box.id);
+    //   } catch (error) {
+    //     isSeedInInitialState = false;
+    //     throw new Error(error);
+    //   }
+    // });
 
     it('should correctly update [new cards] after training responses', async () => {
       // Получение новых карточек для тренировки

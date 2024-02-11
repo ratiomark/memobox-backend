@@ -8,11 +8,11 @@ import {
 import { commonShelfInitialSeedState } from 'test/mock/initial-seed-state';
 import { sleep } from '@/utils/common/sleep';
 import { generateRandomString } from 'test/utils/getRandomString';
+import { getFullUrl } from 'test/utils/helpers/getFullUrl';
 // @Patch('restore/:id')
 export default () => {
   describe('Test shelf delete/restore', () => {
-    const app = APP_URL;
-    const app_url_full = app + API_PREFIX;
+    const app_url_full = getFullUrl();
     let userToken;
     let shelvesData;
     let isSeedInInitialState = true;

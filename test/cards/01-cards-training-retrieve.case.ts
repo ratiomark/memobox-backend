@@ -6,14 +6,16 @@ import {
   TESTER_PASSWORD,
 } from '../utils/constants';
 import { commonShelfInitialSeedState } from 'test/mock/initial-seed-state';
+import { getFullUrl } from 'test/utils/helpers/getFullUrl';
+import { validateInitialCupboardState } from 'test/utils/helpers/validateInitialCupboardState';
+import { response } from 'express';
 
 export default () => {
   describe('Test cards training receiving', () => {
-    const app = APP_URL;
-    const app_url_full = app + API_PREFIX;
+    const app_url_full = getFullUrl();
     let userToken;
     let shelvesData;
-    let shelfId;
+    let initialShelfId;
     let newCardsBoxId;
     let isSeedInInitialState = true;
     let sortedBoxesIds;
@@ -36,11 +38,15 @@ export default () => {
 
       userToken = loginResponse.body.token;
 
+      await request(app_url_full)
+        .post('/aggregate/restore-db')
+        .auth(userToken, { type: 'bearer' });
+
       // Получение данных о полках и коробках
       const shelvesResponse = await request(app_url_full)
         .get('/aggregate/view')
         .auth(userToken, { type: 'bearer' });
-      await dropCards();
+
       shelvesData = shelvesResponse.body.shelvesAndBoxesData;
     });
 
@@ -49,31 +55,20 @@ export default () => {
         throw new Error('Seed test failed, skipping...');
       }
     });
+
     it('should validate initial cupboard state', async () => {
       try {
-        const response = await request(app_url_full)
-          .get('/aggregate/cupboard')
-          .auth(userToken, { type: 'bearer' });
-        const { shelves, commonShelf } = response.body;
-        expect(response.status).toBe(200);
-        expect(shelves).toBeInstanceOf(Array);
-        expect(shelves).toHaveLength(1);
-        expect(shelves[0]).toBeInstanceOf(Object);
-        expect(shelves[0].boxesData).toBeInstanceOf(Array);
-        expect(shelves[0].boxesData).toHaveLength(6);
-        // В данном примере, если commonShelf содержит структуру, идентичную commonShelfInitialSeedState (или более широкую, но включающую в себя все ключи и значения из commonShelfInitialSeedState), тест будет успешно пройден.
-        // Обратите внимание, что если commonShelf содержит дополнительные ключи и значения, не указанные в commonShelfInitialSeedState, тест всё равно будет успешным. Если вам нужно точное соответствие без дополнительных ключей, используйте expect(commonShelf).toEqual(commonShelfInitialSeedState);.
-        expect(commonShelf).toEqual(
-          expect.objectContaining(commonShelfInitialSeedState),
-        );
-        shelfId = shelves[0].id;
-        sortedBoxesIds = shelves[0].boxesData.map((box) => box.id);
+        const { shelfId, sortedBoxes } =
+          await validateInitialCupboardState(userToken);
+        initialShelfId = shelfId;
+        sortedBoxesIds = sortedBoxes;
         newCardsBoxId = sortedBoxesIds[0];
       } catch (error) {
-        isSeedInInitialState = false;
+        isSeedInInitialState = false; // Обновляем состояние в случае ошибки
         throw new Error(error);
       }
     });
+
     it('should retrieve [all new cards] from cupboard', async () => {
       const response = await request(app_url_full)
         .get(`/cards/training/all/new`)
@@ -83,7 +78,7 @@ export default () => {
       expect(response.body).toBeInstanceOf(Array);
       expect(response.body).toHaveLength(5);
       response.body.forEach((card) => {
-        expect(card.shelfId).toBe(shelfId);
+        expect(card.shelfId).toBe(initialShelfId);
         expect(card.boxId).toBe(newCardsBoxId);
         expect(card.specialType).toBe('new');
         expect(card.state).toBe('train');
@@ -92,20 +87,20 @@ export default () => {
     });
 
     it('should retrieve [all new cards] from specific shelf', async () => {
-      const boxWithNewCards = shelvesData[shelfId].boxesItems[0];
+      const boxWithNewCards = shelvesData[initialShelfId].boxesItems[0];
       expect(boxWithNewCards.index).toBe(0);
       expect(boxWithNewCards.id).toBe(newCardsBoxId);
 
       // Получение карточек для тренировки
       const response = await request(app_url_full)
-        .get(`/cards/training/${shelfId}/${newCardsBoxId}`)
+        .get(`/cards/training/${initialShelfId}/${newCardsBoxId}`)
         .auth(userToken, { type: 'bearer' });
 
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
       expect(response.body).toHaveLength(5);
       response.body.forEach((card) => {
-        expect(card.shelfId).toBe(shelfId);
+        expect(card.shelfId).toBe(initialShelfId);
         expect(card.boxId).toBe(newCardsBoxId);
         expect(card.state).toBe('train');
         expect(card.nextTraining).toBe(null);
@@ -114,14 +109,14 @@ export default () => {
     it('should retrieve [all training cards] from the entire shelf', async () => {
       // Получение всех карточек для тренировки
       const response = await request(app_url_full)
-        .get(`/cards/training/${shelfId}/all`)
+        .get(`/cards/training/${initialShelfId}/all`)
         .auth(userToken, { type: 'bearer' });
 
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
       expect(response.body).toHaveLength(30);
       response.body.forEach((card) => {
-        expect(card.shelfId).toBe(shelfId);
+        expect(card.shelfId).toBe(initialShelfId);
         expect(card.state).toBe('train');
         // Дополнительные проверки по необходимости
       });
@@ -135,7 +130,7 @@ export default () => {
 
       // Получение карточек для конкретной полки
       const specificShelfResponse = await request(app_url_full)
-        .get(`/cards/training/${shelfId}/all`)
+        .get(`/cards/training/${initialShelfId}/all`)
         .auth(userToken, { type: 'bearer' });
 
       expect(allShelvesResponse.status).toBe(200);
@@ -151,7 +146,7 @@ export default () => {
       expect(response.body).toBeInstanceOf(Array);
       expect(response.body).toHaveLength(20);
       response.body.forEach((card) => {
-        expect(card.shelfId).toBe(shelfId);
+        expect(card.shelfId).toBe(initialShelfId);
         expect(card.boxId).not.toBe(newCardsBoxId);
         expect(card.specialType).not.toBe('new');
         expect(card.state).toBe('train');
@@ -168,7 +163,7 @@ export default () => {
       expect(response.body).toBeInstanceOf(Array);
       expect(response.body).toHaveLength(5);
       response.body.forEach((card) => {
-        expect(card.shelfId).toBe(shelfId);
+        expect(card.shelfId).toBe(initialShelfId);
         expect(card.boxId).not.toBe(newCardsBoxId);
         expect(card.specialType).not.toBe('new');
         expect(card.state).toBe('train');
