@@ -81,14 +81,15 @@ export class BoxesService {
     return boxesData;
   }
 
-  async moveAllCardsFromBoxToBox(
+  async moveAllCardsFromBoxToBoxAndRestore(
     userId: UserId,
+    shelfId: ShelfId,
     fromBoxId: BoxId,
     toBoxId: BoxId,
   ) {
     return await this.prisma.card.updateMany({
       where: { boxId: fromBoxId, userId },
-      data: { boxId: toBoxId },
+      data: { boxId: toBoxId, isDeleted: false, deletedAt: null, shelfId },
     });
   }
 
