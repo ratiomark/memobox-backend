@@ -11,6 +11,8 @@ import { AnswerType } from '@/common/types/frontend/types';
 import { ta } from 'date-fns/locale';
 import { getFullUrl } from 'test/utils/helpers/getFullUrl';
 import { validateInitialCupboardState } from 'test/utils/helpers/validateInitialCupboardState';
+import { restoreDb } from 'test/utils/helpers/restoreDb';
+import { loginAndGetToken } from 'test/utils/helpers/loginAndGetToken';
 
 // const validateInitialCupboardState = async (
 //   app_url_full,
@@ -66,16 +68,9 @@ export default () => {
     // удалить все карточки из корзины окончательно
 
     beforeAll(async () => {
-      // Получение токена пользователя
-      const loginResponse = await request(app_url_full)
-        .post('/auth/email/login')
-        .send({ email: TESTER_EMAIL, password: TESTER_PASSWORD });
+      userToken = await loginAndGetToken();
 
-      userToken = loginResponse.body.token;
-
-      await request(app_url_full)
-        .post('/aggregate/restore-db')
-        .auth(userToken, { type: 'bearer' });
+      await restoreDb(userToken);
 
       const aggregateViewResponse = await request(app_url_full)
         .get('/aggregate/view')
@@ -88,9 +83,7 @@ export default () => {
     });
 
     afterAll(async () => {
-      await request(app_url_full)
-        .post('/aggregate/restore-db')
-        .auth(userToken, { type: 'bearer' });
+      await restoreDb(userToken);
     });
 
     beforeEach(() => {
@@ -197,9 +190,7 @@ export default () => {
       expect(trashResponse.status).toBe(200);
       expect(cards).toHaveLength(0);
 
-      await request(app_url_full)
-        .post('/aggregate/restore-db')
-        .auth(userToken, { type: 'bearer' });
+      await restoreDb(userToken);
     });
 
     it('should delete one card & restore', async () => {

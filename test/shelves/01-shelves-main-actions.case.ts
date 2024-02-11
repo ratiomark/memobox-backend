@@ -9,6 +9,8 @@ import { commonShelfInitialSeedState } from 'test/mock/initial-seed-state';
 import { generateRandomString } from 'test/utils/getRandomString';
 import { getFullUrl } from 'test/utils/helpers/getFullUrl';
 import { validateInitialCupboardState } from 'test/utils/helpers/validateInitialCupboardState';
+import { restoreDb } from 'test/utils/helpers/restoreDb';
+import { loginAndGetToken } from 'test/utils/helpers/loginAndGetToken';
 
 export default () => {
   describe('Test shelf main actions', () => {
@@ -31,16 +33,9 @@ export default () => {
     // });
 
     beforeAll(async () => {
-      // Получение токена пользователя
-      const loginResponse = await request(app_url_full)
-        .post('/auth/email/login')
-        .send({ email: TESTER_EMAIL, password: TESTER_PASSWORD });
+      userToken = await loginAndGetToken();
 
-      userToken = loginResponse.body.token;
-
-      await request(app_url_full)
-        .post('/aggregate/restore-db')
-        .auth(userToken, { type: 'bearer' });
+      await restoreDb(userToken);
       // Получение данных о полках и коробках
       const cupboardResponse = await request(app_url_full)
         .get('/aggregate/cupboard')
@@ -207,11 +202,9 @@ export default () => {
         .post('/auth/email/login')
         .send({ email: TESTER_EMAIL, password: TESTER_PASSWORD });
 
-      userToken = loginResponse.body.token;
+      userToken = await loginAndGetToken();
 
-      await request(app_url_full)
-        .post('/aggregate/restore-db')
-        .auth(userToken, { type: 'bearer' });
+      await restoreDb(userToken);
 
       const response = await request(app_url_full)
         .get('/aggregate/cupboard')
