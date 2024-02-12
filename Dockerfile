@@ -7,7 +7,7 @@ FROM node:16-alpine as dependencies
 WORKDIR /app
 
 COPY app/package.json ./
-
+# RUN rm -r app/prisma/migrations/20240106080448_add_utc_time_zone
 # Удаляем husky из скрипта prepare
 # RUN sed -i '/\"prepare\":/d' package.json
 
@@ -55,9 +55,9 @@ ENV NODE_ENV=production
 # RUN npm ci --only=production
 # RUN npm install
 RUN npx prisma generate
-RUN npx prisma migrate deploy
-# RUN npx prisma db push --accept-data-loss
+# RUN npx prisma migrate deploy
 RUN npm run build
+# RUN npx prisma db push --accept-data-loss
 # RUN sleep 180
 # RUN exit 0
 
