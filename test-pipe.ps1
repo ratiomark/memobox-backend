@@ -10,9 +10,6 @@ $ErrorActionPreference = "Stop"
 
 # Сброс и инициализация базы данных
 Write-Host "Resetting and seeding database..."
-# pnpm run db:reset:full
-# pnr db:migrate:dev
-# pnr db:push
 pnr db:reset:force
 
 # Start-Sleep -Seconds 10
@@ -32,9 +29,7 @@ Write-Host "Running tests..."
 pnpm run test
 # Start-Sleep -Seconds 10
 
-
-npx kill-port 3000
-# & ".\terminate-server.ps1"
+& ".\terminate-server.ps1"
 
 
 
