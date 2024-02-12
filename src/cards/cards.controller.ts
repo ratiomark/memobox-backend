@@ -45,17 +45,23 @@ export class CardsController {
     return this.cardsService.create(userId, createCardDto);
   }
 
+  // используется только для тестов
   @Post('drop')
   drop(@GetCurrentUser('id') userId: UserId) {
     return this.cardsService.drop(userId);
+  }
+
+  // используется только для тестов
+  @Get('get-cards-from-new-box')
+  getCardsFromNewBox(@GetCurrentUser('id') userId: UserId) {
+    return this.cardsTestService.getCardsFromNewBox(userId);
   }
 
   @Lock(LOCK_KEYS.updateCardsAfterTraining)
   @Post('training/answers/by-prisma')
   updateCardsAfterTrainingPrisma(
     @GetCurrentUser('id') userId: UserId,
-    @Body() body: any,
-    // @Body() body: TrainingResponseDto,
+    @Body() body: TrainingResponseDto,
   ) {
     return this.cardsService.updateCardsWithPrisma(userId, body);
   }
@@ -64,8 +70,7 @@ export class CardsController {
   @Post('training/answers')
   updateCardsAfterTraining(
     @GetCurrentUser('id') userId: UserId,
-    @Body() body: any,
-    // @Body() body: TrainingResponseDto,
+    @Body() body: TrainingResponseDto,
   ) {
     return this.cardsService.updateCardsAfterTraining(userId, body);
   }
@@ -81,12 +86,6 @@ export class CardsController {
       shelfId,
       boxId,
     );
-  }
-
-  // test
-  @Get('get-cards-from-new-box')
-  getCardsFromNewBox(@GetCurrentUser('id') userId: User['id']) {
-    return this.cardsTestService.getCardsFromNewBox(userId);
   }
 
   @Get('get-by-shelfId-and-boxId/:shelfId/:boxId')
@@ -168,7 +167,7 @@ export class CardsController {
 //   constructor(private readonly cardsService: CardsService) {}
 
 //   @Get()
-//   getCardsShelvesBoxesData(@GetCurrentUser('id') userId: User['id']) {
+//   getCardsShelvesBoxesData(@GetCurrentUser('id') userId: UserId) {
 //     return this.cardsService.getCardsShelvesBoxesData(userId);
 //   }
 
