@@ -22,15 +22,6 @@ export default () => {
     let initialShelfTitle;
     const titleFirstTest = generateRandomString();
     const titleSecondTest = generateRandomString();
-    // const dropCards = async () => {
-    //   await request(app_url_full)
-    //     .post('/cards/drop')
-    //     .auth(userToken, { type: 'bearer' });
-    // };
-
-    // afterAll(async () => {
-    //   await dropCards();
-    // });
 
     beforeAll(async () => {
       userToken = await loginAndGetToken();
