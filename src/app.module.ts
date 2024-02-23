@@ -46,6 +46,9 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { RedisModule } from './redis/redis.module';
+import { AwsModule } from './aws/aws.module';
+import { LambdaService } from './aws/lambda.service';
+import awsConfig from './config/aws.config';
 
 @Module({
   imports: [
@@ -55,6 +58,7 @@ import { RedisModule } from './redis/redis.module';
       load: [
         databaseConfig,
         authConfig,
+        awsConfig,
         appConfig,
         EmailConfig,
         fileConfig,
@@ -113,6 +117,7 @@ import { RedisModule } from './redis/redis.module';
     // CacheModule.register(),
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
+    AwsModule,
     RedisModule,
     UsersModule,
     FilesModule,
@@ -146,6 +151,7 @@ import { RedisModule } from './redis/redis.module';
      * @see {@link https://nestjs-prisma.dev/docs/exception-filter}
      */
     providePrismaClientExceptionFilter(),
+    LambdaService,
   ],
 })
 export class AppModule {}
