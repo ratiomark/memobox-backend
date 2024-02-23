@@ -82,18 +82,35 @@ export class CardProcessorService {
   //   return this._userStorageService;
   // }
   // получить объект, который можно превратить в класс, который
+
   async getNotificationTime(userId: UserId, minimumCards = 20) {
+    const cards = (await this.prisma.card.findMany({
+      where: { userId, isDeleted: false, nextTraining: { not: null } },
+      select: { nextTraining: true },
+      orderBy: { nextTraining: 'desc' },
+      take: minimumCards,
+    })) as { nextTraining: Date }[];
+    // если карточек меньше чем минимальное количество, то уведомления не нужно отправлять
+    if (cards.length < minimumCards) return null;
+    const notificationTime = new Date(cards[0].nextTraining);
+    return notificationTime;
+  }
+
+  async getNotificationTime2(userId: UserId, minimumCards = 20) {
     this.logger.log('getNotificationTime - started');
     const cards = (await this.prisma.card.findMany({
       where: { userId, isDeleted: false, nextTraining: { not: null } },
       select: { nextTraining: true },
-      orderBy: { nextTraining: 'asc' },
+      orderBy: { nextTraining: 'desc' },
       take: minimumCards,
     })) as { nextTraining: Date }[];
     // this.logger.log('cards', cards.length);
     if (cards.length < minimumCards) return null;
-    const notificationTime = new Date(cards[cards.length - 1].nextTraining);
-
+    // this.logger.debug(new Date(cards[0].nextTraining));
+    // this.logger.debug(new Date(cards[cards.length - 1].nextTraining));
+    const notificationTime = new Date(cards[0].nextTraining);
+    // [Nest] 62788  - 12.02.2024, 03:54:06   DEBUG [CardProcessorService] Mon Feb 12 2024 01:42:36
+    // [Nest] 62788  - 12.02.2024, 03:54:06   DEBUG [CardProcessorService] Mon Feb 12 2024 09:54:06
     this.logger.log(`getNotificationTime - ${notificationTime}`);
     this.logger.log('getNotificationTime - ended');
     return notificationTime;
@@ -110,6 +127,31 @@ export class CardProcessorService {
       const notificationSettings =
         await this.notificationService.getNotificationSettings(userId);
       this.logger.log(notificationSettings);
+      if (
+        !notificationSettings ||
+        !notificationSettings.emailNotificationsEnabled
+      ) {
+        return;
+      }
+      const notificationTime = await this.getNotificationTime(
+        userId,
+        notificationSettings.minimumCardsForEmailNotification,
+      );
+      if (!notificationTime) {
+        this.logger.log('notificationTime is null');
+        return;
+      }
+      this.notificationService.rescheduleNotification(userId, notificationTime);
+    } catch (error) {
+      console.error('Ошибка при обновлении уведомлений:', error);
+    }
+  }
+
+  async handleNotificationAfterTraining(userId: UserId) {
+    try {
+      const notificationSettings =
+        await this.notificationService.getNotificationSettings(userId);
+      this.logger.debug(notificationSettings);
       if (
         !notificationSettings ||
         !notificationSettings.emailNotificationsEnabled
@@ -178,7 +220,7 @@ export class CardProcessorService {
     }
   }
 
-  async updateCardsAfterTrainingHandler(
+  async getCardsUpdatesListAfterTraining(
     userId: UserId,
     cardsWithAnswer: TrainingResponseDto,
   ) {
@@ -196,7 +238,6 @@ export class CardProcessorService {
     const updates = cardsWithAnswersTransformed.map((card) =>
       cupboard.getNextTrainingTimeByCardData(card),
     );
-    // this.logger.debug(updates);
     return updates;
     // console.log(updates);
     // const getNextTrainingTimeByCardData = await this.getCupboardObject(userId);
