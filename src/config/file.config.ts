@@ -14,11 +14,11 @@ class EnvironmentVariablesValidator {
 
   @ValidateIf((envValues) => envValues.FILE_DRIVER === FileDriver.S3)
   @IsString()
-  ACCESS_KEY_ID: string;
+  AWS_ACCESS_KEY_ID: string;
 
   @ValidateIf((envValues) => envValues.FILE_DRIVER === FileDriver.S3)
   @IsString()
-  SECRET_ACCESS_KEY: string;
+  AWS_SECRET_ACCESS_KEY: string;
 
   @ValidateIf((envValues) => envValues.FILE_DRIVER === FileDriver.S3)
   @IsString()

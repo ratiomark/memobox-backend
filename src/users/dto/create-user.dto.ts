@@ -42,10 +42,10 @@ export class CreateUserDto {
   @IsString()
   socialId?: string | null;
 
-  // @ApiProperty({ example: 'John' })
-  // @IsNotEmpty()
-  // @IsString()
-  // firstName: string | null;
+  @ApiProperty({ example: 'John' })
+  @IsNotEmpty()
+  @IsString()
+  firstName: string | null;
 
   // @ApiProperty({ example: 'Doe' })
   // @IsNotEmpty()

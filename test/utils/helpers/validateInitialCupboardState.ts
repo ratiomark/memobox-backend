@@ -1,10 +1,5 @@
 import { ShelvesCupboardFrontedResponse } from '@/shelves/entities/shelf.entity';
-import { CupboardSchema } from '@/user-data-storage/types/fronted-responses';
-import request from 'supertest';
 import { commonShelfInitialSeedState } from 'test/mock/initial-seed-state';
-import { getFullUrl } from './getFullUrl';
-import { response } from 'express';
-import { shelves } from 'prisma/mock-data/staticDataFromDb';
 import { getCupboard } from './getCupboard';
 
 type CupboardStateTestResponse = {

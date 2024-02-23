@@ -15,53 +15,19 @@ import { LOCK_KEYS } from '@/common/const/lock-keys-patterns';
 import { appendTimeToFile } from '@/utils/helpers/append-data-to-file';
 import { AllConfigType } from '@/config/config.type';
 import { ConfigService } from '@nestjs/config';
+import { create } from 'handlebars';
 
 @Injectable()
 export class CardsService {
-  // private nodeEnv: string;
   private readonly logger = new Logger(CardsService.name);
   constructor(
     private readonly prisma: PrismaService,
-    // private readonly cardDataProcessor: CardProcessorService,
-    // @Inject(forwardRef(() => CardProcessorService))
     private readonly cardDataProcessor: CardProcessorService,
+    // @Inject(forwardRef(() => CardProcessorService))
     private readonly configService: ConfigService<AllConfigType>,
     // @Inject(forwardRef(() => UserDataStorageService))
     // private readonly userDataStorageService: UserDataStorageService,
   ) {}
-
-  async drop(userId: UserId) {
-    const nodeEnv = this.configService.getOrThrow('app.nodeEnv', {
-      infer: true,
-    });
-    if (nodeEnv === 'production') {
-      throw new Error('You can not drop cards in production mode');
-    }
-    const allCards = await this.prisma.card.findMany();
-    const allBoxes = await this.prisma.box.findMany({
-      orderBy: { index: 'asc' },
-    });
-    const now = new Date();
-    for (let i = 0; i < allCards.length; i++) {
-      const card = allCards[i];
-      const boxIndex = Math.floor(i / 5); // 5 карточек в каждой коробке
-      const box = allBoxes[boxIndex];
-
-      let nextTraining: Date | null = now;
-      if (box.index === 0) {
-        nextTraining = null;
-      }
-
-      // Обновление карточки
-      await this.prisma.card.update({
-        where: { id: card.id },
-        data: {
-          boxId: box.id,
-          nextTraining: nextTraining,
-        },
-      });
-    }
-  }
 
   async create(userId: UserId, createCardDto: CreateCardDto): Promise<Card> {
     const card = await this.prisma.card.create({
@@ -292,5 +258,40 @@ export class CardsService {
   // нужно, чтобы лишний раз не импортировать cardDataProcessor в user-data-storage
   enhanceCard(card: CardIncBox) {
     return this.cardDataProcessor.enhanceCardViewPage(card);
+  }
+
+  // используется только для тестов
+  async drop(userId: UserId) {
+    const nodeEnv = this.configService.getOrThrow('app.nodeEnv', {
+      infer: true,
+    });
+    if (nodeEnv === 'production') {
+      throw new Error('You can not drop cards in production mode');
+    }
+    const allCards = await this.prisma.card.findMany({ where: { userId } });
+    const allBoxes = await this.prisma.box.findMany({
+      where: { userId },
+      orderBy: { index: 'asc' },
+    });
+    const now = new Date();
+    for (let i = 0; i < allCards.length; i++) {
+      const card = allCards[i];
+      const boxIndex = Math.floor(i / 5); // 5 карточек в каждой коробке
+      const box = allBoxes[boxIndex];
+
+      let nextTraining: Date | null = now;
+      if (box.index === 0) {
+        nextTraining = null;
+      }
+
+      // Обновление карточки
+      await this.prisma.card.update({
+        where: { id: card.id },
+        data: {
+          boxId: box.id,
+          nextTraining: nextTraining,
+        },
+      });
+    }
   }
 }

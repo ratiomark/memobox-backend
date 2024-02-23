@@ -54,12 +54,19 @@ export type FileConfig = {
   maxFileSize: number;
 };
 
+export type AwsConfig = {
+  accessKeyId?: string;
+  secretAccessKey?: string;
+  awsRegion?: string;
+};
+
 export type GoogleConfig = {
   clientId?: string;
   clientSecret?: string;
 };
 
 export type EmailConfig = {
+  sendgridApiKey: string;
   port: number;
   host?: string;
   user?: string;
@@ -84,6 +91,7 @@ export type RedisConfig = {
 export type AllConfigType = {
   app: AppConfig;
   auth: AuthConfig;
+  aws: AwsConfig;
   redis: RedisConfig;
   database: DatabaseConfig;
   file: FileConfig;
