@@ -34,6 +34,10 @@ import {
 import { DevResponseService } from '@/dev-response/dev-response.service';
 import { TeapotException } from '@/common/exceptions/teapot-exception';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Lambda } from 'aws-sdk';
+import { LambdaService } from '@/aws/lambda.service';
+import { register } from 'module';
+import { EMAIL_TYPES } from '@/common/const/email-types';
 
 @Injectable()
 export class AuthService {
@@ -46,6 +50,7 @@ export class AuthService {
     private readonly mailService: MailService,
     private readonly devResponseService: DevResponseService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly lambda: LambdaService,
     private readonly configService: ConfigService<AllConfigType>,
   ) {}
 
@@ -201,7 +206,7 @@ export class AuthService {
     if (!user) {
       user = await this.usersService.create({
         email: socialEmail,
-        // username: toKebabCase(socialData.name),
+        firstName: socialData.firstName ?? '',
         // fullname: socialData.name ?? null,
         // firstName: socialData.firstName ?? null,
         // lastName: socialData.lastName ?? null,
@@ -232,8 +237,22 @@ export class AuthService {
     };
   }
 
-  async register(dto: AuthRegisterLoginDto): Promise<void | { hash: string }> {
+  async register(
+    dto: AuthRegisterLoginDto,
+    language: string,
+  ): Promise<void | { hash: string }> {
     this.logger.log('register new user - start');
+    // await this.lambda.testNotification();
+    // await this.lambda.sendEmail({
+    //   to: 'yanagae@gmail.com',
+    //   emailType: 'welcome',
+    //   language: 'ru',
+    //   data: {
+    //     hash,
+    //     name: 'Мистер Хороший',
+    //     testNumber: 42,
+    //   },
+    // });
     // async register(dto: AuthRegisterLoginDto): Promise<User> {
     const hash = crypto
       .createHash('sha256')
@@ -250,16 +269,32 @@ export class AuthService {
     });
     // return userCreated;
     // await this.validateLogin({ email: dto.email, password: dto.password });
-    this.logger.log('register new user - end');
-    return this.devResponseService.sendResponseIfDev({ hash });
-  }
+    const url = `${this.configService.getOrThrow('app.frontendDomain', {
+      infer: true,
+    })}/confirm-email?hash=${hash}`;
 
-  // await this.mailService.userSignUp({
-  //   to: dto.email,
-  //   data: {
-  //     hash,
-  //   },
-  // });
+    await this.lambda.sendEmail({
+      // to: 'yanagae@gmail.com',
+      to: dto.email,
+      emailType: EMAIL_TYPES.welcome,
+      language,
+      data: {
+        hash: url,
+        name: dto.firstName,
+        testNumber: 42,
+      },
+    });
+    this.logger.log('register new user - end');
+    // return this.devResponseService.sendResponseIfDev({ hash });
+    // }
+    // await this.lambda.sendActivationEmail();
+    // await this.mailService.userSignUp({
+    //   to: dto.email,
+    //   data: {
+    //     hash,
+    //   },
+    // });
+  }
 
   async confirmEmail(
     hash: string,
@@ -303,12 +338,13 @@ export class AuthService {
       },
     });
 
-    await this.mailService.forgotPassword({
-      to: email,
-      data: {
-        hash,
-      },
-    });
+    // FIXME: нужно сделать отправку письма
+    // await this.mailService.forgotPassword({
+    //   to: email,
+    //   data: {
+    //     hash,
+    //   },
+    // });
   }
 
   async resetPassword(hash: string, newPassword: string): Promise<void> {

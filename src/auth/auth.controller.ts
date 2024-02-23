@@ -10,6 +10,7 @@ import {
   Patch,
   Delete,
   SerializeOptions,
+  Headers,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -52,8 +53,9 @@ export class AuthController {
   @IsPublic()
   async register(
     @Body() createUserDto: AuthRegisterLoginDto,
+    @Headers('x-custom-lang') lang: string,
   ): Promise<void | { hash: string }> {
-    return this.authService.register(createUserDto);
+    return this.authService.register(createUserDto, lang);
   }
 
   @Post('email/confirm')
