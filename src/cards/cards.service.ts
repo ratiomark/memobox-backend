@@ -1,21 +1,17 @@
-import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { CreateCardDto } from './dto/create-card.dto';
 import { MoveCardsDto, UpdateCardDto } from './dto/update-card.dto';
 import { PrismaService } from 'nestjs-prisma';
-import { Box, Card, Prisma, Shelf, User } from '@prisma/client';
 import { CardProcessorService } from './services/cards-data-processor.service';
 import { CardIncBox } from './entities/card.entity';
 import { includeBoxWithIndexAndSpecialType } from './const/include-box';
 import { TrainingResponseDto } from './dto/update-cards-after-training.dto';
 import { UserId, CardId, ShelfId, BoxId } from '@/common/types/prisma-entities';
-import { UserDataStorageService } from '@/user-data-storage/user-data-storage.service';
 import { Lock } from '@/common/decorators/lock.decorator';
-import { sleep } from '@/utils/common/sleep';
 import { LOCK_KEYS } from '@/common/const/lock-keys-patterns';
-import { appendTimeToFile } from '@/utils/helpers/append-data-to-file';
 import { AllConfigType } from '@/config/config.type';
 import { ConfigService } from '@nestjs/config';
-import { create } from 'handlebars';
+import { Card } from '@prisma/client';
 
 @Injectable()
 export class CardsService {
@@ -62,7 +58,7 @@ export class CardsService {
     cardsWithAnswer: TrainingResponseDto,
   ) {
     const updates =
-      await this.cardDataProcessor.updateCardsAfterTrainingHandler(
+      await this.cardDataProcessor.getCardsUpdatesListAfterTraining(
         userId,
         cardsWithAnswer,
       );
@@ -72,7 +68,8 @@ export class CardsService {
     const query = `SELECT update_cards_after_training($1::jsonb[])`;
 
     await this.prisma.$executeRawUnsafe(query, updatesJson);
-
+    void this.cardDataProcessor.handleNotificationAfterTraining(userId);
+    return updates;
     // const end = performance.now();
     // appendTimeToFile('./updateCardsAfterTraining.txt', end - start);
     // this.logger.debug(`updateCardsAfterTraining: ${end - start} ms`);
@@ -83,7 +80,7 @@ export class CardsService {
     cardsWithAnswer: TrainingResponseDto,
   ) {
     const updates =
-      await this.cardDataProcessor.updateCardsAfterTrainingHandler(
+      await this.cardDataProcessor.getCardsUpdatesListAfterTraining(
         userId,
         cardsWithAnswer,
       );

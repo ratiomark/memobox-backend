@@ -57,14 +57,14 @@ export class CardsController {
     return this.cardsTestService.getCardsFromNewBox(userId);
   }
 
-  @Lock(LOCK_KEYS.updateCardsAfterTraining)
-  @Post('training/answers/by-prisma')
-  updateCardsAfterTrainingPrisma(
-    @GetCurrentUser('id') userId: UserId,
-    @Body() body: TrainingResponseDto,
-  ) {
-    return this.cardsService.updateCardsWithPrisma(userId, body);
-  }
+  // @Lock(LOCK_KEYS.updateCardsAfterTraining)
+  // @Post('training/answers/by-prisma')
+  // updateCardsAfterTrainingPrisma(
+  //   @GetCurrentUser('id') userId: UserId,
+  //   @Body() body: TrainingResponseDto,
+  // ) {
+  //   return this.cardsService.updateCardsWithPrisma(userId, body);
+  // }
 
   @Lock(LOCK_KEYS.updateCardsAfterTraining)
   @Post('training/answers')

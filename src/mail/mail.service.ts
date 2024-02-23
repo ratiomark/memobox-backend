@@ -33,9 +33,10 @@ export class MailService {
 
     await this.mailerService.sendMail({
       to: mailData.to,
-      language: mailData.language,
-      emailType: mailData.emailType,
-      from: { email: 'hohoho@memobox.tech', name: 'This is test' },
+      // language: mailData.language,
+      // emailType: mailData.emailType,
+      from: 'test@memobox.tech',
+      // from: { email: 'hohoho@memobox.tech', name: 'This is test' },
       subject: emailConfirmTitle ?? 'activation email',
       templatePath: path.join(
         this.configService.getOrThrow('app.workingDirectory', {
@@ -105,36 +106,36 @@ export class MailService {
       ]);
     }
 
-    await this.mailerService.sendMail({
-      to: mailData.to,
-      subject: resetPasswordTitle,
-      text: `${this.configService.get('app.frontendDomain', {
-        infer: true,
-      })}/password-change?hash=${mailData.data.hash} ${resetPasswordTitle}`,
-      templatePath: path.join(
-        this.configService.getOrThrow('app.workingDirectory', {
-          infer: true,
-        }),
-        'src',
-        'mail',
-        'mail-templates',
-        'reset-password.hbs',
-      ),
-      context: {
-        title: resetPasswordTitle,
-        url: `${this.configService.get('app.frontendDomain', {
-          infer: true,
-        })}/password-change?hash=${mailData.data.hash}`,
-        actionTitle: resetPasswordTitle,
-        app_name: this.configService.get('app.name', {
-          infer: true,
-        }),
-        text1,
-        text2,
-        text3,
-        text4,
-      },
-    });
+    // await this.mailerService.sendMail({
+    //   to: mailData.to,
+    //   subject: resetPasswordTitle ?? 'test',
+    //   text: `${this.configService.get('app.frontendDomain', {
+    //     infer: true,
+    //   })}/password-change?hash=${mailData.data.hash} ${resetPasswordTitle}`,
+    //   templatePath: path.join(
+    //     this.configService.getOrThrow('app.workingDirectory', {
+    //       infer: true,
+    //     }),
+    //     'src',
+    //     'mail',
+    //     'mail-templates',
+    //     'reset-password.hbs',
+    //   ),
+    //   context: {
+    //     title: resetPasswordTitle,
+    //     url: `${this.configService.get('app.frontendDomain', {
+    //       infer: true,
+    //     })}/password-change?hash=${mailData.data.hash}`,
+    //     actionTitle: resetPasswordTitle,
+    //     app_name: this.configService.get('app.name', {
+    //       infer: true,
+    //     }),
+    //     text1,
+    //     text2,
+    //     text3,
+    //     text4,
+    //   },
+    // });
   }
 }
 // import { Injectable } from '@nestjs/common';
