@@ -13,6 +13,7 @@ model File {
   id   String @id @default(uuid())
   path String
   user User[]
+
   @@map("file")
 }
 
@@ -38,6 +39,7 @@ model Role {
   id   Int    @id
   name String
   user User[]
+
   @@map("role")
 }
 
@@ -56,6 +58,7 @@ model Status {
   id   Int    @id
   name String
   user User[]
+
   @@map("status")
 }
 
