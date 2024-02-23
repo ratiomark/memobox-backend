@@ -12,7 +12,6 @@ import {
   jsonSettingsDefault,
 } from '../common/const/json-saved-data-and-settings-default';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { EVENT_LISTENER_METADATA } from '@nestjs/event-emitter/dist/constants';
 import { EVENT_USER_CREATED } from '@/common/const/events';
 
 @Injectable()
