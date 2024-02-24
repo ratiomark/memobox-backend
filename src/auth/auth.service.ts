@@ -29,6 +29,7 @@ import { JwtPayloadType } from './strategies/types/jwt-payload.type';
 import { JwtRefreshPayloadType } from './strategies/types/jwt-refresh-payload.type';
 import {
   LoginResponseType,
+  LoginResponseTypeProd,
   RefreshInitResponseType,
 } from './types/login-response.type';
 import { DevResponseService } from '@/dev-response/dev-response.service';
@@ -58,7 +59,9 @@ export class AuthService {
     private readonly configService: ConfigService<AllConfigType>,
   ) {}
 
-  async validateLogin(loginDto: AuthEmailLoginDto): Promise<LoginResponseType> {
+  async validateLogin(
+    loginDto: AuthEmailLoginDto,
+  ): Promise<LoginResponseTypeProd> {
     const user = await this.usersService.findOneByEmailWithJsonData({
       where: { email: loginDto.email },
     });

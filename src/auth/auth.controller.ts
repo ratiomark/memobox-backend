@@ -20,7 +20,10 @@ import { AuthConfirmEmailDto } from './dto/auth-confirm-email.dto';
 import { AuthResetPasswordDto } from './dto/auth-reset-password.dto';
 import { AuthUpdateDto } from './dto/auth-update.dto';
 import { AuthRegisterLoginDto } from './dto/auth-register-login.dto';
-import { LoginResponseType } from './types/login-response.type';
+import {
+  LoginResponseType,
+  LoginResponseTypeProd,
+} from './types/login-response.type';
 import { User } from '@prisma/client';
 import { NullableType } from '../utils/types/nullable.type';
 import { GetBatchResult } from '@prisma/client/runtime/library';
@@ -44,7 +47,7 @@ export class AuthController {
   @IsPublic()
   public login(
     @Body() loginDto: AuthEmailLoginDto,
-  ): Promise<LoginResponseType> {
+  ): Promise<LoginResponseTypeProd> {
     return this.authService.validateLogin(loginDto);
   }
 

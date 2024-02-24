@@ -169,7 +169,8 @@ export class UsersService {
   async findOneByEmail(params: {
     where: Prisma.UserWhereUniqueInput;
     include?: Prisma.UserInclude;
-  }): Promise<User | null> {
+  }) {
+    // }): Promise<User | null> {
     const user = await this.prisma.user.findUnique(params);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -196,13 +197,14 @@ export class UsersService {
   async findOneBySocialIdAndProvider(
     socialId: string,
     provider: AuthProviders,
-  ): Promise<User | null> {
+  ) {
+    // ): Promise<User | null> {
     return this.prisma.user.findFirst({
       where: {
         socialId,
         provider,
       },
-      include: { dataAndSettingsJson: true },
+      // include: { dataAndSettingsJson: true },
     });
   }
 

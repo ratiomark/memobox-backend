@@ -11,6 +11,12 @@ export type LoginResponseType = Readonly<{
   token: string;
   refreshToken: string;
   tokenExpires: number;
+  user: User;
+}>;
+export type LoginResponseTypeProd = Readonly<{
+  token: string;
+  refreshToken: string;
+  tokenExpires: number;
   user: UserData;
 }>;
 
