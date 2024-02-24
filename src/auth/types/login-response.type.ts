@@ -14,5 +14,7 @@ export type RefreshInitResponseType = Readonly<{
   user: {
     jsonSavedData: any;
     jsonSettings: any;
+    email: string;
+    firstName: string;
   };
 }>;
