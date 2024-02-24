@@ -202,6 +202,7 @@ export class UsersService {
         socialId,
         provider,
       },
+      include: { dataAndSettingsJson: true },
     });
   }
 
