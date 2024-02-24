@@ -38,6 +38,10 @@ import { Lambda } from 'aws-sdk';
 import { LambdaService } from '@/aws/lambda.service';
 import { register } from 'module';
 import { EMAIL_TYPES } from '@/common/const/email-types';
+import {
+  jsonSavedDataDefault,
+  jsonSettingsDefault,
+} from 'prisma/mock-data/json-data-and-settings';
 
 @Injectable()
 export class AuthService {
@@ -133,7 +137,15 @@ export class AuthService {
       refreshToken,
       token,
       tokenExpires,
-      user,
+      user: {
+        // ...user,
+        jsonSavedData: user.jsonSavedData,
+        jsonSettings: user.jsonSettings,
+        email: user.email ?? '???',
+        firstName: user.firstName ?? '???',
+        // userData: {
+        // },
+      },
     };
   }
 
@@ -228,12 +240,28 @@ export class AuthService {
       role: user.roleId,
       sessionId: session.id,
     });
-
+    // const userResponse = new UserEntity({
+    //   ...user,
+    //   jsonSavedData: jsonSavedDataDefault,
+    //   jsonSettings: jsonSettingsDefault,
+    // });
+    // const newUser = new UserEntity(...user, )
+    // user.jsonSavedData = jsonSavedDataDefault;
+    // user.jsonSettings = jsonSettingsDefault;
     return {
       refreshToken,
       token,
       tokenExpires,
       user,
+      // user: {
+      //   ...user,
+      //   // jsonSavedData: user.jsonSavedData,
+      //   // jsonSettings: user.jsonSettings,
+      //   // email: user.email ?? '???',
+      //   // firstName: user.firstName ?? '???',
+      //   // userData: {
+      //   // },
+      // },
     };
   }
 
