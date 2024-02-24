@@ -516,6 +516,10 @@ export class AuthService {
       user: {
         jsonSavedData: user.dataAndSettingsJson?.jsonSavedData,
         jsonSettings: user.dataAndSettingsJson?.jsonSettings,
+        email: user.email ?? '???',
+        firstName: user.firstName ?? '???',
+        // userData: {
+        // },
       },
     };
   }
