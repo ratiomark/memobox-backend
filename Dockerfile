@@ -56,7 +56,7 @@ ENV NODE_ENV=production
 # RUN npm install
 RUN npx prisma generate
 # RUN npx prisma migrate deploy
-RUN npm run build
+RUN npm run build:prod
 # RUN npx prisma db push --accept-data-loss
 # RUN sleep 180
 # RUN exit 0
