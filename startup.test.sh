@@ -27,7 +27,7 @@ npx prisma db seed
 /app/wait-for-it.sh ${REDIS_CONTAINER_NAME}:${REDIS_PORT} -t 60
 # Запуск сервера в фоновом режиме
 echo "Запуск сервера..."
-node dist/main &
+node dist/src/main &
 
 # Ожидание запуска сервера
 echo "Ожидание запуска сервера..."

@@ -56,8 +56,8 @@ ENV NODE_ENV=production
 # RUN npm install
 RUN npx prisma generate
 # RUN npx prisma migrate deploy
-RUN npm run build:prod
-ENTRYPOINT ["tail", "-f", "/dev/null"]
+RUN npm run build
+# ENTRYPOINT ["tail", "-f", "/dev/null"]
 # RUN npx prisma db push --accept-data-loss
 # RUN sleep 180
 # RUN exit 0
@@ -70,36 +70,36 @@ ENTRYPOINT ["tail", "-f", "/dev/null"]
 # PRODUCTION
 ###################
 # Этап запуска
-# FROM node:16-alpine
-# RUN apk add --no-cache bash
-# # RUN exit 0
-# WORKDIR /app
+FROM node:16-alpine
+RUN apk add --no-cache bash
+# RUN exit 0
+WORKDIR /app
 
-# # Копирование собранного приложения и зависимостей из этапа сборки
-# COPY app/. ./
-# COPY --from=dependencies /app/package.json ./package.json
-# COPY --from=build /app/node_modules ./node_modules
-# COPY --from=build /app/dist ./dist
-# COPY --from=build /app/prisma ./prisma
-# COPY --from=build /app/src ./src
-# COPY --from=build /app/test ./test
-# COPY --from=build /app/.env.production ./dist/.env
-# COPY --from=build /app/.env.production ./.env
-# COPY --from=build /app/startup.dev.sh ./startup.dev.sh
-# COPY --from=build /app/wait-for-it.sh  ./wait-for-it.sh 
-# ENV NODE_ENV=production
-# # COPY ./wait-for-it.sh /opt/wait-for-it.sh
-# # Делает скрипт wait-for-it.sh исполняемым.
-# # RUN chmod +x /opt/wait-for-it.sh
-# # Копируем остальные необходимые файлы
-# # COPY --from=build /app ./
+# Копирование собранного приложения и зависимостей из этапа сборки
+COPY app/. ./
+COPY --from=dependencies /app/package.json ./package.json
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/src ./src
+COPY --from=build /app/test ./test
+COPY --from=build /app/.env.production ./dist/.env
+COPY --from=build /app/.env.production ./.env
+COPY --from=build /app/startup.dev.sh ./startup.dev.sh
+COPY --from=build /app/wait-for-it.sh  ./wait-for-it.sh 
+ENV NODE_ENV=production
+# COPY ./wait-for-it.sh /opt/wait-for-it.sh
+# Делает скрипт wait-for-it.sh исполняемым.
+# RUN chmod +x /opt/wait-for-it.sh
+# Копируем остальные необходимые файлы
+# COPY --from=build /app ./
 
-# # Экспорт порта и запуск приложения
-# EXPOSE 3000
-# RUN chmod +x /app/startup.dev.sh
-# ENTRYPOINT ["/app/startup.dev.sh"]
-# # CMD ["node", "dist/main"]
-# # COPY entrypoint.sh /entrypoint.sh
+# Экспорт порта и запуск приложения
+EXPOSE 3000
+RUN chmod +x /app/startup.dev.sh
+ENTRYPOINT ["/app/startup.dev.sh"]
+# CMD ["node", "dist/main"]
+# COPY entrypoint.sh /entrypoint.sh
 
 
 
