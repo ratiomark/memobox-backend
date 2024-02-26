@@ -1,32 +1,73 @@
-# Остановить скрипт при ошибке
 $ErrorActionPreference = "Stop"
 
-# Остановка предыдущего сервера, если он запущен
-& ".\terminate-server.ps1"
+try {
+    # Остановка предыдущего сервера, если он запущен
+    & ".\terminate-server.ps1"
 
-# Сброс и инициализация базы данных
-Write-Host "Resetting and seeding database..."
-pnr db:reset:force
+    # Сброс и инициализация базы данных
+    Write-Host "Resetting and seeding database..."
+    pnr db:reset:force
 
-# Запуск сервера в фоновом режиме с перенаправлением вывода в файл
-Write-Host "Starting server..."
-Start-Process -NoNewWindow -FilePath "powershell" -ArgumentList "-Command", "pnpm run dev > back-test.log 2>&1"
+    # Запуск сервера в фоновом режиме с перенаправлением вывода в файл
+    Write-Host "Starting server..."
+    $process = Start-Process -NoNewWindow -FilePath "powershell" -ArgumentList "-Command", "pnpm run dev > back-test.log 2>&1" -PassThru
 
-# Запуск сервера в фоновом режиме, без перенаправления вывода
+    # Ждать запуска сервера
+    Write-Host "Waiting for server to start..."
+    Start-Sleep -Seconds 10 # Пауза для запуска сервера
+    Write-Host "Server should be up"
+
+    # Запуск тестов с выводом в консоль
+    Write-Host "Running tests..."
+    pnpm run test
+}
+catch {
+    Write-Host "An error occurred: $_"
+}
+finally {
+    # Остановка сервера после выполнения тестов
+    Write-Host "Stopping server..."
+    & ".\terminate-server.ps1"
+
+    # Завершение процесса сервера, если он еще запущен
+    if ($process -and !$process.HasExited) {
+        $process | Stop-Process -Force
+    }
+
+    Write-Host "Script execution completed"
+}
+
+# # Остановить скрипт при ошибке
+# $ErrorActionPreference = "Stop"
+
+# # Остановка предыдущего сервера, если он запущен
+# & ".\terminate-server.ps1"
+
+# # Сброс и инициализация базы данных
+# Write-Host "Resetting and seeding database..."
+# pnr db:reset:force
+
+# Clear-Content back-test.log -ErrorAction SilentlyContinue
+
+# # Запуск сервера в фоновом режиме с перенаправлением вывода в файл
 # Write-Host "Starting server..."
-# $serverProcess = Start-Process -PassThru -NoNewWindow -FilePath "cmd" -ArgumentList "/c", "pnpm run dev"
+# Start-Process -NoNewWindow -FilePath "powershell" -ArgumentList "-Command", "pnpm run dev > back-test.log 2>&1"
 
-# Ждать запуска сервера
-Write-Host "Waiting for server to start..."
-Start-Sleep -Seconds 10 # Пауза для запуска сервера
-Write-Host "Server should be up"
+# # Запуск сервера в фоновом режиме, без перенаправления вывода
+# # Write-Host "Starting server..."
+# # $serverProcess = Start-Process -PassThru -NoNewWindow -FilePath "cmd" -ArgumentList "/c", "pnpm run dev"
 
-# Запуск тестов с выводом в консоль
-Write-Host "Running tests..."
-pnpm run test
+# # Ждать запуска сервера
+# Write-Host "Waiting for server to start..."
+# Start-Sleep -Seconds 10 # Пауза для запуска сервера
+# Write-Host "Server should be up"
 
-# Остановка сервера после выполнения тестов
-& ".\terminate-server.ps1"
+# # Запуск тестов с выводом в консоль
+# Write-Host "Running tests..."
+# pnpm run test
+
+# # Остановка сервера после выполнения тестов
+# & ".\terminate-server.ps1"
 
 
 
