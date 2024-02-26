@@ -39,6 +39,8 @@ import { Lambda } from 'aws-sdk';
 import { LambdaService } from '@/aws/lambda.service';
 import { register } from 'module';
 import { EMAIL_TYPES } from '@/common/const/email-types';
+import { UserLoginResponseDto } from '@/users/dto/user-login-response.dto';
+import { classToPlain, instanceToPlain } from 'class-transformer';
 // нельзя импортировать из prisma, т.к. ломается билд
 // import {
 //   jsonSavedDataDefault,
@@ -56,7 +58,7 @@ export class AuthService {
     private readonly mailService: MailService,
     private readonly devResponseService: DevResponseService,
     private readonly eventEmitter: EventEmitter2,
-    private readonly lambda: LambdaService,
+    // private readonly lambda: LambdaService,
     private readonly configService: ConfigService<AllConfigType>,
   ) {}
 
@@ -136,22 +138,30 @@ export class AuthService {
       sessionId: session.id,
     });
 
+    const userResponseDto = new UserLoginResponseDto(user);
     return {
       refreshToken,
       token,
       tokenExpires,
-      user: {
-        // ...user,
-        id: user.id,
-        roleId: user.roleId,
-        jsonSavedData: user.jsonSavedData,
-        jsonSettings: user.jsonSettings,
-        email: user.email ?? '???',
-        firstName: user.firstName ?? '???',
-        // userData: {
-        // },
-      },
+      user: userResponseDto, // Преобразуем DTO в простой объект для ответа
     };
+    // return {
+    //   refreshToken,
+    //   token,
+    //   tokenExpires,
+    //   user: {
+    //     // ...user,
+    //     id: user.id,
+    //     roleId: user.roleId,
+    //     jsonSavedData: user.jsonSavedData,
+    //     jsonSettings: user.jsonSettings,
+    //     email: user.email ?? '???',
+    //     firstName: user.firstName ?? '???',
+    //     emailVerified: user.statusId === StatusEnum.ACTIVE,
+    //     // userData: {
+    //     // },
+    //   },
+    // };
   }
 
   private async getTokensData(data: {
@@ -294,7 +304,6 @@ export class AuthService {
 
     await this.usersService.create({
       ...dto,
-      // ...dto,
       email: dto.email.toLowerCase(),
       roleId: RoleEnum.USER,
       statusId: StatusEnum.INACTIVE,
@@ -306,7 +315,7 @@ export class AuthService {
       infer: true,
     })}/confirm-email?hash=${hash}`;
 
-    await this.lambda.sendEmail({
+    await this.mailService.sendEmail({
       // to: 'yanagae@gmail.com',
       to: dto.email,
       emailType: EMAIL_TYPES.welcome,
@@ -314,9 +323,20 @@ export class AuthService {
       data: {
         hash: url,
         name: dto.firstName,
-        testNumber: 42,
       },
     });
+
+    // await this.lambda.sendEmail({
+    //   // to: 'yanagae@gmail.com',
+    //   to: dto.email,
+    //   emailType: EMAIL_TYPES.welcome,
+    //   language,
+    //   data: {
+    //     hash: url,
+    //     name: dto.firstName,
+    //     testNumber: 42,
+    //   },
+    // });
     this.logger.log('register new user - end');
     // return this.devResponseService.sendResponseIfDev({ hash });
     // }
@@ -495,30 +515,33 @@ export class AuthService {
     );
   }
 
-  async refreshToken(
-    sessionId: number,
-  ): Promise<Omit<LoginResponseType, 'user'>> {
-    const session = await this.sessionService.findOneWithUser({
-      id: sessionId,
-    });
+  // async refreshToken(
+  //   sessionId: number,
+  // ): Promise<Omit<LoginResponseType, 'user'>> {
+  //   const session = await this.sessionService.findOneWithUser({
+  //     id: sessionId,
+  //   });
 
-    if (!session || !session.user) {
-      throw new TeapotException();
-      // throw new UnauthorizedException();
-    }
+  //   if (!session || !session.user) {
+  //     throw new TeapotException();
+  //     // throw new UnauthorizedException();
+  //   }
 
-    const { token, refreshToken, tokenExpires } = await this.getTokensData({
-      id: session.user.id,
-      role: session.user.roleId,
-      sessionId: session.id,
-    });
+  //   const { token, refreshToken, tokenExpires } = await this.getTokensData({
+  //     id: session.user.id,
+  //     role: session.user.roleId,
+  //     sessionId: session.id,
+  //   });
 
-    return {
-      token,
-      refreshToken,
-      tokenExpires,
-    };
-  }
+  //   return {
+  //     token,
+  //     refreshToken,
+  //     tokenExpires,
+  //     user: {
+  //       ...session.user,
+  //     },
+  //   };
+  // }
 
   async refreshTokenInit(
     sessionId: number,
@@ -542,19 +565,35 @@ export class AuthService {
       role: session.user.roleId,
       sessionId: session.id,
     });
+
+    const userResponseDto = new UserLoginResponseDto(user);
     return {
-      token,
       refreshToken,
+      token,
       tokenExpires,
-      user: {
-        jsonSavedData: user.dataAndSettingsJson?.jsonSavedData,
-        jsonSettings: user.dataAndSettingsJson?.jsonSettings,
-        email: user.email ?? '???',
-        firstName: user.firstName ?? '???',
-        // userData: {
-        // },
-      },
+      user: userResponseDto, // Преобразуем DTO в простой объект для ответа
     };
+    // return {
+    //   token,
+    //   refreshToken,
+    //   tokenExpires,
+    //   user: {
+    //     jsonSavedData: user.dataAndSettingsJson?.jsonSavedData,
+    //     jsonSettings: user.dataAndSettingsJson?.jsonSettings,
+    //     email: user.email ?? '???',
+    //     firstName: user.firstName ?? '???',
+    //     // userData: {
+    //     // },
+    //   },
+    //   // user: {
+    //   //   jsonSavedData: user.dataAndSettingsJson?.jsonSavedData,
+    //   //   jsonSettings: user.dataAndSettingsJson?.jsonSettings,
+    //   //   email: user.email ?? '???',
+    //   //   firstName: user.firstName ?? '???',
+    //   //   // userData: {
+    //   //   // },
+    //   // },
+    // };
   }
 
   async softDelete(user: User): Promise<void> {

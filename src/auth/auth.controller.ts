@@ -106,25 +106,25 @@ export class AuthController {
     return this.authService.me(userId);
   }
 
-  @IsPublic()
-  @Post('refresh')
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Get access token, refresh token and token expiration date',
-    description:
-      'This endpoint requires a Bearer token(refresh token) to be passed in the header.',
-  })
-  @HttpCode(HttpStatus.OK)
-  @SerializeOptions({
-    groups: ['ME'],
-  })
-  @UseGuards(JwtRefreshGuard)
-  public refresh(
-    @GetCurrentUser('sessionId') sessionId: number,
-  ): Promise<Omit<LoginResponseType, 'user'>> {
-    console.log(sessionId);
-    return this.authService.refreshToken(sessionId);
-  }
+  // @IsPublic()
+  // @Post('refresh')
+  // @ApiBearerAuth()
+  // @ApiOperation({
+  //   summary: 'Get access token, refresh token and token expiration date',
+  //   description:
+  //     'This endpoint requires a Bearer token(refresh token) to be passed in the header.',
+  // })
+  // @HttpCode(HttpStatus.OK)
+  // @SerializeOptions({
+  //   groups: ['ME'],
+  // })
+  // @UseGuards(JwtRefreshGuard)
+  // public refresh(
+  //   @GetCurrentUser('sessionId') sessionId: number,
+  // ): Promise<Omit<LoginResponseType, 'user'>> {
+  //   console.log(sessionId);
+  //   return this.authService.refreshToken(sessionId);
+  // }
 
   @IsPublic()
   @Post('refresh-init')

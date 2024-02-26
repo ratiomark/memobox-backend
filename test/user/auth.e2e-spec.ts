@@ -157,24 +157,24 @@ describe('Auth user (e2e)', () => {
       });
   });
 
-  it('Refresh token: /api/v1/auth/refresh (GET)', async () => {
-    const newUserRefreshToken = await request(app)
-      .post('/api/v1/auth/email/login')
-      .send({ email: newUserEmail, password: newUserPassword })
-      .then(({ body }) => body.refreshToken);
+  // it('Refresh token: /api/v1/auth/refresh (GET)', async () => {
+  //   const newUserRefreshToken = await request(app)
+  //     .post('/api/v1/auth/email/login')
+  //     .send({ email: newUserEmail, password: newUserPassword })
+  //     .then(({ body }) => body.refreshToken);
 
-    await request(app)
-      .post('/api/v1/auth/refresh')
-      .auth(newUserRefreshToken, {
-        type: 'bearer',
-      })
-      .send()
-      .expect(({ body }) => {
-        expect(body.token).toBeDefined();
-        expect(body.refreshToken).toBeDefined();
-        expect(body.tokenExpires).toBeDefined();
-      });
-  });
+  //   await request(app)
+  //     .post('/api/v1/auth/refresh')
+  //     .auth(newUserRefreshToken, {
+  //       type: 'bearer',
+  //     })
+  //     .send()
+  //     .expect(({ body }) => {
+  //       expect(body.token).toBeDefined();
+  //       expect(body.refreshToken).toBeDefined();
+  //       expect(body.tokenExpires).toBeDefined();
+  //     });
+  // });
 
   it('Refresh Init: /api/v1/auth/refresh-init (POST)', async () => {
     const responseBody = await request(app)
