@@ -39,10 +39,11 @@ import { Lambda } from 'aws-sdk';
 import { LambdaService } from '@/aws/lambda.service';
 import { register } from 'module';
 import { EMAIL_TYPES } from '@/common/const/email-types';
-import {
-  jsonSavedDataDefault,
-  jsonSettingsDefault,
-} from 'prisma/mock-data/json-data-and-settings';
+// нельзя импортировать из prisma, т.к. ломается билд
+// import {
+//   jsonSavedDataDefault,
+//   jsonSettingsDefault,
+// } from 'prisma/mock-data/json-data-and-settings';
 
 @Injectable()
 export class AuthService {
