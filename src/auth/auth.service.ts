@@ -129,7 +129,6 @@ export class AuthService {
     }
 
     const session = await this.sessionService.create({ userId: user.id });
-    // const dataAndSettingsJson = await this.
 
     const { token, refreshToken, tokenExpires } = await this.getTokensData({
       id: user.id,
@@ -142,7 +141,7 @@ export class AuthService {
       token,
       tokenExpires,
       user: {
-        // ...user,
+        ...user,
         jsonSavedData: user.jsonSavedData,
         jsonSettings: user.jsonSettings,
         email: user.email ?? '???',
