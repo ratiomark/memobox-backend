@@ -515,33 +515,33 @@ export class AuthService {
     );
   }
 
-  // async refreshToken(
-  //   sessionId: number,
-  // ): Promise<Omit<LoginResponseType, 'user'>> {
-  //   const session = await this.sessionService.findOneWithUser({
-  //     id: sessionId,
-  //   });
+  async refreshToken(
+    sessionId: number,
+  ): Promise<Omit<LoginResponseType, 'user'>> {
+    const session = await this.sessionService.findOneWithUser({
+      id: sessionId,
+    });
 
-  //   if (!session || !session.user) {
-  //     throw new TeapotException();
-  //     // throw new UnauthorizedException();
-  //   }
+    if (!session || !session.user) {
+      throw new TeapotException();
+      // throw new UnauthorizedException();
+    }
 
-  //   const { token, refreshToken, tokenExpires } = await this.getTokensData({
-  //     id: session.user.id,
-  //     role: session.user.roleId,
-  //     sessionId: session.id,
-  //   });
+    const { token, refreshToken, tokenExpires } = await this.getTokensData({
+      id: session.user.id,
+      role: session.user.roleId,
+      sessionId: session.id,
+    });
 
-  //   return {
-  //     token,
-  //     refreshToken,
-  //     tokenExpires,
-  //     user: {
-  //       ...session.user,
-  //     },
-  //   };
-  // }
+    return {
+      token,
+      refreshToken,
+      tokenExpires,
+      // user: {
+      //   ...session.user,
+      // },
+    };
+  }
 
   async refreshTokenInit(
     sessionId: number,
