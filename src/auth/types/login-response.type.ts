@@ -1,28 +1,19 @@
+import { UserLoginResponseDto } from '@/users/dto/user-login-response.dto';
 import { User } from '@prisma/client';
 
-type UserData = Partial<User> & {
-  jsonSavedData: any;
-  jsonSettings: any;
-  email: string;
-  firstName: string;
-};
-
+// Пока что использую этот тип (вход через соц. сети), но в будущем его нужно будет заменить на UserLoginResponseDto
 export type LoginResponseType = Readonly<{
   token: string;
   refreshToken: string;
   tokenExpires: number;
   user: User;
 }>;
+
 export type LoginResponseTypeProd = Readonly<{
   token: string;
   refreshToken: string;
   tokenExpires: number;
-  user: UserData;
+  user: UserLoginResponseDto;
 }>;
 
-export type RefreshInitResponseType = Readonly<{
-  token: string;
-  refreshToken: string;
-  tokenExpires: number;
-  user: UserData;
-}>;
+export type RefreshInitResponseType = LoginResponseTypeProd;

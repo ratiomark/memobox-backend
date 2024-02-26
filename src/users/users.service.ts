@@ -163,7 +163,11 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    return user;
+    return new UserEntity({
+      ...user,
+      jsonSavedData: user.dataAndSettingsJson?.jsonSavedData,
+      jsonSettings: user.dataAndSettingsJson?.jsonSettings,
+    });
   }
 
   async findOneByEmail(params: {
