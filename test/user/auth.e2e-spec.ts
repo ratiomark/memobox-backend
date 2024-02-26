@@ -28,6 +28,8 @@ describe('Auth user (e2e)', () => {
         expect(body.user.jsonSavedData).toBeDefined();
         expect(body.user.jsonSettings).toBeDefined();
         expect(body.user.email).toBeDefined();
+        expect(body.user.id).toBeDefined();
+        expect(body.user.roleId).toBeDefined();
         expect(body.user.hash).not.toBeDefined();
         expect(body.user.password).not.toBeDefined();
         expect(body.user.previousPassword).not.toBeDefined();
