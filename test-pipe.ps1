@@ -1,40 +1,32 @@
 # Остановить скрипт при ошибке
 $ErrorActionPreference = "Stop"
 
-# $command = ".\terminate-server.ps1 -Param1 'value1'"
-# & $command
-
+# Остановка предыдущего сервера, если он запущен
 & ".\terminate-server.ps1"
-
-# Start-Sleep -Seconds 3
 
 # Сброс и инициализация базы данных
 Write-Host "Resetting and seeding database..."
 pnr db:reset:force
 
-# Start-Sleep -Seconds 10
-
-# Запуск сервера в фоновом режиме
+# Запуск сервера в фоновом режиме с перенаправлением вывода в файл
 Write-Host "Starting server..."
-$serverProcess = Start-Process -PassThru -NoNewWindow -FilePath "cmd" -ArgumentList "/c", "pnpm run dev"
+Start-Process -NoNewWindow -FilePath "powershell" -ArgumentList "-Command", "pnpm run dev > back-test.log 2>&1"
 
+# Запуск сервера в фоновом режиме, без перенаправления вывода
+# Write-Host "Starting server..."
+# $serverProcess = Start-Process -PassThru -NoNewWindow -FilePath "cmd" -ArgumentList "/c", "pnpm run dev"
 
-# # Ждать запуска сервера
+# Ждать запуска сервера
 Write-Host "Waiting for server to start..."
-Start-Sleep -Seconds 20 # несколько секунд для запуска сервера
-Write-Host "Sleep ends"
+Start-Sleep -Seconds 10 # Пауза для запуска сервера
+Write-Host "Server should be up"
 
-# Запуск тестов
+# Запуск тестов с выводом в консоль
 Write-Host "Running tests..."
 pnpm run test
-# Start-Sleep -Seconds 10
 
+# Остановка сервера после выполнения тестов
 & ".\terminate-server.ps1"
-
-
-
-
-
 
 
 
