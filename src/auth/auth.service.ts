@@ -141,7 +141,9 @@ export class AuthService {
       token,
       tokenExpires,
       user: {
-        ...user,
+        // ...user,
+        id: user.id,
+        roleId: user.roleId,
         jsonSavedData: user.jsonSavedData,
         jsonSettings: user.jsonSettings,
         email: user.email ?? '???',
