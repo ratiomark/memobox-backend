@@ -33,13 +33,14 @@ export class CardsService {
   }
 
   async update(
+    userId: UserId,
     id: CardId,
     updateCardDto: UpdateCardDto,
     skipNotificationUpdate = false,
   ) {
     const { previousBoxId, ...restUpdateCardDto } = updateCardDto;
     const cardUpdated = await this.prisma.card.update({
-      where: { id },
+      where: { id, userId },
       data: restUpdateCardDto,
       include: includeBoxWithIndexAndSpecialType,
     });
@@ -146,6 +147,18 @@ export class CardsService {
     });
   }
 
+  // restoreMultipleByCardIds(
+  //   userId: UserId,
+  //   shelfId: ShelfId,
+  //   boxId: BoxId,
+  //   cardIds: CardId[],
+  // ) {
+  //   return this.prisma.card.updateMany({
+  //     where: { id: { in: cardIds }, userId },
+  //     data: { isDeleted: false, deletedAt: null, shelfId, boxId },
+  //   });
+  // }
+
   async findTrainingCardsByShelfIdAndBoxId(
     userId: UserId,
     shelfId: ShelfId | 'all',
@@ -196,9 +209,9 @@ export class CardsService {
     });
   }
 
-  async restoreSeveralCards(moveCardsDto: MoveCardsDto) {
+  async restoreSeveralCards(userId: UserId, moveCardsDto: MoveCardsDto) {
     return await this.prisma.card.updateMany({
-      where: { id: { in: moveCardsDto.cardIds } },
+      where: { id: { in: moveCardsDto.cardIds }, userId },
       data: {
         shelfId: moveCardsDto.shelfId,
         boxId: moveCardsDto.boxId,
@@ -208,15 +221,15 @@ export class CardsService {
     });
   }
 
-  async moveCards(moveCardsDto: MoveCardsDto) {
+  async moveCards(userId: UserId, moveCardsDto: MoveCardsDto) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [_, cardsUpdated] = await this.prisma.$transaction([
       this.prisma.card.updateMany({
-        where: { id: { in: moveCardsDto.cardIds } },
+        where: { id: { in: moveCardsDto.cardIds }, userId },
         data: { shelfId: moveCardsDto.shelfId, boxId: moveCardsDto.boxId },
       }),
       this.prisma.card.findMany({
-        where: { id: { in: moveCardsDto.cardIds } },
+        where: { id: { in: moveCardsDto.cardIds }, userId },
         include: includeBoxWithIndexAndSpecialType,
       }),
     ]);
@@ -224,18 +237,18 @@ export class CardsService {
     return this.cardDataProcessor.enhanceCardListViewPage(cardsUpdated);
   }
 
-  async deleteSoftByCardIdList(cardIdList: CardId[]) {
+  async deleteSoftByCardIdList(userId, cardIdList: CardId[]) {
     const deletedCards = await this.prisma.card.updateMany({
-      where: { id: { in: cardIdList } },
+      where: { id: { in: cardIdList }, userId },
       data: { isDeleted: true, deletedAt: new Date() },
     });
 
     return deletedCards;
   }
 
-  deleteSoftByCardId(cardId: CardId) {
+  deleteSoftByCardId(userId: UserId, cardId: CardId) {
     return this.prisma.card.update({
-      where: { id: cardId },
+      where: { id: cardId, userId },
       data: { isDeleted: true, deletedAt: new Date() },
     });
   }
