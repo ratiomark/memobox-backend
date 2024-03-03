@@ -11,30 +11,29 @@ import { validateInitialCupboardState } from 'test/utils/helpers/validateInitial
 import { response } from 'express';
 import { restoreDb } from 'test/utils/helpers/restoreDb';
 import { loginAndGetToken } from 'test/utils/helpers/loginAndGetToken';
+import { createTestUtils } from 'test/utils/utils';
+import { TestUtils } from 'test/utils/utils copy';
 
 export default () => {
   describe('Test cards training receiving', () => {
-    const app_url_full = getFullUrl();
+    let app_url_full;
     let userToken;
-    let shelvesData;
-    let initialShelfId;
-    let newCardsBoxId;
+    let restoreDb;
     let isSeedInInitialState = true;
+    let initialShelfId;
     let sortedBoxesIds;
-
-    const dropCards = async () => {
-      await request(app_url_full)
-        .post('/cards/drop')
-        .auth(userToken, { type: 'bearer' });
-    };
-
-    afterAll(async () => {
-      await dropCards();
-    });
+    let shelvesData;
+    let newCardsBoxId;
 
     beforeAll(async () => {
-      userToken = await loginAndGetToken();
-      await restoreDb(userToken);
+      const utils = await createTestUtils();
+      app_url_full = utils.app_url_full;
+      userToken = utils.userToken;
+      initialShelfId = utils.initialShelfId;
+      restoreDb = utils.restoreDb;
+      initialShelfId = utils.initialShelfId;
+      sortedBoxesIds = utils.sortedBoxesIds;
+      await restoreDb();
 
       // Получение данных о полках и коробках
       const shelvesResponse = await request(app_url_full)
@@ -42,6 +41,10 @@ export default () => {
         .auth(userToken, { type: 'bearer' });
 
       shelvesData = shelvesResponse.body.shelvesAndBoxesData;
+    });
+
+    afterAll(async () => {
+      await restoreDb();
     });
 
     beforeEach(() => {
