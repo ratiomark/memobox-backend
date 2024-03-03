@@ -12,6 +12,12 @@ import { LOCK_KEYS } from '@/common/const/lock-keys-patterns';
 import { AllConfigType } from '@/config/config.type';
 import { ConfigService } from '@nestjs/config';
 import { Card } from '@prisma/client';
+import {
+  diffInFullTime,
+  diffInHours,
+  diffInMinutes,
+  diffInMonths,
+} from '@/utils/formaters/time-diff';
 
 @Injectable()
 export class CardsService {
@@ -58,13 +64,19 @@ export class CardsService {
     userId: UserId,
     cardsWithAnswer: TrainingResponseDto,
   ) {
+    const now = new Date();
     const updates =
       await this.cardDataProcessor.getCardsUpdatesListAfterTraining(
         userId,
         cardsWithAnswer,
+        now,
       );
     // const start = performance.now();
-
+    // this.logger.log(diffInFullTime(updates[0].nextTraining, now));
+    // this.logger.log(diffInMonths(updates[0].nextTraining, now));
+    // this.logger.log(diffInHours(updates[0].nextTraining, now));
+    // this.logger.log(diffInMinutes(updates[0].nextTraining, now));
+    // this.logger.log(updates);
     const updatesJson = updates.map((u) => JSON.stringify(u));
     const query = `SELECT update_cards_after_training($1::jsonb[])`;
 
@@ -84,6 +96,7 @@ export class CardsService {
       await this.cardDataProcessor.getCardsUpdatesListAfterTraining(
         userId,
         cardsWithAnswer,
+        new Date(),
       );
     // const start = performance.now();
 
