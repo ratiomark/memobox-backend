@@ -70,9 +70,9 @@ export class TrainingResponseDto {
   @Type(() => CardDetails)
   responses: CardDetails[];
 
-  getCardIds() {
-    return this.responses.map((response) => response.id);
-  }
+  // getCardIds() {
+  //   return this.responses.map((response) => response.id);
+  // }
 }
 // [cardId: string]: TrainingCardResponse;
 // export class TrainingBodyDto {

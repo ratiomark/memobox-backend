@@ -7,17 +7,9 @@ import { CardIncBox } from './entities/card.entity';
 import { includeBoxWithIndexAndSpecialType } from './const/include-box';
 import { TrainingResponseDto } from './dto/update-cards-after-training.dto';
 import { UserId, CardId, ShelfId, BoxId } from '@/common/types/prisma-entities';
-import { Lock } from '@/common/decorators/lock.decorator';
-import { LOCK_KEYS } from '@/common/const/lock-keys-patterns';
 import { AllConfigType } from '@/config/config.type';
 import { ConfigService } from '@nestjs/config';
 import { Card } from '@prisma/client';
-import {
-  diffInFullTime,
-  diffInHours,
-  diffInMinutes,
-  diffInMonths,
-} from '@/utils/formaters/time-diff';
 
 @Injectable()
 export class CardsService {
@@ -25,10 +17,7 @@ export class CardsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cardDataProcessor: CardProcessorService,
-    // @Inject(forwardRef(() => CardProcessorService))
     private readonly configService: ConfigService<AllConfigType>,
-    // @Inject(forwardRef(() => UserDataStorageService))
-    // private readonly userDataStorageService: UserDataStorageService,
   ) {}
 
   async create(userId: UserId, createCardDto: CreateCardDto): Promise<Card> {
@@ -72,14 +61,8 @@ export class CardsService {
         now,
       );
     // const start = performance.now();
-    // this.logger.log(diffInFullTime(updates[0].nextTraining, now));
-    // this.logger.log(diffInMonths(updates[0].nextTraining, now));
-    // this.logger.log(diffInHours(updates[0].nextTraining, now));
-    // this.logger.log(diffInMinutes(updates[0].nextTraining, now));
-    // this.logger.log(updates);
     const updatesJson = updates.map((u) => JSON.stringify(u));
     const query = `SELECT update_cards_after_training($1::jsonb[])`;
-
     await this.prisma.$executeRawUnsafe(query, updatesJson);
     void this.cardDataProcessor.handleNotificationAfterTraining(userId);
     return updates;
@@ -114,7 +97,6 @@ export class CardsService {
 
     // Выполняем все промисы с помощью Promise.all
     await Promise.all(updatePromises);
-
     // const end = performance.now();
     // appendTimeToFile('./updateCardsWithPrisma.txt', end - start);
     // this.logger.debug(`updateCardsWithPrisma: ${end - start} ms`);
