@@ -1,18 +1,6 @@
 import request from 'supertest';
-import {
-  API_PREFIX,
-  APP_URL,
-  TESTER_EMAIL,
-  TESTER_PASSWORD,
-} from '../utils/constants';
-import { commonShelfInitialSeedState } from 'test/mock/initial-seed-state';
-import { getFullUrl } from 'test/utils/helpers/getFullUrl';
 import { validateInitialCupboardState } from 'test/utils/helpers/validateInitialCupboardState';
-import { response } from 'express';
-import { restoreDb } from 'test/utils/helpers/restoreDb';
-import { loginAndGetToken } from 'test/utils/helpers/loginAndGetToken';
 import { createTestUtils } from 'test/utils/utils';
-import { TestUtils } from 'test/utils/utils copy';
 
 export default () => {
   describe('Test cards training receiving', () => {

@@ -1,13 +1,15 @@
 import request from 'supertest';
 import { addDays, addHours, addMinutes, addMonths, addWeeks } from 'date-fns';
 import { validateInitialCupboardState } from 'test/utils/helpers/validateInitialCupboardState';
-import { TestUtils } from 'test/utils/utils copy';
 import { createTestUtils } from 'test/utils/utils';
 
 export default () => {
   describe('Test cards training responses', () => {
-    let app_url_full;
-    let userToken;
+    let app_url_full: string;
+    let userToken: string;
+    let initialShelfId: string;
+    let sortedBoxesIds: string[];
+    let isSeedInInitialState = true;
     let getCardsByBoxIndex;
     let getTrainingCardsByBoxIndex;
     let getServerTime;
@@ -15,9 +17,6 @@ export default () => {
     let sendTrainingResponses;
     let checkUpdatedCards;
     let restoreDb;
-    let isSeedInInitialState = true;
-    let initialShelfId;
-    let sortedBoxesIds;
 
     beforeAll(async () => {
       const utils = await createTestUtils();

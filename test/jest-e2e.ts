@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv';
 import type { Config } from 'jest';
-
+process.env.TZ = 'Etc/UTC';
 if (process.env.NODE_ENV) {
   console.log(`JEST: Using .env.${process.env.NODE_ENV} file`);
   dotenv.config({
@@ -21,7 +21,7 @@ const config: Config = {
   },
   testEnvironment: 'node',
   testTimeout: 13000,
-  // testRegex: '.test.ts$',
+  // testRegex: '.case2.ts$',
   testRegex: '(.test.ts$)|(.e2e-spec.ts$)',
   // testRegex: '.e2e-spec.ts$',
   transform: {

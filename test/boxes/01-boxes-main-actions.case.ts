@@ -9,9 +9,8 @@ export default () => {
   describe('Test box main actions', () => {
     const app_url_full = getFullUrl();
     let userToken;
-    let shelvesData;
     let shelfId;
-    let userId;
+    // let userId;
     let isSeedInInitialState = true;
     let sortedBoxesIds;
     let initialShelfTitle;
@@ -24,11 +23,10 @@ export default () => {
     beforeAll(async () => {
       const responseBody = await loginAndGetToken(true);
       userToken = responseBody.token;
-      userId = responseBody.user.userId;
+      // // userId = responseBody.user.userId;
 
       // Получение данных о полках и коробках
       const { shelves } = await getCupboard(userToken);
-      shelvesData = shelves;
       initialShelfTitle = shelves[0].title;
       shelfId = shelves[0].id;
     });
