@@ -7,13 +7,34 @@ import { MaybeType } from '../utils/types/maybe.type';
 import { MailerService } from '@/mailer/mailer.service';
 import path from 'path';
 import mail from '@sendgrid/mail';
+import { LambdaService } from '@/aws/lambda.service';
+import { EMAIL_TYPES } from '@/common/const/email-types';
+import { url } from 'inspector';
 
 @Injectable()
 export class MailService {
   constructor(
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService<AllConfigType>,
+    private readonly lambda: LambdaService,
   ) {}
+
+  // await this.lambda.sendEmail({
+  //     // to: 'yanagae@gmail.com',
+  //     to: dto.email,
+  //     emailType: EMAIL_TYPES.welcome,
+  //     language,
+  //     data: {
+  //       hash: url,
+  //       name: dto.firstName,
+  //       testNumber: 42,
+  //     },
+  //   });
+  async sendEmail(
+    mailData: MailData<{ hash?: string; name?: string; testNumber?: number }>,
+  ) {
+    return await this.lambda.sendEmail({ ...mailData });
+  }
 
   async userSignUp(mailData: MailData<{ hash: string }>): Promise<void> {
     const i18n = I18nContext.current();

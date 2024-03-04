@@ -36,6 +36,11 @@ export class AggregateController {
     return this.userDataStorageService.getCupboardPageData(userId);
   }
 
+  // @Get('cupboard-object')
+  // getCupboardObject(@GetCurrentUser('id') userId: User['id']) {
+  //   return this.userDataStorageService.getCupboardObject(userId);
+  // }
+
   @Get('trash')
   @WaitForUnlock(LOCK_KEYS.removingShelfToTrash)
   @WaitForUnlock(LOCK_KEYS.removingBoxFromShelfToTrash)

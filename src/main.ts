@@ -13,11 +13,9 @@ import { useContainer } from 'class-validator';
 import { AppModule } from './app.module';
 import { validationOptions } from '@/utils/validation-options';
 import { AllConfigType } from './config/config.type';
-import { on } from 'events';
-import { logger } from 'handlebars';
+
 process.env.TZ = 'Etc/UTC';
-// "builder": "swc",
-// "typeCheck": true,
+
 const DOCS_ROUTE = 'docs';
 
 async function bootstrap() {

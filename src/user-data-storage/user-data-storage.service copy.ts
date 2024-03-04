@@ -41,30 +41,21 @@ import { ConfigService, PathImpl2 } from '@nestjs/config';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { HttpService } from '@nestjs/axios';
-import { async, firstValueFrom } from 'rxjs';
-import { restoreDb } from 'test/utils/helpers/restoreDb';
+import { firstValueFrom } from 'rxjs';
 
 const execAsync = promisify(exec);
 
 @Injectable()
 export class UserDataStorageService implements OnModuleInit {
-  // private cardsService: CardsService;
   private nodeEnv: string;
   private readonly logger = new Logger(UserDataStorageService.name);
-  // private cupboards = new Map<string, CupboardObject>();
   constructor(
     private readonly moduleRef: ModuleRef,
     private readonly httpService: HttpService,
-    // @Inject(forwardRef(() => CardsService))
     private readonly cardsService: CardsService,
-    // @Inject(forwardRef(() => BoxesService))
     private readonly boxesService: BoxesService,
-    // @Inject(forwardRef(() => ShelvesService))
     private readonly shelvesService: ShelvesService,
     private readonly shelvesProcessorService: ShelvesProcessorService,
-    // private readonly cardsService: CardsService,
-    // private readonly boxesService: BoxesService,
-    // private readonly shelvesService: ShelvesService,
     private readonly i18n: I18nService,
     private readonly redisService: RedisService,
     private readonly prisma: PrismaService,
@@ -88,21 +79,6 @@ export class UserDataStorageService implements OnModuleInit {
       this.shelvesService.getCupboardObject.bind(this.shelvesService),
       this.redisService.saveCupboardObjectByUserId.bind(this.redisService),
     );
-    // const cupboardData = await cacheOrFetchData<CupboardObject>(
-    //   userId,
-    //   this.redisService.getCupboardObjectByUserId.bind(this.redisService),
-    //   this.shelvesService.getCupboardObject.bind(this.shelvesService),
-    //   this.redisService.saveCupboardObjectByUserId.bind(this.redisService),
-    // );
-    // let cupboardData =
-    //   await this.redisService.getCupboardObjectByUserId(userId);
-    // if (!cupboardData) {
-    //   this.logger.log('cupboardData is null');
-    //   cupboardData = await this.shelvesService.getCupboardObject(userId);
-    //   await this.redisService.saveCupboardObjectByUserId(userId, cupboardData);
-    // } else {
-    //   this.logger.log('cupboardData уже в редисе!!!!!');
-    // }
     return new CupboardClass(cupboardData);
   }
 
@@ -118,12 +94,10 @@ export class UserDataStorageService implements OnModuleInit {
     return `${month} ${day}  ${hours}:${minutes}:${seconds}`;
   }
 
-  // Дополнительная функция для добавления ведущих нулей
   padTime(time: number) {
     return time.toString().padStart(2, '0');
   }
 
-  // @WaitForUnlock('updateCardsLock')
   async getCupboardPageData(userId: UserId): Promise<CupboardSchema> {
     const shelvesData = await this.shelvesService.findAllWithBoxCard(userId);
 
@@ -131,7 +105,6 @@ export class UserDataStorageService implements OnModuleInit {
       JSON.stringify(commonShelfTemplate),
     );
     const now = new Date();
-    // const delay = dateTime.getTime() - now.getTime();
     const formattedShelves = shelvesData.map((shelf, index) => {
       let allCardsInShelf = 0;
       let trainCardsInShelf = 0;
@@ -139,18 +112,9 @@ export class UserDataStorageService implements OnModuleInit {
         const boxSpecialType = box.specialType;
         const allCardsInBox = box.card.length;
         let trainCardsInBox = box.card.filter((card) => {
-          // skip cards in new box
           if (boxSpecialType === BoxSpecialType.new) return false;
           return card.nextTraining ? card.nextTraining < now : false;
         }).length;
-        // const trainCardsInBox = box.card.filter((card) => {
-        //   console.log(
-        //     this.formatTime(card.nextTraining),
-        //     this.formatTime(now),
-        //     card.nextTraining > now,
-        //   );
-        //   return card.nextTraining ? card.nextTraining < now : false;
-        // }).length;
 
         allCardsInShelf += allCardsInBox;
         trainCardsInShelf += trainCardsInBox;
@@ -181,7 +145,6 @@ export class UserDataStorageService implements OnModuleInit {
           specialType: boxSpecialType,
           missedTrainingValue:
             box.missedTrainingValue ?? MissedTrainingValue.none,
-          // specialType: specialType,
           timing: box.timing,
           data: {
             all: allCardsInBox,
@@ -253,8 +216,6 @@ export class UserDataStorageService implements OnModuleInit {
         this.shelvesService.getShelvesAndBoxesData(userId),
       ]);
 
-    // this.logger.debug(boxes);
-
     return {
       shelves: shelvesDeleted,
       boxes: this.sortTrashBoxesBeforeResponse(boxes),
@@ -267,37 +228,29 @@ export class UserDataStorageService implements OnModuleInit {
       },
       shelvesAndBoxesData,
     };
-    // return getTrashPageDataFromDbData(deletedShelvesAndShelvesData);
   }
 
   sortTrashBoxesBeforeResponse(
     boxes: Box[],
     test: boolean = false,
   ): Box[] | Box[][] {
-    // Сначала сортируем объекты по полю shelfId
     boxes.sort((a, b) => {
       if (a.shelfId < b.shelfId) return -1;
       if (a.shelfId > b.shelfId) return 1;
       return 0;
     });
     const testResponse: Box[][] = [];
-    // Затем внутри каждой полки сортируем объекты
     for (let i = 0; i < boxes.length; i++) {
       const shelfId = boxes[i].shelfId;
       const shelfObjects: Box[] = [];
       let j = i;
-      // Находим все объекты для текущей полки
       while (j < boxes.length && boxes[j].shelfId === shelfId) {
         shelfObjects.push(boxes[j]);
         j++;
       }
-      // Сортируем объекты внутри полки
       shelfObjects.sort(this.sortTrashBoxes);
-      // this.logger.debug(shelfObjects);
-      // Заменяем отсортированные объекты в исходном массиве
       if (test) {
         testResponse.push(shelfObjects);
-        // вариант где собирается массив с массивами
       } else {
         boxes.splice(i, shelfObjects.length, ...shelfObjects);
       }
@@ -315,67 +268,12 @@ export class UserDataStorageService implements OnModuleInit {
     return a.index - b.index;
   }
 
-  // async getCupboardObject(userId: UserId): Promise<CupboardObject> {
-  //   return this.shelvesService.getCupboardObject(userId);
-  // }
-  // sortTrashBoxes(boxes: Box[], test: boolean = false): Box[] | Box[][] {
-  //   boxes.sort((a, b) => {
-  //     if (a.shelfId < b.shelfId) return -1;
-  //     if (a.shelfId > b.shelfId) return 1;
-  //     return 0;
-  //   });
-
-  //   const result: Box[][] = [];
-  //   let currentShelfId: string | null = null;
-  //   let shelfBoxes: Box[] = [];
-
-  //   boxes.forEach((box) => {
-  //     // Если это первая итерация или начало новой полки
-  //     if (box.shelfId !== currentShelfId) {
-  //       if (shelfBoxes.length > 0) {
-  //         // Сохраняем предыдущую полку, если она не пуста
-  //         result.push(shelfBoxes);
-  //       }
-  //       shelfBoxes = []; // Начинаем собирать новую полку
-  //       currentShelfId = box.shelfId;
-  //     }
-
-  //     shelfBoxes.push(box);
-  //   });
-
-  //   // Не забываем добавить последнюю полку
-  //   if (shelfBoxes.length > 0) {
-  //     result.push(shelfBoxes);
-  //   }
-
-  //   // Сортировка каждой полки
-  //   result.forEach((shelf) => {
-  //     shelf.sort((a, b) => {
-  //       if (a.specialType === 'new' && b.specialType !== 'new') return -1;
-  //       if (a.specialType !== 'new' && b.specialType === 'new') return 1;
-  //       if (a.specialType === 'learnt' && b.specialType !== 'learnt') return 1;
-  //       if (a.specialType !== 'learnt' && b.specialType === 'learnt') return -1;
-  //       return a.index - b.index;
-  //     });
-  //   });
-
-  //   // Возвращаем либо исходный отсортированный массив, либо массив массивов в зависимости от флага test
-  //   return test ? result : boxes;
-  // }
-  // D:\Programs\PostgreSQL\bin\pg_dump -U postgres memobox > D:\Programs\PostgreSQL\bin\db_backup.sql
-  // D:\Programs\PostgreSQL\bin\psql -U postgres -d memobox -f D:\Programs\PostgreSQL\bin\db_backup.sql
-
-  // D:\Programs\PostgreSQL\bin\psql -U postgres -d memobox
-  // show client_encoding;
-  // set client_encoding to 'UTF8';
-
   async saveDb() {
     if (this.nodeEnv === 'production') {
       throw new Error('You can not restore database in production mode');
     }
     const isDevelopment = this.nodeEnv === 'development';
     let result;
-    // await this.prisma.$disconnect();
     const [dbName, username, dbPassword, dbHost, postgresBinPath]: string[] = [
       'name',
       'username',
@@ -409,11 +307,9 @@ export class UserDataStorageService implements OnModuleInit {
         result = data;
       }
 
-      // await this.prisma.$connect();
       return result;
     } catch (error) {
       console.error('Ошибка при создании резервной копии:', error);
-      // await this.prisma.$connect();
       return error;
     }
   }
@@ -424,7 +320,6 @@ export class UserDataStorageService implements OnModuleInit {
     }
     const isDevelopment = this.nodeEnv === 'development';
     let result: string;
-    // await this.prisma.$disconnect();
     const [dbName, username, dbPassword, dbHost, postgresBinPath]: string[] = [
       'name',
       'username',
@@ -459,12 +354,9 @@ export class UserDataStorageService implements OnModuleInit {
         );
         result = data;
       }
-      // console.log('Бд восстановлена');
-      // await this.prisma.$connect();
       return result;
     } catch (error) {
       console.error('Ошибка при восстановлении базы данных:', error);
-      // await this.prisma.$connect();
       throw error;
     }
   }
@@ -472,9 +364,9 @@ export class UserDataStorageService implements OnModuleInit {
 
 export class CupboardClass {
   private readonly logger = new Logger(CupboardClass.name);
-  private shelves: Record<ShelfId, ShelfData>;
+  private shelves: Record<UserId, ShelfData>;
 
-  constructor(shelvesData: Record<ShelfId, ShelfData>) {
+  constructor(shelvesData: Record<UserId, ShelfData>) {
     this.shelves = shelvesData;
   }
 
@@ -498,7 +390,6 @@ export class CupboardClass {
         now,
         targetBox.timing,
       );
-      // no matter what answer is, we should move card to the box 1
       return { boxId: currentBox.nextBoxIdKey, id, nextTraining };
     } else if (currentBox.index === 1 && answer !== 'good') {
       const targetBox = currentBox;
@@ -506,12 +397,8 @@ export class CupboardClass {
         now,
         targetBox.timing,
       );
-      // no matter what answer is, we should not move card to the new cards box
       return { boxId, id, nextTraining };
     }
-
-    // console.log(currentBox);
-    // let nextTraining: Date;
 
     switch (answer) {
       case 'good':
@@ -527,16 +414,13 @@ export class CupboardClass {
     }
 
     const targetBox = shelfBoxes[targetBoxId];
-    // console.log(targetBox.timing);
     const nextTraining = this.calculateNextTrainingTime(now, targetBox.timing);
-    // targetBoxId = targetBoxId
     return { boxId: targetBoxId, id, nextTraining };
   }
 
-  calculateNextTrainingTime(now: Date, timing: TimingBlock): string {
+  public calculateNextTrainingTime(now: Date, timing: TimingBlock): string {
     const currentTime = now ?? new Date();
 
-    // Расчет нового времени тренировки
     let newTrainingTime: Date;
     newTrainingTime = addMinutes(currentTime, timing.minutes);
     newTrainingTime = addHours(newTrainingTime, timing.hours);
@@ -545,6 +429,72 @@ export class CupboardClass {
     newTrainingTime = addMonths(newTrainingTime, timing.months);
 
     return newTrainingTime.toISOString();
-    // return newTrainingTime.toISOString();
   }
 }
+
+// export class CupboardDataObject {
+//   private readonly logger = new Logger(CupboardDataObject.name);
+//   private shelves: Record<string, ShelfData>;
+
+//   constructor(shelvesData: Record<string, ShelfData>) {
+//     this.shelves = shelvesData;
+//   }
+
+//   getNextTrainingTimeByCardData({
+//     id,
+//     shelfId,
+//     boxId,
+//     answer,
+//     nextTraining: nextTrainingCurrent,
+//   }: CardTrainingData): TrainingOutcome {
+//     const shelf = this.shelves[shelfId];
+//     const currentBox = shelf[boxId];
+//     let targetBoxId: string;
+//     if (currentBox.index === 0) {
+//       const targetBox = shelf[currentBox.nextBoxIdKey!];
+//       const nextTraining = this.calculateNextTrainingTime(
+//         nextTrainingCurrent,
+//         targetBox.timing,
+//       );
+
+//       return { boxId: currentBox.nextBoxIdKey!, id, nextTraining };
+//     }
+
+//     switch (answer) {
+//       case 'good':
+//         break;
+//       case 'bad':
+//         break;
+//       case 'middle':
+//       default:
+//         targetBoxId = boxId;
+//         break;
+//     }
+
+//     const targetBox = shelf[targetBoxId];
+//     const nextTraining = this.calculateNextTrainingTime(
+//       nextTrainingCurrent,
+//       targetBox.timing,
+//     );
+
+//     return { boxId: targetBoxId, id, nextTraining };
+//   }
+
+//   private calculateNextTrainingTime(
+//     cardNextTrainingCurrent: Date | string,
+//     timing: TimingBlock,
+//   ): Date | string {
+//     const currentTime = cardNextTrainingCurrent ?? new Date();
+
+//     const newTrainingTime = new Date(currentTime);
+//     newTrainingTime.setDate(
+//       newTrainingTime.getDate() + timing.days + timing.weeks * 7,
+//     );
+//     newTrainingTime.setHours(newTrainingTime.getHours() + timing.hours);
+//     newTrainingTime.setMinutes(newTrainingTime.getMinutes() + timing.minutes);
+//     newTrainingTime.setMonth(newTrainingTime.getMonth() + timing.months);
+
+//     return newTrainingTime.toISOString();
+//   }
+
+// }

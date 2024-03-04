@@ -11,11 +11,11 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { User } from '@prisma/client';
 import { CardsTestService } from './services/cards-test.service';
 import { CardsService } from './cards.service';
 import { CreateCardDto } from './dto/create-card.dto';
 import {
+  MoveCardsBaseDto,
   MoveCardsDto,
   RemoveMultipleCardsDto,
   UpdateCardDto,
@@ -51,12 +51,6 @@ export class CardsController {
     return this.cardsService.drop(userId);
   }
 
-  // используется только для тестов
-  @Get('get-cards-from-new-box')
-  getCardsFromNewBox(@GetCurrentUser('id') userId: UserId) {
-    return this.cardsTestService.getCardsFromNewBox(userId);
-  }
-
   // @Lock(LOCK_KEYS.updateCardsAfterTraining)
   // @Post('training/answers/by-prisma')
   // updateCardsAfterTrainingPrisma(
@@ -88,7 +82,8 @@ export class CardsController {
     );
   }
 
-  @Get('get-by-shelfId-and-boxId/:shelfId/:boxId')
+  // only for tests
+  @Get('test/get-by-shelfId-and-boxId/:shelfId/:boxId')
   getCardsByShelfIdAndBoxId(
     @GetCurrentUser('id') userId: UserId,
     @Param('shelfId') shelfId: ShelfId,
@@ -102,15 +97,18 @@ export class CardsController {
   }
 
   @Patch('restore-several-cards')
-  restoreSeveralCards(@Body() moveCardsDto: MoveCardsDto) {
-    return this.cardsService.restoreSeveralCards(moveCardsDto);
+  restoreSeveralCards(
+    @GetCurrentUser('id') userId: UserId,
+    @Body() moveCardsDto: MoveCardsDto,
+  ) {
+    return this.cardsService.restoreSeveralCards(userId, moveCardsDto);
   }
 
   @Patch('restore/:cardId')
   restoreByCardId(
     @GetCurrentUser('id') userId: UserId,
     @Param('cardId') cardId: CardId,
-    @Body() body: { boxId: BoxId; shelfId: ShelfId },
+    @Body() body: MoveCardsBaseDto,
   ) {
     return this.cardsService.restoreByCardId(
       userId,
@@ -120,19 +118,45 @@ export class CardsController {
     );
   }
 
+  // @Patch('restore-multiple-cards')
+  // restoreByCardIdList(
+  //   @GetCurrentUser('id') userId: UserId,
+  //   @Body() body: { boxId: BoxId; shelfId: ShelfId; cardIds: CardId[] },
+  // ) {
+  //   return this.cardsService.restoreMultipleByCardIds(
+  //     userId,
+  //     body.shelfId,
+  //     body.boxId,
+  //     body.cardIds,
+  //   );
+  // }
+
   @Patch('move-cards')
-  moveCards(@Body() moveCardsDto: MoveCardsDto) {
-    return this.cardsService.moveCards(moveCardsDto);
+  moveCards(
+    @GetCurrentUser('id') userId: UserId,
+    @Body() moveCardsDto: MoveCardsDto,
+  ) {
+    return this.cardsService.moveCards(userId, moveCardsDto);
   }
 
   @Patch(':id')
-  update(@Param('id') id: CardId, @Body() updateCardDto: UpdateCardDto) {
-    return this.cardsService.update(id, updateCardDto);
+  update(
+    @GetCurrentUser('id') userId: UserId,
+    @Param('id') id: CardId,
+    @Body() updateCardDto: UpdateCardDto,
+  ) {
+    return this.cardsService.update(userId, id, updateCardDto);
   }
 
   @Delete('remove-cards')
-  deleteSoftByCardIdList(@Body() removeCardsDto: RemoveMultipleCardsDto) {
-    return this.cardsService.deleteSoftByCardIdList(removeCardsDto.cardIds);
+  deleteSoftByCardIdList(
+    @GetCurrentUser('id') userId: UserId,
+    @Body() removeCardsDto: RemoveMultipleCardsDto,
+  ) {
+    return this.cardsService.deleteSoftByCardIdList(
+      userId,
+      removeCardsDto.cardIds,
+    );
   }
 
   @Delete('remove-final-several-cards')
@@ -155,8 +179,11 @@ export class CardsController {
   }
 
   @Delete(':id')
-  deleteSoftByCardId(@Param('id') id: CardId) {
-    return this.cardsService.deleteSoftByCardId(id);
+  deleteSoftByCardId(
+    @GetCurrentUser('id') userId: UserId,
+    @Param('id') id: CardId,
+  ) {
+    return this.cardsService.deleteSoftByCardId(userId, id);
   }
 }
 // @Controller({

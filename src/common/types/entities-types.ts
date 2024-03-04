@@ -1,9 +1,11 @@
 import { TimingBlock, AnswerType } from './frontend/types';
-import { CardId } from './prisma-entities';
-export type CupboardObject = Record<string, ShelfData>;
+import { BoxId, CardId, ShelfId } from './prisma-entities';
+
+export type CupboardObject = Record<ShelfId, ShelfData>;
+
 export interface ShelfData {
   maxBoxIndex: number;
-  boxes: Record<string, BoxData>;
+  boxes: Record<BoxId, BoxData>;
 }
 // export interface ShelfData {
 //   maxBoxIndex: number;
@@ -11,22 +13,22 @@ export interface ShelfData {
 // }
 
 export interface BoxData {
-  nextBoxIdKey: string | null;
-  previousBoxIdKey: string | null;
+  nextBoxIdKey: BoxId;
+  previousBoxIdKey: BoxId;
   timing: TimingBlock;
   index: number;
 }
 
 export interface CardTrainingData {
   id: CardId;
-  shelfId: string;
-  boxId: string;
+  shelfId: ShelfId;
+  boxId: BoxId;
   answer: AnswerType;
-  now: Date | string;
+  now: Date;
 }
 
 export interface TrainingOutcome {
-  boxId: string;
-  nextTraining: Date | string;
+  boxId: BoxId;
+  nextTraining: string; // date.toISOString()
   id: CardId;
 }

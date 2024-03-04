@@ -7,8 +7,6 @@ import { CardIncBox } from './entities/card.entity';
 import { includeBoxWithIndexAndSpecialType } from './const/include-box';
 import { TrainingResponseDto } from './dto/update-cards-after-training.dto';
 import { UserId, CardId, ShelfId, BoxId } from '@/common/types/prisma-entities';
-import { Lock } from '@/common/decorators/lock.decorator';
-import { LOCK_KEYS } from '@/common/const/lock-keys-patterns';
 import { AllConfigType } from '@/config/config.type';
 import { ConfigService } from '@nestjs/config';
 import { Card } from '@prisma/client';
@@ -19,10 +17,7 @@ export class CardsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cardDataProcessor: CardProcessorService,
-    // @Inject(forwardRef(() => CardProcessorService))
     private readonly configService: ConfigService<AllConfigType>,
-    // @Inject(forwardRef(() => UserDataStorageService))
-    // private readonly userDataStorageService: UserDataStorageService,
   ) {}
 
   async create(userId: UserId, createCardDto: CreateCardDto): Promise<Card> {
@@ -33,13 +28,14 @@ export class CardsService {
   }
 
   async update(
+    userId: UserId,
     id: CardId,
     updateCardDto: UpdateCardDto,
     skipNotificationUpdate = false,
   ) {
     const { previousBoxId, ...restUpdateCardDto } = updateCardDto;
     const cardUpdated = await this.prisma.card.update({
-      where: { id },
+      where: { id, userId },
       data: restUpdateCardDto,
       include: includeBoxWithIndexAndSpecialType,
     });
@@ -57,16 +53,16 @@ export class CardsService {
     userId: UserId,
     cardsWithAnswer: TrainingResponseDto,
   ) {
+    const now = new Date();
     const updates =
       await this.cardDataProcessor.getCardsUpdatesListAfterTraining(
         userId,
         cardsWithAnswer,
+        now,
       );
     // const start = performance.now();
-
     const updatesJson = updates.map((u) => JSON.stringify(u));
     const query = `SELECT update_cards_after_training($1::jsonb[])`;
-
     await this.prisma.$executeRawUnsafe(query, updatesJson);
     void this.cardDataProcessor.handleNotificationAfterTraining(userId);
     return updates;
@@ -83,6 +79,7 @@ export class CardsService {
       await this.cardDataProcessor.getCardsUpdatesListAfterTraining(
         userId,
         cardsWithAnswer,
+        new Date(),
       );
     // const start = performance.now();
 
@@ -100,7 +97,6 @@ export class CardsService {
 
     // Выполняем все промисы с помощью Promise.all
     await Promise.all(updatePromises);
-
     // const end = performance.now();
     // appendTimeToFile('./updateCardsWithPrisma.txt', end - start);
     // this.logger.debug(`updateCardsWithPrisma: ${end - start} ms`);
@@ -145,6 +141,18 @@ export class CardsService {
       data: { isDeleted: false, deletedAt: null, shelfId, boxId },
     });
   }
+
+  // restoreMultipleByCardIds(
+  //   userId: UserId,
+  //   shelfId: ShelfId,
+  //   boxId: BoxId,
+  //   cardIds: CardId[],
+  // ) {
+  //   return this.prisma.card.updateMany({
+  //     where: { id: { in: cardIds }, userId },
+  //     data: { isDeleted: false, deletedAt: null, shelfId, boxId },
+  //   });
+  // }
 
   async findTrainingCardsByShelfIdAndBoxId(
     userId: UserId,
@@ -196,9 +204,9 @@ export class CardsService {
     });
   }
 
-  async restoreSeveralCards(moveCardsDto: MoveCardsDto) {
+  async restoreSeveralCards(userId: UserId, moveCardsDto: MoveCardsDto) {
     return await this.prisma.card.updateMany({
-      where: { id: { in: moveCardsDto.cardIds } },
+      where: { id: { in: moveCardsDto.cardIds }, userId },
       data: {
         shelfId: moveCardsDto.shelfId,
         boxId: moveCardsDto.boxId,
@@ -208,15 +216,15 @@ export class CardsService {
     });
   }
 
-  async moveCards(moveCardsDto: MoveCardsDto) {
+  async moveCards(userId: UserId, moveCardsDto: MoveCardsDto) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [_, cardsUpdated] = await this.prisma.$transaction([
       this.prisma.card.updateMany({
-        where: { id: { in: moveCardsDto.cardIds } },
+        where: { id: { in: moveCardsDto.cardIds }, userId },
         data: { shelfId: moveCardsDto.shelfId, boxId: moveCardsDto.boxId },
       }),
       this.prisma.card.findMany({
-        where: { id: { in: moveCardsDto.cardIds } },
+        where: { id: { in: moveCardsDto.cardIds }, userId },
         include: includeBoxWithIndexAndSpecialType,
       }),
     ]);
@@ -224,18 +232,18 @@ export class CardsService {
     return this.cardDataProcessor.enhanceCardListViewPage(cardsUpdated);
   }
 
-  async deleteSoftByCardIdList(cardIdList: CardId[]) {
+  async deleteSoftByCardIdList(userId, cardIdList: CardId[]) {
     const deletedCards = await this.prisma.card.updateMany({
-      where: { id: { in: cardIdList } },
+      where: { id: { in: cardIdList }, userId },
       data: { isDeleted: true, deletedAt: new Date() },
     });
 
     return deletedCards;
   }
 
-  deleteSoftByCardId(cardId: CardId) {
+  deleteSoftByCardId(userId: UserId, cardId: CardId) {
     return this.prisma.card.update({
-      where: { id: cardId },
+      where: { id: cardId, userId },
       data: { isDeleted: true, deletedAt: new Date() },
     });
   }

@@ -46,6 +46,7 @@ export class NotificationService {
   }
 
   rescheduleNotification(userId: UserId, newDateTime: Date) {
+    // нужно обновить данные на AWS
     // addOrUpdateTrainingNotification;
     this.logger.log(`reschedule Notification for user ${userId} - started.`);
     this.cancelNotification(userId);

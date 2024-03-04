@@ -6,6 +6,7 @@ import { Box, BoxSpecialType, Card, Shelf } from '@prisma/client';
 import { I18nService } from 'nestjs-i18n';
 import { timeLeft } from '../helpers/timeLeft';
 import { IsArray, IsString } from 'class-validator';
+import { BoxId, CardId, ShelfId } from '@/common/types/prisma-entities';
 
 export class UpdateCardDto extends PartialType(CreateCardDto) {
   // constructor(partial: Partial<CreateCardDto>) {
@@ -46,22 +47,29 @@ export class UpdateCardDto extends PartialType(CreateCardDto) {
 
   isDeleting: false;
 }
-
-export class MoveCardsDto {
-  // @Expose({ name: 'cardIds' })
-  @IsArray()
-  cardIds: Card['id'][];
+// @Expose({ name: 'cardIds' })
+export class MoveCardsBaseDto {
+  @IsString()
+  shelfId: ShelfId;
 
   @IsString()
-  shelfId: Shelf['id'];
-
-  @IsString()
-  boxId: Box['id'];
+  boxId: BoxId;
 }
+
+export class MoveCardsDto extends MoveCardsBaseDto {
+  @IsArray()
+  cardIds: CardId[];
+}
+
+export class MoveOneCardDto extends MoveCardsBaseDto {
+  @IsString()
+  cardId: CardId; // Добавляем новое поле
+}
+// export class RestoreCardsDto = MoveCardsDto
 
 export class RemoveMultipleCardsDto {
   @IsArray()
-  cardIds: Card['id'][];
+  cardIds: CardId[];
 }
 
 // const getCardState = (card: UpdateCardDto): 'wait' | 'train' => {

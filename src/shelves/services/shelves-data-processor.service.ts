@@ -10,7 +10,7 @@ import {
   ShelfData,
 } from '@/common/types/entities-types';
 import { AnswerType } from '@/common/types/frontend/types';
-import { UserId } from '@/common/types/prisma-entities';
+import { BoxId, UserId } from '@/common/types/prisma-entities';
 import { RedisService } from '@/redis/redis.service';
 import { Injectable, Logger } from '@nestjs/common';
 import { Shelf, Prisma } from '@prisma/client';
@@ -82,21 +82,39 @@ export class ShelvesProcessorService {
     const shelvesData: CupboardObject = {};
 
     userShelves.forEach((shelf) => {
-      const boxData: Record<string, BoxData> = {};
+      const boxData: Record<BoxId, BoxData> = {};
+      // 6
       const sortedBoxes = shelf.box.sort((a, b) => a.index - b.index);
+      const boxesLength = sortedBoxes.length;
 
       sortedBoxes.forEach((box, index) => {
+        let nextBoxIdKey: BoxId;
+        let previousBoxIdKey: BoxId;
+
+        switch (index) {
+          case boxesLength - 1: // learnt card box
+            nextBoxIdKey = box.id;
+            previousBoxIdKey = sortedBoxes[index - 1].id;
+            break;
+          case 0: // new cards box
+            nextBoxIdKey = sortedBoxes[index + 1].id;
+            previousBoxIdKey = box.id;
+            break;
+          default:
+            nextBoxIdKey = sortedBoxes[index + 1].id;
+            previousBoxIdKey = sortedBoxes[index - 1].id;
+        }
+
         boxData[box.id] = {
-          nextBoxIdKey:
-            index < sortedBoxes.length - 1 ? sortedBoxes[index + 1].id : null,
-          previousBoxIdKey: index > 0 ? sortedBoxes[index - 1].id : null,
+          nextBoxIdKey,
+          previousBoxIdKey,
           index: box.index,
           timing: box.timing as unknown as TimingBlock,
         };
       });
 
       shelvesData[shelf.id] = {
-        maxBoxIndex: shelf.box.length - 1,
+        maxBoxIndex: boxesLength - 1,
         boxes: boxData,
       };
     });
