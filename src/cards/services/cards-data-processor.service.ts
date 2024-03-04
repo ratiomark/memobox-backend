@@ -129,7 +129,7 @@ export class CardProcessorService {
 
   enhanceCardViewPage(card: CardIncBox) {
     const enhancedCard = this.transformToUpdateCardDto(card);
-    // this.calculateState(enhancedCard);
+    this.calculateState(enhancedCard);
     // this.updateNextTraining(enhancedCard);
     return enhancedCard;
   }
