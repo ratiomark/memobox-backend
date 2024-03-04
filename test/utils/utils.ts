@@ -1,17 +1,7 @@
-import request from 'supertest';
-import {
-  API_PREFIX,
-  APP_URL,
-  TESTER_EMAIL,
-  TESTER_PASSWORD,
-} from '../utils/constants';
-import { addDays, addHours, addMinutes, addMonths, addWeeks } from 'date-fns';
-import { commonShelfInitialSeedState } from 'test/mock/initial-seed-state';
 import { AnswerType } from '@/common/types/frontend/types';
-import { getFullUrl } from 'test/utils/helpers/getFullUrl';
-import { validateInitialCupboardState } from 'test/utils/helpers/validateInitialCupboardState';
-import { restoreDb } from 'test/utils/helpers/restoreDb';
-import { loginAndGetToken } from 'test/utils/helpers/loginAndGetToken';
+import request from 'supertest';
+import { getFullUrl } from './helpers/getFullUrl';
+import { loginAndGetToken } from './helpers/loginAndGetToken';
 
 export const createTestUtils: (token?: string) => Promise<{
   getCardsByBoxIndex: (boxIndex: any) => Promise<any>;

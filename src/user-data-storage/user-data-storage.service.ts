@@ -41,8 +41,7 @@ import { ConfigService, PathImpl2 } from '@nestjs/config';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { HttpService } from '@nestjs/axios';
-import { async, firstValueFrom } from 'rxjs';
-import { restoreDb } from 'test/utils/helpers/restoreDb';
+import { firstValueFrom } from 'rxjs';
 
 const execAsync = promisify(exec);
 

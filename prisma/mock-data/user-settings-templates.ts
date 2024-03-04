@@ -3,7 +3,7 @@ import {
   NotificationSettings,
   TimingBlock,
 } from 'src/aggregate/entities/settings-types';
-import { TESTER_EMAIL } from '../../test/utils/constants';
+import { TESTER_EMAIL } from 'test/utils/constants';
 
 export const timeSleepMock: TimeSleepSettings = {
   isTimeSleepEnabled: true,
