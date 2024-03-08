@@ -23,6 +23,7 @@ export class AggregateController {
   @WaitForUnlock(LOCK_KEYS.removingShelfToTrash)
   @WaitForUnlock(LOCK_KEYS.removingBoxFromShelfToTrash)
   @WaitForUnlock(LOCK_KEYS.restoringEntityFromTrash)
+  @WaitForUnlock(LOCK_KEYS.updateShelfBoxesList)
   async getViewPageData(@GetCurrentUser('id') userId: User['id']) {
     return this.userDataStorageService.getViewPageData(userId);
   }
@@ -32,6 +33,7 @@ export class AggregateController {
   @WaitForUnlock(LOCK_KEYS.removingShelfToTrash)
   @WaitForUnlock(LOCK_KEYS.removingBoxFromShelfToTrash)
   @WaitForUnlock(LOCK_KEYS.restoringEntityFromTrash)
+  @WaitForUnlock(LOCK_KEYS.updateShelfBoxesList)
   async getCupboardPageData(@GetCurrentUser('id') userId: User['id']) {
     return this.userDataStorageService.getCupboardPageData(userId);
   }
