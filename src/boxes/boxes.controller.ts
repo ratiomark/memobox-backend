@@ -13,7 +13,6 @@ import { BoxesService } from './boxes.service';
 import { CreateBoxDto } from './dto/create-box.dto';
 import { UpdateBoxDto } from './dto/update-box.dto';
 import { ApiTags } from '@nestjs/swagger';
-import { Box } from '@prisma/client';
 import { BoxId, ShelfId, UserId } from '@/common/types/prisma-entities';
 import { GetCurrentUser } from '@/common/decorators';
 import { LOCK_KEYS } from '@/common/const/lock-keys-patterns';
