@@ -4,9 +4,9 @@ export type TrainingNotificationItem = {
   TableName: string;
   Item: {
     notificationId: string;
-    time: string;
+    notificationTime: string;
     email: string;
     language: string;
-    notificationType: string;
+    notificationType: 'training' | 'validateEmail';
   };
 };
