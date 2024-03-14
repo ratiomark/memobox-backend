@@ -27,6 +27,11 @@ import {
   subDays,
   subMinutes,
 } from 'date-fns';
+import {
+  getCurrentDayOfWeek,
+  getNextDayOfWeek,
+  getPreviousDayOfWeek,
+} from './helpers';
 
 @Injectable()
 export class NotificationService {
@@ -214,11 +219,117 @@ export class NotificationService {
     ) {
       return notificationTimeLocal;
     }
-    const notificationDayOfWeek = this.getCurrentDayOfWeek(
+
+    if (timeSleepSettings.isDayByDayOptionEnabled) {
+      return this.getNotificationTimeAdjustedForDayByDay(
+        notificationTimeLocal,
+        timeSleepSettings,
+        beforeSleepMinutes,
+        afterSleepMinutes,
+        debug,
+      );
+    }
+
+    return this.getNotificationTimeAdjustedForGeneralSleepPeriod(
       notificationTimeLocal,
+      timeSleepSettings,
+      beforeSleepMinutes,
+      afterSleepMinutes,
+      debug,
     );
-    const nextDayOfWeek = this.getNextDayOfWeek(notificationTimeLocal);
-    const previousDayOfWeek = this.getPreviousDayOfWeek(notificationTimeLocal);
+
+    // const notificationDayOfWeek = this.getCurrentDayOfWeek(
+    //   notificationTimeLocal,
+    // );
+    // const nextDayOfWeek = this.getNextDayOfWeek(notificationTimeLocal);
+    // const previousDayOfWeek = this.getPreviousDayOfWeek(notificationTimeLocal);
+    // const sleepPeriodsForCurrentDay =
+    //   timeSleepSettings.dayByDaySleepPeriods?.[notificationDayOfWeek];
+    // const sleepPeriodsForPreviousDay =
+    //   timeSleepSettings.dayByDaySleepPeriods?.[previousDayOfWeek];
+    // const sleepPeriodsForNextDay =
+    //   timeSleepSettings.dayByDaySleepPeriods?.[nextDayOfWeek];
+
+    // console.log('previousDayOfWeek:  ', previousDayOfWeek);
+    // console.log('notificationDayOfWeek:   ', notificationDayOfWeek);
+    // console.log('nextDayOfWeek:   ', nextDayOfWeek);
+    // if (sleepPeriodsForCurrentDay?.length === 0) {
+    //   // Если для текущего дня нет периода сна, то проверяем периоды сна для предыдущего дня
+    //   return this.getNotificationTimeFromPreviousPeriod(
+    //     sleepPeriodsForPreviousDay,
+    //     notificationTimeLocal,
+    //     beforeSleepMinutes,
+    //     afterSleepMinutes,
+    //   );
+    //   // const sortedSleepPeriods = sleepPeriodsForPreviousDay.sort((a, b) =>
+    //   //   a.startTime.localeCompare(b.startTime),
+    //   // );
+    //   // const lastPeriod = sortedSleepPeriods[sortedSleepPeriods.length - 1];
+    //   // const { startTime, durationMinutes } = lastPeriod;
+    //   // const [startHours, startMinutes] = startTime.split(':').map(Number);
+    //   // let sleepStartTime = subDays(notificationTimeLocal, 1);
+    //   // sleepStartTime.setHours(startHours, startMinutes, 0, 0);
+    //   // let sleepEndTime = addMinutes(sleepStartTime, durationMinutes);
+    //   // // if (debug) {
+    //   // //   console.log('notificationTimeLocal:', notificationTimeLocal);
+    //   // //   console.log('sleepStartTime:', sleepStartTime);
+    //   // //   console.log('sleepEndTime:', sleepEndTime);
+    //   // // }
+    //   // sleepStartTime = subMinutes(sleepStartTime, beforeSleepMinutes);
+    //   // sleepEndTime = addMinutes(sleepEndTime, afterSleepMinutes);
+    //   // if (isBefore(notificationTimeLocal, sleepEndTime)) {
+    //   //   return sleepEndTime;
+    //   // } else {
+    //   //   notificationTimeLocal;
+    //   // }
+    // } else {
+    //   // в начале проверю периоды текущего дня, потом если потребуется последний пероид предыдущего дня
+    //   const sortedSleepPeriods = sleepPeriodsForCurrentDay.sort((a, b) =>
+    //     a.startTime.localeCompare(b.startTime),
+    //   );
+
+    //   for (const sleepPeriod of sortedSleepPeriods) {
+    //     const { startTime, durationMinutes } = sleepPeriod;
+    //     const [startHours, startMinutes] = startTime.split(':').map(Number);
+
+    //     let sleepStartTime = new Date(notificationTimeLocal);
+    //     sleepStartTime.setHours(startHours, startMinutes, 0, 0);
+    //     let sleepEndTime = addMinutes(sleepStartTime, durationMinutes);
+
+    //     sleepStartTime = subMinutes(sleepStartTime, beforeSleepMinutes);
+    //     sleepEndTime = addMinutes(sleepEndTime, afterSleepMinutes);
+
+    //     const isNotificationWithinSleepInterval = isWithinInterval(
+    //       notificationTimeLocal,
+    //       {
+    //         start: sleepStartTime,
+    //         end: sleepEndTime,
+    //       },
+    //     );
+
+    //     if (isNotificationWithinSleepInterval) {
+    //       return sleepEndTime;
+    //     }
+    //   }
+    //   return this.getNotificationTimeFromPreviousPeriod(
+    //     sleepPeriodsForPreviousDay,
+    //     notificationTimeLocal,
+    //     beforeSleepMinutes,
+    //     afterSleepMinutes,
+    //   );
+    // }
+  }
+
+  getNotificationTimeAdjustedForDayByDay(
+    notificationTimeLocal: Date,
+    timeSleepSettings: TimeSleepSettings,
+    beforeSleepMinutes = 0,
+    afterSleepMinutes = 0,
+    debug = false,
+  ): Date {
+    const notificationDayOfWeek = getCurrentDayOfWeek(notificationTimeLocal);
+    const nextDayOfWeek = getNextDayOfWeek(notificationTimeLocal);
+    const previousDayOfWeek = getPreviousDayOfWeek(notificationTimeLocal);
     const sleepPeriodsForCurrentDay =
       timeSleepSettings.dayByDaySleepPeriods?.[notificationDayOfWeek];
     const sleepPeriodsForPreviousDay =
@@ -327,113 +438,106 @@ export class NotificationService {
       return notificationTimeLocal;
     }
   }
-  // getNotificationTimeAdjusted(
-  //   notificationTimeLocal: Date,
-  //   timeSleepSettings: TimeSleepSettings,
-  //   beforeSleepMinutes = 0,
-  //   afterSleepMinutes = 0,
-  //   debug = false,
-  // ): Date {
-  //   if (
-  //     !timeSleepSettings.isTimeSleepEnabled ||
-  //     !timeSleepSettings.generalSleepPeriod
-  //   ) {
-  //     return notificationTimeLocal;
-  //   }
+  getNotificationTimeAdjustedForGeneralSleepPeriod(
+    notificationTimeLocal: Date,
+    timeSleepSettings: TimeSleepSettings,
+    beforeSleepMinutes = 0,
+    afterSleepMinutes = 0,
+    debug = false,
+  ): Date {
+    const { startTime, durationMinutes } = timeSleepSettings.generalSleepPeriod;
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
 
-  //   const { startTime, durationMinutes } = timeSleepSettings.generalSleepPeriod;
-  //   const [startHours, startMinutes] = startTime.split(':').map(Number);
+    // Создаем объекты даты для начала и конца сна
+    let sleepStartTime = new Date(notificationTimeLocal);
+    sleepStartTime.setHours(startHours, startMinutes, 0, 0);
+    let sleepEndTime = addMinutes(sleepStartTime, durationMinutes);
+    if (debug) {
+      console.log('notificationTimeLocal:', notificationTimeLocal);
+      console.log('sleepStartTime:', sleepStartTime);
+      console.log('sleepEndTime:', sleepEndTime);
+    }
+    sleepStartTime = subMinutes(sleepStartTime, beforeSleepMinutes);
+    sleepEndTime = addMinutes(sleepEndTime, afterSleepMinutes);
+    if (debug) {
+      console.log('sleepStartTime after correction:', sleepStartTime);
+      console.log('sleepEndTime after correction:', sleepEndTime);
+    }
+    // например, если период сна начинается в 01:00 и заканчивается в 8:00 - то true
+    const isSleepStartEndSameDay = isSameDay(sleepStartTime, sleepEndTime);
+    if (debug) {
+      console.log('isSleepStartEndSameDay: ', isSleepStartEndSameDay);
+    }
 
-  //   // Создаем объекты даты для начала и конца сна
-  //   let sleepStartTime = new Date(notificationTimeLocal);
-  //   sleepStartTime.setHours(startHours, startMinutes, 0, 0);
-  //   let sleepEndTime = addMinutes(sleepStartTime, durationMinutes);
-  //   if (debug) {
-  //     console.log('notificationTimeLocal:', notificationTimeLocal);
-  //     console.log('sleepStartTime:', sleepStartTime);
-  //     console.log('sleepEndTime:', sleepEndTime);
-  //   }
-  //   sleepStartTime = subMinutes(sleepStartTime, beforeSleepMinutes);
-  //   sleepEndTime = addMinutes(sleepEndTime, afterSleepMinutes);
-  //   if (debug) {
-  //     console.log('sleepStartTime after correction:', sleepStartTime);
-  //     console.log('sleepEndTime after correction:', sleepEndTime);
-  //   }
-  //   // например, если период сна начинается в 01:00 и заканчивается в 8:00 - то true
-  //   const isSleepStartEndSameDay = isSameDay(sleepStartTime, sleepEndTime);
-  //   if (debug) {
-  //     console.log('isSleepStartEndSameDay: ', isSleepStartEndSameDay);
-  //   }
-
-  //   if (isSleepStartEndSameDay) {
-  //     const isNotificationWithinSleepInterval = isWithinInterval(
-  //       notificationTimeLocal,
-  //       {
-  //         start: sleepStartTime,
-  //         end: sleepEndTime,
-  //       },
-  //     );
-  //     const isNotificationBeforeSleepInterval = isBefore(
-  //       notificationTimeLocal,
-  //       sleepStartTime,
-  //     );
-  //     if (isNotificationWithinSleepInterval) {
-  //       return sleepEndTime;
-  //     }
-  //     if (isNotificationBeforeSleepInterval) {
-  //       if (isSameDay(notificationTimeLocal, sleepStartTime)) {
-  //         return notificationTimeLocal;
-  //       } else {
-  //         return sleepStartTime;
-  //       }
-  //     }
-  //     return notificationTimeLocal;
-  //   }
-  //   if (!isSleepStartEndSameDay) {
-  //     const endSleepCurrentDay = subDays(sleepEndTime, 1);
-  //     const isNotificationWithinWakeUpInterval = isWithinInterval(
-  //       notificationTimeLocal,
-  //       {
-  //         start: endSleepCurrentDay,
-  //         end: sleepStartTime,
-  //       },
-  //     );
-  //     const isNotificationBeforeSleepInterval = isBefore(
-  //       notificationTimeLocal,
-  //       endSleepCurrentDay,
-  //     );
-  //     const isNotificationAtSleepStartTime = isEqual(
-  //       notificationTimeLocal,
-  //       sleepStartTime,
-  //     );
-  //     if (debug) {
-  //       console.log('endSleepCurrentDay:  ', endSleepCurrentDay);
-  //       console.log(
-  //         'notificationBeforeSleepInterval: ',
-  //         isNotificationBeforeSleepInterval,
-  //       );
-  //       console.log(
-  //         'isNotificationAtSleepStartTime:  ',
-  //         isNotificationAtSleepStartTime,
-  //       );
-  //     }
-  //     if (isNotificationWithinWakeUpInterval) {
-  //       if (isNotificationAtSleepStartTime) {
-  //         return sleepEndTime;
-  //       }
-  //     }
-  //     if (isNotificationBeforeSleepInterval) {
-  //       return endSleepCurrentDay;
-  //     }
-  //     if (isAfter(notificationTimeLocal, sleepStartTime)) {
-  //       return sleepEndTime;
-  //     }
-  //     if (isAfter(notificationTimeLocal, sleepEndTime)) {
-  //       return addDays(sleepEndTime, 1);
-  //     }
-  //   }
-  //   return notificationTimeLocal;
-  // }
+    if (isSleepStartEndSameDay) {
+      const isNotificationWithinSleepInterval = isWithinInterval(
+        notificationTimeLocal,
+        {
+          start: sleepStartTime,
+          end: sleepEndTime,
+        },
+      );
+      const isNotificationBeforeSleepInterval = isBefore(
+        notificationTimeLocal,
+        sleepStartTime,
+      );
+      if (isNotificationWithinSleepInterval) {
+        return sleepEndTime;
+      }
+      if (isNotificationBeforeSleepInterval) {
+        if (isSameDay(notificationTimeLocal, sleepStartTime)) {
+          return notificationTimeLocal;
+        } else {
+          return sleepStartTime;
+        }
+      }
+      return notificationTimeLocal;
+    }
+    if (!isSleepStartEndSameDay) {
+      const endSleepCurrentDay = subDays(sleepEndTime, 1);
+      const isNotificationWithinWakeUpInterval = isWithinInterval(
+        notificationTimeLocal,
+        {
+          start: endSleepCurrentDay,
+          end: sleepStartTime,
+        },
+      );
+      const isNotificationBeforeSleepInterval = isBefore(
+        notificationTimeLocal,
+        endSleepCurrentDay,
+      );
+      const isNotificationAtSleepStartTime = isEqual(
+        notificationTimeLocal,
+        sleepStartTime,
+      );
+      if (debug) {
+        console.log('endSleepCurrentDay:  ', endSleepCurrentDay);
+        console.log(
+          'notificationBeforeSleepInterval: ',
+          isNotificationBeforeSleepInterval,
+        );
+        console.log(
+          'isNotificationAtSleepStartTime:  ',
+          isNotificationAtSleepStartTime,
+        );
+      }
+      if (isNotificationWithinWakeUpInterval) {
+        if (isNotificationAtSleepStartTime) {
+          return sleepEndTime;
+        }
+      }
+      if (isNotificationBeforeSleepInterval) {
+        return endSleepCurrentDay;
+      }
+      if (isAfter(notificationTimeLocal, sleepStartTime)) {
+        return sleepEndTime;
+      }
+      if (isAfter(notificationTimeLocal, sleepEndTime)) {
+        return addDays(sleepEndTime, 1);
+      }
+    }
+    return notificationTimeLocal;
+  }
   correctNotificationTimeForSleep(
     notificationTimeUTC: Date,
     timeSleepSettings: TimeSleepSettings,
@@ -454,62 +558,6 @@ export class NotificationService {
     );
 
     return adjustedNotificationTimeLocal; // Возвращаем локальное время
-  }
-  getCurrentDayOfWeek(notificationTimeLocal: Date): DaysOfWeek {
-    // getDay => Sunday - Saturday : 0 - 6
-    const dayOfWeekNumber = getDay(notificationTimeLocal);
-    const daysOfWeek: DaysOfWeek[] = [
-      'sunday',
-      'monday',
-      'tuesday',
-      'wednesday',
-      'thursday',
-      'friday',
-      'saturday',
-    ];
-    const dayOfWeek = daysOfWeek[dayOfWeekNumber];
-    // console.log('Day of week:', dayOfWeek);
-    return dayOfWeek;
-  }
-  getNextDayOfWeek(notificationTimeLocal: Date): DaysOfWeek {
-    // getDay => Sunday - Saturday : 0 - 6
-    const dayOfWeekNumber = getDay(notificationTimeLocal);
-    if (dayOfWeekNumber === 6) {
-      return 'sunday';
-    }
-    const daysOfWeek: DaysOfWeek[] = [
-      'sunday',
-      'monday',
-      'tuesday',
-      'wednesday',
-      'thursday',
-      'friday',
-      'saturday',
-    ];
-
-    const dayOfWeek = daysOfWeek[dayOfWeekNumber + 1];
-    // console.log('Day of week:', dayOfWeek);
-    return dayOfWeek;
-  }
-  getPreviousDayOfWeek(notificationTimeLocal: Date): DaysOfWeek {
-    // getDay => Sunday - Saturday : 0 - 6
-    const dayOfWeekNumber = getDay(notificationTimeLocal);
-    if (dayOfWeekNumber === 0) {
-      return 'saturday';
-    }
-    const daysOfWeek: DaysOfWeek[] = [
-      'sunday',
-      'monday',
-      'tuesday',
-      'wednesday',
-      'thursday',
-      'friday',
-      'saturday',
-    ];
-
-    const dayOfWeek = daysOfWeek[dayOfWeekNumber - 1];
-    // console.log('Day of week:', dayOfWeek);
-    return dayOfWeek;
   }
 }
 
