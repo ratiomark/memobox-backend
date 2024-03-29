@@ -4,7 +4,9 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   Inject,
+  Logger,
   Param,
   Patch,
   Post,
@@ -31,6 +33,7 @@ import { BoxId, CardId, ShelfId, UserId } from '@/common/types/prisma-entities';
   version: '1',
 })
 export class CardsController {
+  private readonly logger = new Logger(CardsController.name);
   constructor(
     @Inject(forwardRef(() => CardsService))
     private readonly cardsService: CardsService,
@@ -66,6 +69,7 @@ export class CardsController {
     @GetCurrentUser('id') userId: UserId,
     @Body() body: TrainingResponseDto,
   ) {
+    // this.logger.log('updateCardsAfterTraining', body);
     return this.cardsService.updateCardsAfterTraining(userId, body);
   }
 
