@@ -2,15 +2,11 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { UpdateSettingTimeSleepDto } from './dto/update-setting.dto';
 import { PrismaService } from 'nestjs-prisma';
-import {
-  MissedTrainingValue,
-  Prisma,
-  ShelfTemplate,
-  User,
-} from '@prisma/client';
+import { MissedTrainingValue, Prisma, ShelfTemplate } from '@prisma/client';
 import {
   NotificationEmails,
   NotificationSettings,
+  TimeSleepSettings,
 } from '@/aggregate/entities/settings-types';
 import {
   DefaultSettings,
@@ -21,6 +17,7 @@ import {
 import { OnEvent } from '@nestjs/event-emitter';
 import { EVENT_USER_CREATED } from '@/common/const/events';
 import { UserId } from '@/common/types/prisma-entities';
+import { prepareTimeSettingsToFront } from './helpers';
 
 @Injectable()
 export class SettingsService implements OnModuleInit {
@@ -39,7 +36,7 @@ export class SettingsService implements OnModuleInit {
       ]);
 
     this.defaultSettings = {
-      timeSleep: timeSleep?.settings ?? timeSleepMock,
+      timeSleep: (timeSleep?.settings ?? timeSleepMock) as TimeSleepSettings,
       missedTraining: missedTraining?.settings ?? MissedTrainingValue.none,
       notifications: notification?.settings ?? notificationsMock,
       shelfTemplate: shelfTemplate?.template ?? shelfTemplateDefaultMock,
@@ -82,8 +79,19 @@ export class SettingsService implements OnModuleInit {
         this.prisma.notification.findUnique({ where: { userId } }),
       ]);
 
+    let timeSleepFrontReady;
+    if (timeSleep?.settings) {
+      timeSleepFrontReady = prepareTimeSettingsToFront(
+        timeSleep.settings as unknown as TimeSleepSettings,
+      );
+    } else {
+      timeSleepFrontReady = prepareTimeSettingsToFront(
+        timeSleepDefault as unknown as TimeSleepSettings,
+      );
+    }
+
     const response = {
-      timeSleep: timeSleep?.settings ?? timeSleepDefault,
+      timeSleep: timeSleepFrontReady,
       missedTraining: missedTraining?.settings ?? missedTrainingDefault,
       shelfTemplate: shelfTemplate?.template ?? shelfTemplateDefault,
       notifications: notification?.settings ?? notificationDefault,
@@ -93,13 +101,25 @@ export class SettingsService implements OnModuleInit {
   }
 
   async getNotificationSettings(
-    userId: User['id'],
+    userId: UserId,
   ): Promise<NotificationSettings | null> {
     // const { notification: notificationDefault } = this.getDefaultSettings();
     const notification = await this.prisma.notification.findUnique({
       where: { userId },
     });
     return (notification?.settings as unknown as NotificationSettings) ?? null;
+  }
+
+  async getTimeSleepSettings(
+    userId: UserId,
+  ): Promise<TimeSleepSettings | null> {
+    const timeSleep = await this.prisma.timeSleep.findUnique({
+      where: { userId },
+    });
+    return (
+      (timeSleep?.settings as unknown as TimeSleepSettings) ?? timeSleepMock
+    );
+    // return (timeSleep?.settings as unknown as TimeSleepSettings) ?? null;
   }
 
   async updateMissedTrainingValue(
@@ -131,7 +151,7 @@ export class SettingsService implements OnModuleInit {
     return { shelfTemplate: shelfTemplateRow.template };
   }
 
-  async setDefaultShelfTemplate(userId: User['id']) {
+  async setDefaultShelfTemplate(userId: UserId) {
     await this.prisma.shelfTemplate.deleteMany({ where: { userId } });
     return { shelfTemplate: this.getDefaultSettings().shelfTemplate };
   }
@@ -139,8 +159,13 @@ export class SettingsService implements OnModuleInit {
   async updateTimeSleep(userId: UserId, timeSleep: UpdateSettingTimeSleepDto) {
     const timeSleepRow = await this.prisma.timeSleep.upsert({
       where: { userId },
-      update: { settings: timeSleep as Prisma.InputJsonObject },
-      create: { userId, settings: timeSleep as Prisma.InputJsonObject },
+      update: {
+        settings: timeSleep as Prisma.InputJsonObject,
+      },
+      create: {
+        userId,
+        settings: timeSleep as Prisma.InputJsonObject,
+      },
     });
     return timeSleepRow.settings;
   }
