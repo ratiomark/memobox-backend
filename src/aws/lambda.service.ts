@@ -43,9 +43,6 @@ export class LambdaService {
         language: mailData.language,
         emailType: mailData.emailType,
         data: mailData.data,
-        // to: mailData.to ?? 'yanagae@gmail.com',
-        // language: mailData.language ?? 'en',
-        // emailType: mailData.emailType ?? 'welcome',
       },
     };
 

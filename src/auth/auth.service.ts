@@ -41,6 +41,7 @@ import { register } from 'module';
 import { EMAIL_TYPES } from '@/common/const/email-types';
 import { UserLoginResponseDto } from '@/users/dto/user-login-response.dto';
 import { classToPlain, instanceToPlain } from 'class-transformer';
+import { ServerLessService } from '@/server-less/server-less.service';
 // нельзя импортировать из prisma, т.к. ломается билд
 // import {
 //   jsonSavedDataDefault,
@@ -59,6 +60,7 @@ export class AuthService {
     private readonly devResponseService: DevResponseService,
     private readonly eventEmitter: EventEmitter2,
     // private readonly lambda: LambdaService,
+    // private readonly serverless: ServerLessService,
     private readonly configService: ConfigService<AllConfigType>,
   ) {}
 
@@ -241,6 +243,7 @@ export class AuthService {
         provider: authProvider,
         roleId: RoleEnum.USER,
         statusId: StatusEnum.ACTIVE,
+        timezone: 'UTC',
       });
     } else {
       await this.usersService.updateByUserId(user.id, {
@@ -285,18 +288,7 @@ export class AuthService {
     language: string,
   ): Promise<void | { hash: string }> {
     this.logger.log('register new user - start');
-    // await this.lambda.testNotification();
-    // await this.lambda.sendEmail({
-    //   to: 'yanagae@gmail.com',
-    //   emailType: 'welcome',
-    //   language: 'ru',
-    //   data: {
-    //     hash,
-    //     name: 'Мистер Хороший',
-    //     testNumber: 42,
-    //   },
-    // });
-    // async register(dto: AuthRegisterLoginDto): Promise<User> {
+
     const hash = crypto
       .createHash('sha256')
       .update(randomStringGenerator())
@@ -308,6 +300,7 @@ export class AuthService {
       roleId: RoleEnum.USER,
       statusId: StatusEnum.INACTIVE,
       hash,
+      language,
     });
     // return userCreated;
     // await this.validateLogin({ email: dto.email, password: dto.password });
@@ -315,8 +308,7 @@ export class AuthService {
       infer: true,
     })}/confirm-email?hash=${hash}`;
 
-    await this.mailService.sendEmail({
-      // to: 'yanagae@gmail.com',
+    void this.mailService.sendEmail({
       to: dto.email,
       emailType: EMAIL_TYPES.welcome,
       language,
@@ -326,27 +318,9 @@ export class AuthService {
       },
     });
 
-    // await this.lambda.sendEmail({
-    //   // to: 'yanagae@gmail.com',
-    //   to: dto.email,
-    //   emailType: EMAIL_TYPES.welcome,
-    //   language,
-    //   data: {
-    //     hash: url,
-    //     name: dto.firstName,
-    //     testNumber: 42,
-    //   },
-    // });
     this.logger.log('register new user - end');
     // return this.devResponseService.sendResponseIfDev({ hash });
     // }
-    // await this.lambda.sendActivationEmail();
-    // await this.mailService.userSignUp({
-    //   to: dto.email,
-    //   data: {
-    //     hash,
-    //   },
-    // });
   }
 
   async confirmEmail(

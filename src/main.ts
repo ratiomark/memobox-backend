@@ -60,37 +60,26 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup(DOCS_ROUTE, app, document);
 
-  await app.listen(
-    configService.getOrThrow('app.port', { infer: true }),
-    () => {
-      logger.log(
-        `Listening on port http://localhost:${configService.getOrThrow(
-          'app.port',
-          {
-            infer: true,
-          },
-        )}`,
-      );
-      logger.log(
-        `Docs on route http://localhost:${configService.getOrThrow('app.port', {
-          infer: true,
-        })}/${DOCS_ROUTE}`,
-      );
-      logger.log(
-        `Using NODE_ENV = ${configService.getOrThrow('app.nodeEnv', {
-          infer: true,
-        })}`,
-      );
-      logger.log(`Timezone сервера: ${process.env.TZ}`);
-      logger.log(`Время сервера: ${new Date().toLocaleString()}`);
-    },
-  );
-  // process.on('SIGTERM', async () => {
-  //   logger.log('Закрытие сервера NestJS...');
-  //   await app.close();
-  //   logger.log('Сервер NestJS закрыт.');
-  //   process.exit(0); // Явно завершает процесс Node.js
+  // app.use((req, res, next) => {
+  //   console.log(`Входящий запрос: ${req.method} ${req.url}`);
+  //   next();
   // });
+
+  const port = configService.getOrThrow('app.port', { infer: true });
+  const nodeEnv = configService.getOrThrow('app.nodeEnv', { infer: true });
+  await app.listen(port, () => {
+    logger.log(`Listening on port http://localhost:${port}`);
+    logger.log(`Docs on route http://localhost:${port}/${DOCS_ROUTE}`);
+    logger.log(`Using NODE_ENV = ${nodeEnv}`);
+    logger.log(`Timezone сервера: ${process.env.TZ}`);
+    logger.log(`Время сервера: ${new Date().toLocaleString()}`);
+  });
+  process.on('SIGTERM', async () => {
+    logger.log('Закрытие сервера NestJS...');
+    await app.close();
+    logger.log('Сервер NestJS закрыт.');
+    process.exit(0); // Явно завершает процесс Node.js
+  });
 
   process.on('SIGINT', async () => {
     logger.log('Закрытие сервера NestJS (SIGINT)...');

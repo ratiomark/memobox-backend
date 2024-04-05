@@ -1,12 +1,9 @@
 import { ShelfWithBoxCards } from '@/aggregate';
-import {
-  ShelfIncBoxesIncCards,
-  ShelfIncBoxes,
-} from '@/aggregate/entities/types';
+import { ShelfIncBoxes } from '@/aggregate/entities/types';
 import { BoxesService } from '@/boxes/boxes.service';
 import { CardsService } from '@/cards/cards.service';
 import { SettingsService } from '@/settings/settings.service';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Shelf, Prisma } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { CreateShelfDto } from './dto/create-shelf.dto';
@@ -17,15 +14,19 @@ import { ShelfId, UserId } from '@/common/types/prisma-entities';
 import { cacheOrFetchData } from '@/utils/helpers/cache-or-fetch';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
+  EVENT_SHELF_BOXES_UPDATE,
   EVENT_SHELF_CREATED,
   EVENT_SHELF_DELETED,
   EVENT_SHELF_ORDER_CHANGED,
   EVENT_SHELF_RESTORED,
 } from '@/common/const/events';
 import { ShelvesTrashResponse } from '@/user-data-storage/types/fronted-responses';
+import { ShelfUpdateBoxesListDto } from './dto/update-boxes-list.dto';
+import { updateObjectIfAllZeros } from '@/utils/common/checkTimingBlockZeros';
 
 @Injectable()
 export class ShelvesService {
+  private readonly logger = new Logger(ShelvesService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly settingsService: SettingsService,
@@ -69,9 +70,76 @@ export class ShelvesService {
     });
   }
 
-  findAll(params: Prisma.ShelfFindManyArgs): Promise<Shelf[]> {
-    return this.prisma.shelf.findMany(params);
+  async updateBoxesList(
+    userId: UserId,
+    updateShelfBody: ShelfUpdateBoxesListDto,
+  ) {
+    const { shelfId, boxesList } = updateShelfBody;
+    const boxesListChecked = boxesList.map((box, index) => ({
+      ...box,
+      index: index + 1,
+      timing: updateObjectIfAllZeros(box.timing),
+    }));
+    const existingBoxes = boxesListChecked.filter(
+      (box) => !box.id.startsWith('newBox'),
+    );
+    const actualBoxesIds = existingBoxes.map((box) => box.id);
+    // console.log('existingBoxes   ', existingBoxes);
+    const newBoxes = boxesListChecked.filter((box) =>
+      box.id.startsWith('newBox'),
+    );
+    // console.log('newBoxes   ', newBoxes);
+    const shelfUpdated = await this.prisma.$transaction(async (prisma) => {
+      const currentBoxes = (
+        await prisma.box.findMany({
+          where: {
+            userId,
+            shelfId,
+            specialType: { not: { in: ['learnt', 'new'] } },
+          },
+        })
+      ).map((box) => box.id);
+      const boxesToDelete = currentBoxes.filter(
+        (boxId) => !actualBoxesIds.includes(boxId),
+      );
+      // удалить все коробки, которые не пришли в запросе
+      await prisma.box.updateMany({
+        where: { id: { in: boxesToDelete } },
+        data: { isDeleted: true },
+      });
+
+      existingBoxes.forEach(async (box) => {
+        console.log(box);
+        await prisma.box.update({
+          where: { id: box.id, shelfId, userId },
+          data: {
+            index: box.index,
+            timing: box.timing as unknown as Prisma.InputJsonValue,
+          },
+        });
+      });
+
+      newBoxes.forEach(async (box) => {
+        await prisma.box.create({
+          data: {
+            index: box.index,
+            timing: box.timing as unknown as Prisma.InputJsonValue,
+            user: { connect: { id: userId } },
+            shelf: { connect: { id: shelfId } },
+          },
+        });
+      });
+
+      return await prisma.shelf.findFirst({ where: { id: shelfId } });
+    });
+    this.eventEmitter.emit(EVENT_SHELF_BOXES_UPDATE, {
+      userId,
+      event: EVENT_SHELF_BOXES_UPDATE,
+    });
+    return shelfUpdated;
   }
+
+  // findAll(params: Prisma.ShelfFindManyArgs): Promise<Shelf[]> {}
 
   async findAllWithBoxCard(userId: UserId): Promise<ShelfWithBoxCards[]> {
     return await this.prisma.shelf.findMany({

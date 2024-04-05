@@ -3,7 +3,11 @@ import { RedisRepository } from './redis-repository.service';
 import { UserId } from '@/common/types/prisma-entities';
 import { CupboardObject } from '@/common/types/entities-types';
 import { createKeyWithPrefix } from '@/utils/helpers/create-key-with-prefix';
-import { REDIS_KEY_CUPBOARD, REDIS_KEY_SHELVES } from './const/keys';
+import {
+  REDIS_KEY_CUPBOARD,
+  REDIS_KEY_SHELVES,
+  REDIS_KEY_USER_NOTIFICATION_DATA,
+} from './const/keys';
 import { ShelfIncBoxes } from '@/aggregate/entities/types';
 import {
   EVENT_BOX_DELETED,
@@ -60,7 +64,31 @@ export class RedisService {
     // this.logger.log(`достаю cupboardData из redis `);
     // return await this.redisRepository.get(key);
   }
+  async getUserNotificationData(
+    userId: UserId,
+  ): Promise<{ email: string; language: string }> {
+    const key = createKeyWithPrefix(REDIS_KEY_USER_NOTIFICATION_DATA, userId);
+    return await this.getWithLogger(
+      key,
+      `достаю user notification data из redis ${REDIS_KEY_USER_NOTIFICATION_DATA}`,
+    );
+    // this.logger.log(`достаю cupboardData из redis `);
+    // return await this.redisRepository.get(key);
+  }
 
+  async saveUserNotificationData(
+    userId: UserId,
+    userNotificationData: { email: string; language: string },
+  ): Promise<void> {
+    const key = createKeyWithPrefix(REDIS_KEY_USER_NOTIFICATION_DATA, userId);
+    return await this.saveWithLogger(
+      key,
+      userNotificationData,
+      `сохраняю shelves в redis ${REDIS_KEY_USER_NOTIFICATION_DATA}`,
+    );
+    // this.logger.log(`сохраняю cupboardData из redis `);
+    // return await this.redisRepository.set(key, cupboardObject);
+  }
   async saveCupboardObjectByUserId(
     userId: UserId,
     cupboardObject: CupboardObject,

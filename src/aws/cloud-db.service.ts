@@ -13,10 +13,10 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable()
-export class DynamoDbService implements OnModuleInit {
+export class CloudDbService implements OnModuleInit {
   private nodeEnv: string;
   private readonly docClient: DynamoDBDocumentClient;
-  private readonly logger = new Logger(DynamoDbService.name);
+  private readonly logger = new Logger(CloudDbService.name);
   //  const { data } = await firstValueFrom<{ data: string }>(
   //           this.httpService.get(`http://${dbHost}:3001/restore-db`),
   //         );

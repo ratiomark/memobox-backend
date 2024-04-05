@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength, Validate } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  MinLength,
+  Validate,
+} from 'class-validator';
 // import { IsEmail, IsNotEmpty, MinLength, Validate } from 'class-validator';
 import { IsNotExist } from '@/utils/validators/is-not-exists.validator';
 import { Transform } from 'class-transformer';
@@ -22,6 +28,10 @@ export class AuthRegisterLoginDto {
   @MinLength(1)
   @IsString()
   firstName: string;
+
+  @ApiProperty({ example: 'Europe/Moscow' })
+  @IsOptional()
+  timezone: string = 'UTC';
 
   // @ApiProperty({ example: 'John' })
   // @IsNotEmpty()

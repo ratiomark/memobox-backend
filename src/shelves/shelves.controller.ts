@@ -7,6 +7,8 @@ import {
   Param,
   Delete,
   Request,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ShelvesService } from './shelves.service';
 import { CreateShelfDto } from './dto/create-shelf.dto';
@@ -19,6 +21,7 @@ import { ShelfFrontedResponse } from './entities/shelf.entity';
 import { RemoveShelfDto } from './dto/remove-shelf.dto';
 import { LOCK_KEYS } from '@/common/const/lock-keys-patterns';
 import { Lock } from '@/common/decorators/lock.decorator';
+import { ShelfUpdateBoxesListDto } from './dto/update-boxes-list.dto';
 
 @ApiTags('Shelves')
 @Controller({
@@ -30,6 +33,7 @@ export class ShelvesController {
 
   @Post()
   @Lock(LOCK_KEYS.creatingNewShelf)
+  @HttpCode(HttpStatus.CREATED)
   async create(
     @GetCurrentUser('id') userId: User['id'],
     @Body() createShelfDto: CreateShelfDto,
@@ -42,9 +46,32 @@ export class ShelvesController {
     @GetCurrentUser('id') userId: User['id'],
     @Body() shelfOrder: ShelfOrderRequest,
   ) {
-    console.log(shelfOrder);
+    // console.log(shelfOrder);
     return await this.shelvesService.orderShelves(userId, shelfOrder);
   }
+
+  @Lock(LOCK_KEYS.updateShelfBoxesList)
+  @Patch('update-boxes-list')
+  async updateBoxesList(
+    @GetCurrentUser('id') userId: User['id'],
+    @Body() updateShelfBody: ShelfUpdateBoxesListDto,
+  ) {
+    console.log(updateShelfBody);
+    // return { data: 'return' };
+    return await this.shelvesService.updateBoxesList(userId, updateShelfBody);
+  }
+
+  // @Patch('shelf-template')
+  // updateShelfTemplate(
+  //   @GetCurrentUser('id') userId: User['id'],
+  //   @Body() shelfTemplate: UpdateSettingShelfTemplateDto,
+  // ) {
+  //   console.log('missedTrainingValue', shelfTemplate);
+  //   return this.settingsService.updateShelfTemplate(
+  //     userId,
+  //     shelfTemplate.shelfTemplate as unknown as Prisma.InputJsonArray,
+  //   );
+  // }
 
   @Patch(':id')
   async update(

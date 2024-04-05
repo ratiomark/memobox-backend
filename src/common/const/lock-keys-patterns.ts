@@ -4,5 +4,6 @@ export const LOCK_KEYS = {
   removingShelfToTrash: 'removingShelfToTrash',
   restoringEntityFromTrash: 'restoringEntityFromTrash',
   removingBoxFromShelfToTrash: 'removingBoxFromShelfToTrash',
+  updateShelfBoxesList: 'updateShelfBoxesList',
 } as const;
 export type LockKeys = keyof typeof LOCK_KEYS;

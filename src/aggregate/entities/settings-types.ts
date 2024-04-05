@@ -19,17 +19,6 @@ export interface NotificationSettings {
   notificationEmails: NotificationEmails[];
 }
 
-export interface TimeSleepDataObject {
-  up: {
-    hours: number;
-    minutes: number;
-  };
-  down: {
-    hours: number;
-    minutes: number;
-  };
-}
-
 export type DaysOfWeek =
   | 'monday'
   | 'tuesday'
@@ -39,14 +28,38 @@ export type DaysOfWeek =
   | 'saturday'
   | 'sunday';
 
+export interface SleepPeriod {
+  startTime: string; // Формат "HH:mm"
+  durationMinutes: number;
+}
+
+export interface TimeSleepAtomicDataObject {
+  hours: number;
+  minutes: number;
+}
+
+export interface SleepPeriodFrontendRequest {
+  startTime: TimeSleepAtomicDataObject; // Формат "HH:mm"
+  durationMinutes: number;
+}
+
 export interface TimeSleepSettings {
   isTimeSleepEnabled: boolean;
   isDayByDayOptionEnabled: boolean;
-  generalTimeSleepData: TimeSleepDataObject;
-  dayByDayTimeSleepData?: {
-    [key in DaysOfWeek]: TimeSleepDataObject;
+  generalSleepPeriod: SleepPeriod;
+  dayByDaySleepPeriods: {
+    [key in DaysOfWeek]: SleepPeriod[];
   };
 }
+
+// export interface TimeSleepSettings {
+//   isTimeSleepEnabled: boolean;
+//   isDayByDayOptionEnabled: boolean;
+//   generalTimeSleepData: TimeSleepDataObject;
+//   dayByDayTimeSleepData?: {
+//     [key in DaysOfWeek]: TimeSleepDataObject;
+//   };
+// }
 export interface UserSettings {
   notifications: NotificationSettings;
   missedTrainingValue: 'none' | 'additionalTraining' | 'sendBackwards';

@@ -70,9 +70,8 @@ export class TrainingResponseDto {
   @Type(() => CardDetails)
   responses: CardDetails[];
 
-  // getCardIds() {
-  //   return this.responses.map((response) => response.id);
-  // }
+  @IsString()
+  timezone: string;
 }
 // [cardId: string]: TrainingCardResponse;
 // export class TrainingBodyDto {

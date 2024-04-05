@@ -54,6 +54,21 @@ export class UserEntity implements User {
   @Exclude({ toPlainOnly: true })
   hash: string | null;
 
+  @ApiProperty({
+    example: 'ru',
+    required: false,
+    nullable: false,
+  })
+  language: string | null;
+
+  @ApiProperty({
+    example: 'Moscow/Europe',
+    required: false,
+    default: 'UTC',
+    nullable: false,
+  })
+  timezone: string | null;
+
   @ApiProperty({ example: '2022-10-21T14:48:00.000Z' })
   createdAt: Date;
 

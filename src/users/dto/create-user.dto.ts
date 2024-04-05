@@ -73,4 +73,11 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   hash?: string | null;
+
+  @IsOptional()
+  @IsString()
+  language?: string | null;
+
+  @IsOptional()
+  timezone: string = 'UTC';
 }

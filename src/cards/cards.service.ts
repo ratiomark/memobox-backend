@@ -60,16 +60,39 @@ export class CardsService {
         cardsWithAnswer,
         now,
       );
-    // const start = performance.now();
     const updatesJson = updates.map((u) => JSON.stringify(u));
     const query = `SELECT update_cards_after_training($1::jsonb[])`;
     await this.prisma.$executeRawUnsafe(query, updatesJson);
-    void this.cardDataProcessor.handleNotificationAfterTraining(userId);
+    this.logger.log(cardsWithAnswer.timezone); //в моем случае Asia/Jerusalem
+    void this.cardDataProcessor.handleNotificationAfterTraining(
+      userId,
+      cardsWithAnswer.timezone,
+    );
     return updates;
-    // const end = performance.now();
-    // appendTimeToFile('./updateCardsAfterTraining.txt', end - start);
-    // this.logger.debug(`updateCardsAfterTraining: ${end - start} ms`);
   }
+
+  // async updateCardsAfterTraining(
+  //   userId: UserId,
+  //   cardsWithAnswer: TrainingResponseDto,
+  // ) {
+  //   const now = new Date();
+  //   const updates =
+  //     await this.cardDataProcessor.getCardsUpdatesListAfterTraining(
+  //       userId,
+  //       cardsWithAnswer,
+  //       now,
+  //     );
+  //   // const start = performance.now();
+  //   const updatesJson = updates.map((u) => JSON.stringify(u));
+  //   const query = `SELECT update_cards_after_training($1::jsonb[])`;
+  //   await this.prisma.$executeRawUnsafe(query, updatesJson);
+  //   this.logger.debug(cardsWithAnswer.timeZone);
+  //   void this.cardDataProcessor.handleNotificationAfterTraining(userId);
+  //   return updates;
+  //   // const end = performance.now();
+  //   // appendTimeToFile('./updateCardsAfterTraining.txt', end - start);
+  //   // this.logger.debug(`updateCardsAfterTraining: ${end - start} ms`);
+  // }
 
   async updateCardsWithPrisma(
     userId: UserId,

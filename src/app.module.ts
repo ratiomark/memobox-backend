@@ -48,6 +48,7 @@ import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { RedisModule } from './redis/redis.module';
 import { AwsModule } from './aws/aws.module';
 import { LambdaService } from './aws/lambda.service';
+import { ServerLessModule } from './server-less/server-less.module';
 import awsConfig from './config/aws.config';
 
 @Module({
@@ -140,6 +141,7 @@ import awsConfig from './config/aws.config';
     UserDataStorageModule,
     SettingsModule,
     NotificationModule,
+    ServerLessModule,
   ],
   providers: [
     {
