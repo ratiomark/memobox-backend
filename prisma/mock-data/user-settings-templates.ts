@@ -2,94 +2,50 @@ import {
   TimeSleepSettings,
   NotificationSettings,
   TimingBlock,
+  SleepPeriod,
 } from 'src/aggregate/entities/settings-types';
 import { TESTER_EMAIL } from '../../test/utils/constants';
+
+export const generalTimeSleepDataDefault: SleepPeriod = {
+  startTime: '23:00',
+  durationMinutes: 480,
+};
+
+// export const generalTimeSleepDataDefault: TimeSleepDataObject = {
+//   up: {
+//     hours: 7,
+//     minutes: 0,
+//   },
+//   down: {
+//     hours: 23,
+//     minutes: 0,
+//   },
+// };
 
 export const timeSleepMock: TimeSleepSettings = {
   isTimeSleepEnabled: true,
   isDayByDayOptionEnabled: false,
-  generalTimeSleepData: {
-    up: {
-      hours: 7,
-      minutes: 0,
-    },
-    down: {
-      hours: 23,
-      minutes: 0,
-    },
+  generalSleepPeriod: generalTimeSleepDataDefault,
+  dayByDaySleepPeriods: {
+    monday: [],
+    tuesday: [],
+    wednesday: [],
+    thursday: [],
+    friday: [],
+    saturday: [],
+    sunday: [],
   },
+  // generalTimeSleepData: generalTimeSleepDataDefault,
 };
+
 const timeSleepMockExtended = {
-  monday: {
-    up: {
-      hours: 7,
-      minutes: 0,
-    },
-    down: {
-      hours: 23,
-      minutes: 0,
-    },
-  },
-  tuesday: {
-    up: {
-      hours: 7,
-      minutes: 0,
-    },
-    down: {
-      hours: 23,
-      minutes: 0,
-    },
-  },
-  wednesday: {
-    up: {
-      hours: 7,
-      minutes: 0,
-    },
-    down: {
-      hours: 23,
-      minutes: 0,
-    },
-  },
-  thursday: {
-    up: {
-      hours: 7,
-      minutes: 0,
-    },
-    down: {
-      hours: 23,
-      minutes: 0,
-    },
-  },
-  friday: {
-    up: {
-      hours: 7,
-      minutes: 0,
-    },
-    down: {
-      hours: 23,
-      minutes: 0,
-    },
-  },
-  saturday: {
-    up: {
-      hours: 7,
-      minutes: 0,
-    },
-    down: {
-      hours: 23,
-      minutes: 0,
-    },
-  },
-  sunday: {
-    up: {
-      hours: 7,
-      minutes: 0,
-    },
-    down: {
-      hours: 23,
-      minutes: 0,
-    },
-  },
+  monday: generalTimeSleepDataDefault,
+  tuesday: generalTimeSleepDataDefault,
+  wednesday: generalTimeSleepDataDefault,
+  thursday: generalTimeSleepDataDefault,
+  friday: generalTimeSleepDataDefault,
+  saturday: generalTimeSleepDataDefault,
+  sunday: generalTimeSleepDataDefault,
 };
 
 export const notificationsMock: NotificationSettings = {

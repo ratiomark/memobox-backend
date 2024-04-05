@@ -149,16 +149,19 @@ async function createSeedsInDB() {
         password: hashedPassword,
         roleId: 1,
         statusId: 1,
+        timezone: 'Asia/Jerusalem',
       },
       {
         id: userId,
         firstName: 'John',
         lastName: 'Doe',
         // userName: 'John',
-        email: TESTER_EMAIL,
+        // email: TESTER_EMAIL,
+        email: 'yanagae@gmail.com',
         password: hashedPassword,
         roleId: 2,
         statusId: 1,
+        timezone: 'Asia/Jerusalem',
       },
     ];
     // await prisma.user.deleteMany();
