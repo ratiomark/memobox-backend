@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { SettingsService } from '@/settings/settings.service';
-import { EVENT_NOTIFY_EMAIL } from '@/common/const/events';
+import { EVENT_NOTIFY_EMAIL, EVENT_USER_CREATED } from '@/common/const/events';
 import { UserId } from '@/common/types/prisma-entities';
 import {
   TimeSleepSettings,
@@ -13,41 +13,369 @@ import {
 import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
 import {
   addDays,
+  addHours,
   addMinutes,
-  compareAsc,
-  getDay,
   isAfter,
   isBefore,
   isEqual,
   isSameDay,
   isWithinInterval,
-  setHours,
-  setMinutes,
-  startOfDay,
   subDays,
   subMinutes,
 } from 'date-fns';
 import {
   getCurrentDayOfWeek,
+  getIsNotificationWithinSleepInterval,
   getNextDayOfWeek,
   getPreviousDayOfWeek,
 } from './helpers';
+import { RedisService } from '@/redis/redis.service';
+import { cacheOrFetchData } from '@/utils/helpers/cache-or-fetch';
+import { PrismaService } from 'nestjs-prisma';
+import { UserNotificationData } from './types/types';
+import { TrainingNotificationItem } from '@/aws/types/db-tables';
+import { ResponseDTO } from './dto/notifications-from-aws.dto';
+import { appendTimeToFile } from '@/utils/helpers/append-data-to-file';
+import * as cron from 'node-cron';
+import { AllConfigType } from '@/config/config.type';
+import { ConfigService } from '@nestjs/config';
+import { ServerLessService } from '@/server-less/server-less.service';
+
+type NotificationPromise = Promise<TrainingNotificationItem | null | undefined>;
 
 @Injectable()
-export class NotificationService {
+export class NotificationService implements OnModuleInit {
   private logger = new Logger(NotificationService.name);
-
+  private nodeEnv: string;
   constructor(
     private eventEmitter: EventEmitter2,
     private readonly settingsService: SettingsService,
-  ) {}
+    private readonly serverless: ServerLessService,
+    // private readonly awsDynamo: DynamoDbService,
+    private readonly redisService: RedisService,
+    private readonly prisma: PrismaService,
+    // private readonly httpService: HttpService,
+    private readonly configService: ConfigService<AllConfigType>,
+  ) {
+    this.startCronJob();
+  }
+  onModuleInit() {
+    const nodeEnv = this.configService.getOrThrow('app.nodeEnv', {
+      infer: true,
+    });
+    this.nodeEnv = nodeEnv;
+  }
 
-  rescheduleNotification(userId: UserId, newDateTime: Date) {
+  startCronJob() {
+    cron.schedule('*/2 * * * *', async () => {
+      this.logger.log('Running a job at 2-minute intervals');
+      await this.serverless.sendAllEmailNotifications();
+    });
+  }
+
+  // async sendAllEmailNotifications() {
+  //   if (this.nodeEnv === 'testing') {
+  //     this.logger.log('Testing Mode - DynamoDb ignored');
+  //     return;
+  //   }
+  //   const headers = {
+  //     'x-api-key': '12345',
+  //   };
+
+  //   try {
+  //     await firstValueFrom<{ data: any }>(
+  //       this.httpService.post(
+  //         `http://memobox-vercel-edge-functions.vercel.app/api/sendAllEmailNotifications`,
+  //         {},
+  //         { headers },
+  //       ),
+  //     );
+  //     // this.logger.debug(
+  //     //   'sendAllEmailNotifications',
+  //     //   JSON.stringify(data, null, 3),
+  //     // );
+  //     // return data;
+  //   } catch (error) {
+  //     this.logger.error('Error sendAllEmailNotifications:', error);
+  //     throw error;
+  //   }
+  // }
+
+  async rescheduleNotification(userId: UserId, notificationTime: Date) {
     this.logger.log(`reschedule Notification for user ${userId} - started.`);
-    // нужно обновить данные на AWS
-    // addOrUpdateTrainingNotification;
+    const notificationItem = await this.createNotificationItem(
+      userId,
+      notificationTime,
+    );
+
+    const lastNotificationItem =
+      await this.prisma.notificationHistory.findFirst({
+        where: { userId },
+      });
+
+    if (lastNotificationItem) {
+      // если время не изменилось, то ничего не нужно делать
+      if (isEqual(lastNotificationItem.notificationTime, notificationTime)) {
+        this.logger.log(`no need to update notification ${userId} - ended.`);
+        return;
+      }
+      void this.serverless.addOrUpdateTrainingNotification(notificationItem);
+      // void this.serverless.replaceTrainingNotification(
+      //   notificationItem,
+      //   lastNotificationItem.notificationTime,
+      // );
+    } else {
+      void this.serverless.addOrUpdateTrainingNotification(notificationItem);
+    }
+
+    await this.prisma.notificationHistory.upsert({
+      where: { userId },
+      update: { notificationTime },
+      create: { userId, notificationTime },
+    });
+
     this.logger.log(`reschedule Notification for user ${userId} - ended.`);
   }
+
+  // async getAllEmails() {
+  //   return await this.awsDynamo.getAllEmails();
+  // }
+
+  async getUserNotificationData(userId: UserId): Promise<UserNotificationData> {
+    const getUserDataFn = async (userId: UserId) => {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, language: true, firstName: true },
+      });
+      // FIXME: использовать мейл указанный в настройках уведомлений
+      if (!user || user.email === null) {
+        throw new Error('User not found or missing required fields');
+      }
+      return {
+        email: user.email,
+        language: user.language ?? 'en',
+        name: user.firstName ?? 'user_name',
+      };
+    };
+    const userData = await getUserDataFn(userId);
+    // const userData = await cacheOrFetchData<UserNotificationData>(
+    //   userId,
+    //   this.redisService.getUserNotificationData.bind(this.redisService),
+    //   getUserDataFn,
+    //   this.redisService.saveUserNotificationData.bind(this.redisService),
+    // );
+
+    return userData;
+  }
+
+  async recalculateNotificationsAfterAws(data: ResponseDTO[]) {
+    const start = performance.now();
+    for (const item of data) {
+      if (item.success && item.response) {
+        await this.processAwsLanguageResponse(item.notificationIds, true);
+      } else if (!item.success) {
+        await this.processAwsLanguageResponse(item.notificationIds, false);
+      }
+    }
+    const end = performance.now();
+    // appendTimeToFile('./recalculateNotification.txt', end - start);
+    this.logger.debug(`recalculateNotification time: ${end - start} ms`);
+  }
+
+  async processAwsLanguageResponse(
+    userIdList: UserId[],
+    notificationsSendSuccessfully: boolean,
+  ) {
+    try {
+      const notificationItemPromises: NotificationPromise[] = userIdList.map(
+        (id) =>
+          this.getNotificationItemAfterAws(id, notificationsSendSuccessfully),
+      );
+
+      const notificationItems = await Promise.all(notificationItemPromises);
+      const notificationItemsFiltered = notificationItems.filter(
+        Boolean,
+      ) as TrainingNotificationItem[];
+
+      await this.serverless.addOrUpdateTrainingNotificationList([
+        ...notificationItemsFiltered,
+      ]);
+
+      const notificationUpdatesJson = notificationItemsFiltered.map((item) =>
+        JSON.stringify({
+          userId: item.notificationId,
+          notificationTime: item.notificationTime,
+        }),
+      );
+      const query = `SELECT update_or_insert_notification_history($1::jsonb[])`;
+      await this.prisma.$executeRawUnsafe(query, notificationUpdatesJson);
+    } catch (error) {
+      this.logger.error('Ошибка при обновлении уведомлений:', error);
+    }
+  }
+
+  async getNotificationItemAfterAws(
+    userId: UserId,
+    notificationsSendSuccessfully: boolean,
+  ) {
+    // userId
+    // настройки уведомлений
+    try {
+      const notificationSettings = await this.getNotificationSettings(userId);
+      this.logger.log(notificationSettings);
+      if (
+        !notificationSettings ||
+        !notificationSettings.emailNotificationsEnabled
+      ) {
+        return null;
+      }
+
+      const minimumCards =
+        notificationSettings.minimumCardsForEmailNotification;
+
+      const cards = (await this.prisma.card.findMany({
+        where: { userId, isDeleted: false, nextTraining: { not: null } },
+        select: { nextTraining: true },
+        orderBy: { nextTraining: 'desc' },
+        take: minimumCards,
+      })) as { nextTraining: Date }[];
+
+      // если карточек меньше чем минимальное количество, то уведомления не нужно отправлять
+      if (cards.length < minimumCards) return null;
+      const notificationTime = new Date(cards[0].nextTraining);
+
+      this.logger.debug('notificationTime ', notificationTime);
+      if (!notificationTime) {
+        // this.logger.log('notificationTime is null');
+        return null;
+      }
+
+      const now = new Date();
+      let nextNotificationTime;
+      if (isBefore(notificationTime, now)) {
+        nextNotificationTime = now;
+      } else {
+        nextNotificationTime = notificationTime;
+      }
+
+      this.logger.debug('nextNotificationTime ', nextNotificationTime);
+      if (notificationsSendSuccessfully) {
+        nextNotificationTime = addHours(nextNotificationTime, 4);
+      }
+      // this.logger.debug('nextNotificationTime ', nextNotificationTime);
+
+      const timeSleepSettings = await this.getTimeSleepSettings(userId);
+      this.logger.debug('timeSleepSettings ');
+
+      this.logger.debug(JSON.stringify(timeSleepSettings, null, 2));
+
+      this.logger.debug('timeSleepSettings ');
+      if (!timeSleepSettings || !timeSleepSettings.isTimeSleepEnabled) {
+        return await this.createNotificationItem(userId, nextNotificationTime);
+      }
+
+      const timezone = (await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { timezone: true },
+      }))!.timezone!;
+
+      this.logger.debug('timezone  ', timezone);
+
+      const correctedTime = this.correctNotificationTimeForSleepUTC(
+        nextNotificationTime,
+        timeSleepSettings,
+        timezone,
+      );
+      // this.logger.debug(JSON.stringify(correctedTime, null, 3));
+      this.logger.debug('correctedTime  ', correctedTime);
+      return await this.createNotificationItem(userId, correctedTime);
+    } catch (error) {
+      this.logger.error('Ошибка при обновлении уведомлений:', error);
+    }
+  }
+
+  // async getAllEmails() {
+  //   // await sleep(5);
+  //   const user = await this.prisma.user.findUnique({
+  //     where: { email: 'yanagae@gmail.com' },
+  //   });
+  //   const testUserIds = [user!.id!];
+  //   const subscriptions = await this.prisma.pushSubscription.findMany({
+  //     where: {
+  //       userId: {
+  //         in: testUserIds,
+  //         // in: userIds,
+  //       },
+  //     },
+  //   });
+  //   this.logger.debug(JSON.stringify(subscriptions, null, 2));
+  //   const sentPushPromises = subscriptions.map((subscription) => {
+  //     return webPush.sendNotification(
+  //       JSON.parse(subscription.subscription as unknown as string),
+  //       JSON.stringify(payload),
+  //     );
+  //   });
+  //   const responses = await Promise.all(sentPushPromises);
+  //   console.log(JSON.stringify(responses, null, 2));
+  //   return responses;
+  //   // очистить записи в базе данных, если подписка не действительна или не существует
+  // }
+
+  async createNotificationItem(userId: UserId, notificationTime: Date) {
+    // this.logger.log(`reschedule Notification for user ${userId} - started.`);
+    const userData = await this.getUserNotificationData(userId);
+    const notificationItem: TrainingNotificationItem = {
+      notificationId: userId,
+      notificationTime: notificationTime.toISOString(),
+      name: userData.name,
+      // notificationTime: '2024-04-03T04:30:00.000Z',
+      notificationType: 'trainingNotification',
+      user_language: userData.language,
+      email: userData.email,
+    };
+    // this.logger.log(`userData: ${JSON.stringify(userData)}`);
+    // this.logger.log(
+    //   `notificationItem: ${JSON.stringify(notificationItem, null, 2)}`,
+    // );
+    return notificationItem;
+    // нужно обновить данные на AWS
+  }
+
+  async recalculateAll() {
+    const start = performance.now();
+    const users = await this.prisma.user.findMany({
+      where: { lastName: 'Doe', NOT: { email: 'yanagae@gmail.com' } },
+    });
+    const usersIds = users.map((user) => user.id);
+    await this.processAwsLanguageResponse(usersIds, false);
+
+    const end = performance.now();
+
+    appendTimeToFile('./recalculateAll.txt', end - start);
+    this.logger.debug(`recalculateAll time: ${end - start} ms`);
+    // this.logger.log('recalculateNotifications - ended');
+  }
+
+  // async getUserNotificationData(
+  //   userId: UserId,
+  // ): Promise<{ email: string; language: string }> {
+  //   const userData = await cacheOrFetchData<{
+  //     email: string;
+  //     language: string;
+  //   }>(
+  //     userId,
+  //     this.redisService.getUserNotificationData.bind(this.redisService),
+  //     () => {
+  //       this.prisma.user.findUnique({
+  //         where: { id: userId },
+  //         select: { email: true, language: true },
+  //       });
+  //     },
+  //     this.redisService.saveUserNotificationData.bind(this.redisService),
+  //   );
+
+  //   return userData;
+  // }
 
   getNotificationSettings(userId: UserId) {
     return this.settingsService.getNotificationSettings(userId);
@@ -376,25 +704,43 @@ export class NotificationService {
       );
 
       for (const sleepPeriod of sortedSleepPeriods) {
-        const { startTime, durationMinutes } = sleepPeriod;
-        const [startHours, startMinutes] = startTime.split(':').map(Number);
+        // const { startTime, durationMinutes } = sleepPeriod;
+        // const [startHours, startMinutes] = startTime.split(':').map(Number);
 
-        let sleepStartTime = new Date(notificationTimeLocal);
-        sleepStartTime.setHours(startHours, startMinutes, 0, 0);
-        let sleepEndTime = addMinutes(sleepStartTime, durationMinutes);
+        // let sleepStartTime = new Date(notificationTimeLocal);
+        // sleepStartTime.setHours(startHours, startMinutes, 0, 0);
+        // let sleepEndTime = addMinutes(sleepStartTime, durationMinutes);
 
-        sleepStartTime = subMinutes(sleepStartTime, beforeSleepMinutes);
-        sleepEndTime = addMinutes(sleepEndTime, afterSleepMinutes);
+        // sleepStartTime = subMinutes(sleepStartTime, beforeSleepMinutes);
+        // sleepEndTime = addMinutes(sleepEndTime, afterSleepMinutes);
 
-        const isNotificationWithinSleepInterval = isWithinInterval(
-          notificationTimeLocal,
-          {
-            start: sleepStartTime,
-            end: sleepEndTime,
-          },
-        );
+        const { isNotificationWithinSleepInterval, sleepEndTime } =
+          getIsNotificationWithinSleepInterval({
+            sleepPeriod,
+            notificationTimeLocal,
+            beforeSleepMinutes,
+            afterSleepMinutes,
+          });
 
         if (isNotificationWithinSleepInterval) {
+          if (sortedSleepPeriods.length === 1) {
+            return sleepEndTime;
+          }
+          // нужно провереть не пересекается с временем начала следующего периода сна
+          const nextPeriod = sortedSleepPeriods[1];
+
+          const {
+            isNotificationWithinSleepInterval: isInNextInterval,
+            sleepEndTime: nextSleepTime,
+          } = getIsNotificationWithinSleepInterval({
+            sleepPeriod: nextPeriod,
+            notificationTimeLocal,
+            beforeSleepMinutes,
+            afterSleepMinutes,
+          });
+          if (isInNextInterval) {
+            return nextSleepTime;
+          }
           return sleepEndTime;
         }
       }
@@ -558,6 +904,23 @@ export class NotificationService {
     );
 
     return adjustedNotificationTimeLocal; // Возвращаем локальное время
+  }
+
+  correctNotificationTimeForSleepUTC(
+    notificationTimeUTC: Date,
+    timeSleepSettings: TimeSleepSettings,
+    timeZone: string,
+    beforeSleepMinutes = 30,
+    afterSleepMinutes = 30,
+  ): Date {
+    const timeLocalCorrected = this.correctNotificationTimeForSleep(
+      notificationTimeUTC,
+      timeSleepSettings,
+      timeZone,
+      beforeSleepMinutes,
+      afterSleepMinutes,
+    );
+    return zonedTimeToUtc(timeLocalCorrected, timeZone);
   }
 }
 

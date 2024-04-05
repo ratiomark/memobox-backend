@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { SettingsService } from '@/settings/settings.service';
 import { EVENT_NOTIFY_EMAIL, EVENT_USER_CREATED } from '@/common/const/events';
@@ -39,21 +39,153 @@ import { ResponseDTO } from './dto/notifications-from-aws.dto';
 import { appendTimeToFile } from '@/utils/helpers/append-data-to-file';
 import { isObject } from 'class-validator';
 import * as webPush from 'web-push';
-
+import { PushSubscription } from 'web-push';
+import { sleep } from '@/utils/common/sleep';
+import { ConfigService } from '@nestjs/config';
+import { AllConfigType } from '@/config/config.type';
+// interface PushSubscription {
+//   endpoint: string;
+//   expirationTime?: number | null;
+//   keys: {
+//     p256dh: string;
+//     auth: string;
+//   };
+// }
 // type NotificationPromise = Promise<TrainingNotificationItem | null | undefined>;
 @Injectable()
-export class PushService {
+export class PushService implements OnModuleInit {
+  private VAPID_PUBLIC_KEY: string;
+  private VAPID_PRIVATE_KEY: string;
   private logger = new Logger(PushService.name);
-  constructor() {
-    this.generateVapidKeys();
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService<AllConfigType>,
+  ) {}
+  onModuleInit() {
+    this.initVariables();
+    webPush.setVapidDetails(
+      'https://memobox.tech/',
+      this.VAPID_PUBLIC_KEY,
+      this.VAPID_PRIVATE_KEY,
+    );
   }
 
-  private generateVapidKeys(): void {
-    const vapidKeys = webPush.generateVAPIDKeys();
-    this.logger.warn(vapidKeys);
+  async sendNotificationToUsers(userIds: string[], payload: any) {
+    // await sleep(5);
+    const user = await this.prisma.user.findUnique({
+      where: { email: 'yanagae@gmail.com' },
+    });
+    const testUserIds = [user!.id!];
+    const subscriptions = await this.prisma.pushSubscription.findMany({
+      where: {
+        userId: {
+          in: testUserIds,
+          // in: userIds,
+        },
+      },
+    });
+    this.logger.debug(JSON.stringify(subscriptions, null, 2));
+    const sentPushPromises = subscriptions.map((subscription) => {
+      return webPush.sendNotification(
+        JSON.parse(subscription.subscription as unknown as string),
+        JSON.stringify(payload),
+      );
+    });
+    const responses = await Promise.all(sentPushPromises);
+    console.log(JSON.stringify(responses, null, 2));
+    return responses;
+    // очистить записи в базе данных, если подписка не действительна или не существует
+  }
+
+  async subscribePushNotification(
+    subscription: PushSubscription,
+    userId: UserId,
+    browser: string,
+    osName: string,
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: 'yanagae@gmail.com' },
+    });
+    const endpoint = subscription.endpoint;
+    const alreadySubscribed = await this.prisma.pushSubscription.findUnique({
+      where: { endpoint },
+    });
+    if (alreadySubscribed) {
+      return { message: 'Already subscribed' };
+    }
+    await this.prisma.pushSubscription.create({
+      data: {
+        subscription: JSON.stringify(subscription),
+        userId: user!.id!,
+        endpoint,
+        browser,
+        osName,
+      },
+    });
+    return { message: 'Subscribed' };
+  }
+
+  async unsubscribePushNotification(
+    subscription: PushSubscription,
+    userId: UserId,
+  ) {
+    const endpoint = subscription.endpoint;
+    const alreadySubscribed = await this.prisma.pushSubscription.findUnique({
+      where: { endpoint },
+    });
+    if (alreadySubscribed) {
+      await this.prisma.pushSubscription.delete({
+        where: { endpoint },
+      });
+      return { message: 'Unsubscribed successfully' };
+    }
+    return { message: 'User not subscribed' };
+  }
+
+  initVariables() {
+    this.VAPID_PUBLIC_KEY = this.configService.getOrThrow<string>(
+      'VAPID_PUBLIC_KEY',
+      {
+        infer: true,
+      },
+    );
+    this.VAPID_PRIVATE_KEY = this.configService.getOrThrow<string>(
+      'VAPID_PRIVATE_KEY',
+      {
+        infer: true,
+      },
+    );
+    // this.baseUrl = this.configService.getOrThrow<string>(
+    //   'SERVERLESS_BASE_URL',
+    //   {
+    //     infer: true,
+    //   },
+    // );
+    // this.baseHeader = {
+    //   'x-api-key': this.xApiKey,
+    // };
   }
 }
-
+// private generateVapidKeys(): void {
+//   const vapidKeys = webPush.generateVAPIDKeys();
+//   this.logger.warn(vapidKeys);
+// }
+// {
+//   "endpoint": "https://fcm.googleapis.com/fcm/send/ffzs9tXettg:APA91bGC6ioP1vOrTMuHrhmq5ney1gWwuqGB4K8-rWVKsB1Xb3PQDW2fNMIHpn7boTeMD2bl16aF1nAB_OeEH42osNRGBCPVYw_YeQwPJTf_K1tmly8eLBMlifNuchcw6pBSBbvnP8Ke",
+//   "expirationTime": null,
+//   "keys": {
+//     "p256dh": "BImuh_M2xksrNbRMIa4qY4jSXF5QaBGtCBe5UwpIETgpVZM4LNW5F4ilrz7BMhP_UEetszXeSRvnxRLCXq5b85M",
+//     "auth": "LDJcgkbQjG9auOVgMm2NEw"
+//   }
+// }
+// {
+//   "endpoint": "https://fcm.googleapis.com/fcm/send/eM3t_TECAu4:APA91bExyOQFUbvIadRZEk9ip9BbrwxsbSxmdrqKKBk42C4v7hukUhO-3Qu4MdKDfzYVsKrB3E1bvJ4SfK0m-g09wDWox_uxJFYSjUdPSprFC6UmDoC_UIDSvNk38RyUALD8huGj4v1v",
+//   "expirationTime": null,
+//   "keys": {
+//     "p256dh": "BAvk_mapFuBDIhpac_KsUYCvUI0bLRRIRPS4NQ4KmHuh1NtHKA0kvilOQ2-G2dihfUC3FWe3YtmeVm6tVUoZwFQ",
+//     "auth": "6G9VMdwbQVVSbCZg2hT08g"
+//   }
+// }
 // if(isSleepStartEndSameDay) {
 //   const notificationWithinSleepInterval = isWithinInterval(
 //     notificationTimeLocal,
