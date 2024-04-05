@@ -6,10 +6,8 @@ import { AllConfigType } from '@/config/config.type';
 import { MaybeType } from '../utils/types/maybe.type';
 import { MailerService } from '@/mailer/mailer.service';
 import path from 'path';
-import mail from '@sendgrid/mail';
 import { LambdaService } from '@/aws/lambda.service';
-import { EMAIL_TYPES } from '@/common/const/email-types';
-import { url } from 'inspector';
+import { ServerLessService } from '@/server-less/server-less.service';
 
 @Injectable()
 export class MailService {
@@ -17,6 +15,7 @@ export class MailService {
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService<AllConfigType>,
     private readonly lambda: LambdaService,
+    private readonly serverless: ServerLessService,
   ) {}
 
   // await this.lambda.sendEmail({
@@ -30,10 +29,15 @@ export class MailService {
   //       testNumber: 42,
   //     },
   //   });
+  // async sendEmail(
+  //   mailData: MailData<{ hash?: string; name?: string; testNumber?: number }>,
+  // ) {
+  //   return await this.lambda.sendEmail({ ...mailData });
+  // }
   async sendEmail(
     mailData: MailData<{ hash?: string; name?: string; testNumber?: number }>,
   ) {
-    return await this.lambda.sendEmail({ ...mailData });
+    return await this.serverless.sendEmail({ ...mailData });
   }
 
   async userSignUp(mailData: MailData<{ hash: string }>): Promise<void> {
