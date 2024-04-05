@@ -1,8 +1,9 @@
 import { TimingBlockDto } from '@/aggregate/entities/aggregate.entity';
 import {
   DaysOfWeek,
-  TimeSleepDataObject,
+  TimeSleepAtomicDataObject,
   TimingBlock,
+  SleepPeriodFrontendRequest,
 } from '@/aggregate/entities/settings-types';
 import { MissedTrainingValue } from '@prisma/client';
 import { Type } from 'class-transformer';
@@ -51,13 +52,31 @@ export class CreateSettingTimeSleepDto {
 
   @IsDefined()
   @IsNotEmptyObject()
-  generalTimeSleepData: TimeSleepDataObject;
+  generalSleepPeriod: SleepPeriodFrontendRequest;
 
   @IsOptional()
-  dayByDayTimeSleepData?: {
-    [key in DaysOfWeek]: TimeSleepDataObject;
+  dayByDaySleepPeriods?: {
+    [key in DaysOfWeek]: SleepPeriodFrontendRequest[];
   };
 }
+// export class CreateSettingTimeSleepDto {
+//   @IsBoolean()
+//   @IsDefined()
+//   isTimeSleepEnabled: boolean;
+
+//   @IsBoolean()
+//   @IsDefined()
+//   isDayByDayOptionEnabled: boolean;
+
+//   @IsDefined()
+//   @IsNotEmptyObject()
+//   generalTimeSleepData: TimeSleepDataObject;
+
+//   @IsOptional()
+//   dayByDayTimeSleepData?: {
+//     [key in DaysOfWeek]: TimeSleepDataObject;
+//   };
+// }
 
 export class CreateSettingNotificationDto {
   @IsBoolean()

@@ -2,22 +2,59 @@ import { Prisma } from '@prisma/client';
 import {
   TimeSleepSettings,
   NotificationSettings,
-} from 'src/aggregate/entities/settings-types';
+  SleepPeriod,
+} from '@/aggregate/entities/settings-types';
+
+export const generalTimeSleepDataDefault: SleepPeriod = {
+  startTime: '23:00',
+  durationMinutes: 480,
+};
 
 export const timeSleepMock: TimeSleepSettings = {
   isTimeSleepEnabled: true,
   isDayByDayOptionEnabled: false,
-  generalTimeSleepData: {
-    up: {
-      hours: 7,
-      minutes: 0,
-    },
-    down: {
-      hours: 23,
-      minutes: 0,
-    },
+  generalSleepPeriod: generalTimeSleepDataDefault,
+  dayByDaySleepPeriods: {
+    monday: [],
+    tuesday: [],
+    wednesday: [],
+    thursday: [],
+    friday: [],
+    saturday: [],
+    sunday: [],
   },
+  // generalTimeSleepData: generalTimeSleepDataDefault,
 };
+
+// export const generalTimeSleepDataDefault: TimeSleepDataObject = {
+//   up: {
+//     hours: 7,
+//     minutes: 0,
+//   },
+//   down: {
+//     hours: 23,
+//     minutes: 0,
+//   },
+// };
+
+// export const timeSleepMock: TimeSleepSettings = {
+//   isTimeSleepEnabled: true,
+//   isDayByDayOptionEnabled: false,
+//   generalSleepPeriod: {
+//     startTime: '23:00',
+//     durationMinutes: 480,
+//   },
+//   // generalTimeSleepData: {
+//   //   up: {
+//   //     hours: 7,
+//   //     minutes: 0,
+//   //   },
+//   //   down: {
+//   //     hours: 23,
+//   //     minutes: 0,
+//   //   },
+//   // },
+// };
 const timeSleepMockExtended = {
   monday: {
     up: {
@@ -92,10 +129,10 @@ const timeSleepMockExtended = {
 };
 
 export const notificationsMock: NotificationSettings = {
-  mobilePushEnabled: false,
-  emailNotificationsEnabled: false,
-  minimumCardsForPush: 15,
+  emailNotificationsEnabled: true,
   minimumCardsForEmailNotification: 10,
+  mobilePushEnabled: false,
+  minimumCardsForPush: 15,
   notificationEmails: [],
 };
 

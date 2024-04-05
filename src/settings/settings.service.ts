@@ -116,10 +116,17 @@ export class SettingsService implements OnModuleInit {
     const timeSleep = await this.prisma.timeSleep.findUnique({
       where: { userId },
     });
+    if (!timeSleep) {
+      await this.prisma.timeSleep.create({
+        data: {
+          userId,
+          settings: timeSleepMock as unknown as Prisma.JsonObject,
+        },
+      });
+    }
     return (
       (timeSleep?.settings as unknown as TimeSleepSettings) ?? timeSleepMock
     );
-    // return (timeSleep?.settings as unknown as TimeSleepSettings) ?? null;
   }
 
   async updateMissedTrainingValue(

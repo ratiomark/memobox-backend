@@ -3,8 +3,9 @@ import {
   CreateSettingDto,
   CreateSettingMissedTrainingDto,
   CreateSettingShelfTemplateDto,
-  CreateSettingTimeSleepDto,
+  // CreateSettingTimeSleepDto,
 } from './create-setting.dto';
+import { CreateSettingTimeSleepDto } from '../entities/setting.entity';
 
 export class UpdateSettingDto extends PartialType(CreateSettingDto) {}
 
@@ -16,9 +17,9 @@ export class UpdateSettingShelfTemplateDto extends PartialType(
   CreateSettingShelfTemplateDto,
 ) {}
 
+// export class UpdateSettingTimeSleepDto extends PartialType(
+//   TimeSleepSettingsFrontendEntity,
+// ) {}
 export class UpdateSettingTimeSleepDto extends PartialType(
   CreateSettingTimeSleepDto,
 ) {}
-// export class UpdateSettingTimeSleepDto extends PartialType(
-//   CreateSettingTimeSleepDto,
-// ) {}

@@ -8,7 +8,6 @@ import {
   Delete,
 } from '@nestjs/common';
 import { SettingsService } from './settings.service';
-import { CreateSettingDto } from './dto/create-setting.dto';
 import {
   UpdateSettingDto,
   UpdateSettingMissedTrainingDto,
@@ -17,9 +16,9 @@ import {
 } from './dto/update-setting.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { GetCurrentUser } from '@/common/decorators';
-import { MissedTrainingValue, Prisma, User } from '@prisma/client';
-import { plainToClass } from 'class-transformer';
 import { NotificationSettings } from '@/aggregate/entities/settings-types';
+import { User, Prisma } from '@prisma/client';
+import { UserId } from '@/common/types/prisma-entities';
 
 @ApiTags('Settings')
 @Controller({
@@ -35,13 +34,13 @@ export class SettingsController {
   // }
 
   @Get()
-  getAllSettings(@GetCurrentUser('id') userId: User['id']) {
+  getAllSettings(@GetCurrentUser('id') userId: UserId) {
     return this.settingsService.getAllSettings(userId);
   }
 
   @Patch('missed-training')
   updateMissedTraining(
-    @GetCurrentUser('id') userId: User['id'],
+    @GetCurrentUser('id') userId: UserId,
     @Body() missedTrainingValue: UpdateSettingMissedTrainingDto,
   ) {
     console.log('missedTrainingValue', missedTrainingValue);
@@ -53,7 +52,7 @@ export class SettingsController {
 
   @Patch('shelf-template')
   updateShelfTemplate(
-    @GetCurrentUser('id') userId: User['id'],
+    @GetCurrentUser('id') userId: UserId,
     @Body() shelfTemplate: UpdateSettingShelfTemplateDto,
   ) {
     console.log('missedTrainingValue', shelfTemplate);
@@ -64,24 +63,22 @@ export class SettingsController {
   }
 
   @Delete('shelf-template')
-  setDefaultShelfTemplate(@GetCurrentUser('id') userId: User['id']) {
+  setDefaultShelfTemplate(@GetCurrentUser('id') userId: UserId) {
     return this.settingsService.setDefaultShelfTemplate(userId);
   }
 
   @Patch('time-sleep')
   updateTimeSleep(
-    @GetCurrentUser('id') userId: User['id'],
+    @GetCurrentUser('id') userId: UserId,
     @Body() timeSleep: UpdateSettingTimeSleepDto,
   ) {
-    console.log('timeSleep', timeSleep);
-    const timeSleepObj = plainToClass(UpdateSettingTimeSleepDto, timeSleep);
-    console.log('timeSleep', timeSleepObj);
+    console.log(JSON.stringify(timeSleep, null, 2));
     return this.settingsService.updateTimeSleep(userId, timeSleep);
   }
 
   @Patch('notification')
   updateNotification(
-    @GetCurrentUser('id') userId: User['id'],
+    @GetCurrentUser('id') userId: UserId,
     @Body() notificationSettings: NotificationSettings,
   ) {
     // console.log('timeSleep', timeSleep);
@@ -93,18 +90,18 @@ export class SettingsController {
     );
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.settingsService.findOne(+id);
-  }
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.settingsService.findOne(+id);
+  // }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSettingDto: UpdateSettingDto) {
-    // return this.settingsService.update(+id, updateSettingDto);
-  }
+  // @Patch(':id')
+  // update(@Param('id') id: string, @Body() updateSettingDto: UpdateSettingDto) {
+  //   // return this.settingsService.update(+id, updateSettingDto);
+  // }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    // return this.settingsService.remove(+id);
-  }
+  // @Delete(':id')
+  // remove(@Param('id') id: string) {
+  //   // return this.settingsService.remove(+id);
+  // }
 }
