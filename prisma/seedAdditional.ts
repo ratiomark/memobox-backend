@@ -100,64 +100,23 @@ export const prismaExtended = prisma.$extends({
   },
 });
 
-async function createSeedsInDB() {
+async function createSeedsInDB(index: number) {
   console.log('Seeding...');
-  const adminUserId = uuid();
   const userId = uuid();
   const shelfA = uuid();
-  const shelfB = uuid();
-  const shelfC = uuid();
   let userShelves: PartialShelf[];
   // let userBoxes: PartialBox[];
 
-  async function seedRoles() {
-    const roles: Role[] = [
-      { id: 1, name: 'ADMIN' },
-      { id: 2, name: 'USER' },
-    ];
-
-    const createdRoles = await prismaExtended.role.createManyAndReturn({
-      data: roles,
-    });
-    console.log('✔️ roles');
-    // console.log({ roles });
-    return createdRoles['newRecords'];
-  }
-
-  async function seedStatuses() {
-    const statuses: Status[] = [
-      { id: 1, name: 'ACTIVE' },
-      { id: 2, name: 'INACTIVE' },
-    ];
-    const createdStatuses = await prismaExtended.status.createManyAndReturn({
-      data: statuses,
-    });
-    console.log('✔️ statuses');
-    return createdStatuses['newRecords'];
-  }
-
-  async function seedUsers() {
+  async function seedUsers(index: number) {
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, salt);
     const users = [
       {
-        id: adminUserId,
-        firstName: 'Super',
-        lastName: 'Admin',
-        // userName: 'admin',
-        email: ADMIN_EMAIL,
-        password: hashedPassword,
-        roleId: 1,
-        statusId: 1,
-        timezone: 'Asia/Jerusalem',
-      },
-      {
         id: userId,
-        firstName: 'John',
+        firstName: 'John ' + index,
         lastName: 'Doe',
         // userName: 'John',
-        email: TESTER_EMAIL,
-        // email: 'yanagae@gmail.com',
+        email: TESTER_EMAIL + index,
         password: hashedPassword,
         roleId: 2,
         statusId: 1,
@@ -186,27 +145,7 @@ async function createSeedsInDB() {
         index: 0,
         isDeleted: false,
       },
-      // {
-      //   id: shelfB,
-      //   title: 'Shelf B',
-      //   userId: userId,
-      //   isCollapsed: true,
-      //   missedTrainingValue: 'none',
-      //   index: 1,
-      //   isDeleted: false,
-      // },
-      // {
-      //   id: shelfC,
-      //   title: 'Shelf C',
-      //   userId: userId,
-      //   isCollapsed: true,
-      //   missedTrainingValue: 'none',
-      //   index: 2,
-      //   isDeleted: false,
-      // },
     ];
-    // await prisma.shelf.createMany({ data: userShelves });
-    // return prisma.shelf.findMany();
     const createdShelves = await prismaExtended.shelf.createManyAndReturn({
       data: userShelves,
     });
@@ -292,12 +231,7 @@ async function createSeedsInDB() {
         userId: box.userId,
         boxId: box.id,
         isDeleted: false,
-        // createdAt: now,
         nextTraining: now,
-        // nextTraining: calculateNextTraining(
-        //   box.timing as unknown as TimingBlock,
-        //   now,
-        // ),
       }));
     };
 
@@ -323,46 +257,18 @@ async function createSeedsInDB() {
   }
 
   async function seedCards(boxData: PartialBox[]) {
-    const box = boxData[0];
     const cards = createCardsForBoxes(boxData, newCards, defaultCard);
 
     const createdCards = await prismaExtended.card.createMany({
       data: cards as Prisma.CardCreateManyInput[],
     });
-    // console.log(createdCards.count);
-    // const createdCards = await prismaExtended.card.createManyAndReturn({
-    //   data: cards,
-    // });
     console.log('✔️ cards' + ' | created ', createdCards.count);
     return await prisma.card.findMany();
-    // return createdCards;
-    // return createdCards['newRecords'];
-  }
-
-  async function seedShelfTemplateDefaultSettings() {
-    await prisma.shelfTemplate.create({
-      data: { template: shelfTemplateDefaultMock },
-    });
-    console.log('✔️ settings: shelf template');
-  }
-
-  async function seedTimeSleepDefaultSettings() {
-    await prisma.timeSleep.create({
-      data: { settings: timeSleepMock as unknown as Prisma.InputJsonValue },
-    });
-    console.log('✔️ settings: time sleep');
-  }
-
-  async function seedMissedTrainingDefaultSettings() {
-    await prisma.missedTraining.create({
-      data: { settings: MissedTrainingValue.none },
-    });
-    console.log('✔️ settings: missed training');
   }
 
   async function seedNotificationDefaultSettings() {
     const notificationEmails: NotificationEmails[] = [
-      { email: TESTER_EMAIL, verified: false },
+      { email: TESTER_EMAIL + index, verified: false },
     ];
     const notifications = notificationsMock;
     notifications.notificationEmails = notificationEmails;
@@ -396,9 +302,7 @@ async function createSeedsInDB() {
   // }
 
   const seedData = {
-    seedRoles: await seedRoles(),
-    seedStatuses: await seedStatuses(),
-    seedUsers: await seedUsers(),
+    seedUsers: await seedUsers(index),
     seedShelves: await seedShelves(),
   };
   const seedBoxesResult = await seedBoxes();
@@ -406,12 +310,9 @@ async function createSeedsInDB() {
   const boxCounts = seedBoxesResult.boxCounts;
   seedData['seedBoxes'] = boxesFromDb;
   seedData['boxCounts'] = boxCounts;
-  // console.log(boxesFromDb);
   const cardsFromDb = await seedCards(boxesFromDb);
   seedData['seedCards'] = cardsFromDb;
-  await seedShelfTemplateDefaultSettings();
-  await seedTimeSleepDefaultSettings();
-  await seedMissedTrainingDefaultSettings();
+  // console.log(seedUsers['seedUsers']);
   await seedNotificationDefaultSettings();
   await seedJsonDataAndSettingsDefault();
   console.log('Seeding completed.');
@@ -420,9 +321,12 @@ async function createSeedsInDB() {
 
 async function main() {
   try {
-    const createdDB = await createSeedsInDB();
+    Array.from({ length: 5 }).forEach(async (_, index) => {
+      const createdDB = await createSeedsInDB(index);
+    });
+    // const createdDB = await createSeedsInDB();
     await prisma.$disconnect();
-    return createdDB;
+    // return createdDB;
   } catch (e) {
     console.error(e);
     console.log('Seeding failed.');
