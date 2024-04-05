@@ -63,13 +63,16 @@ export const createTestUtils: (token?: string) => Promise<{
   };
 
   const createTrainingResponses = (trainingCards, answer: AnswerType) => {
-    return trainingCards.map((card, index) => ({ ...card, answer }));
+    return trainingCards.map((card, index) => ({
+      ...card,
+      answer,
+    }));
   };
 
   const sendTrainingResponses = async (trainingResponses) => {
     return await request(app_url_full)
       .post('/cards/training/answers')
-      .send({ responses: trainingResponses })
+      .send({ responses: trainingResponses, timezone: 'UTC' })
       .auth(userToken, { type: 'bearer' });
   };
 

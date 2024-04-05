@@ -13,15 +13,23 @@ if (process.env.NODE_ENV) {
 
 const config: Config = {
   moduleFileExtensions: ['js', 'json', 'ts'],
+  globals: {
+    'ts-jest': {
+      isolatedModules: true,
+    },
+  },
   rootDir: '..',
   // roots: ['<rootDir>/src'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^test/(.*)$': '<rootDir>/test/$1',
   },
+
   testEnvironment: 'node',
   testTimeout: 13000,
   // testRegex: '.case2.ts$',
+  // testRegex: '.case3.ts$',
+  // testRegex: '(.test2.ts$)',
   testRegex: '(.test.ts$)|(.e2e-spec.ts$)',
   // testRegex: '.e2e-spec.ts$',
   transform: {

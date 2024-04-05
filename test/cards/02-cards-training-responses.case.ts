@@ -113,17 +113,37 @@ export default () => {
 
       expect(updatedCards).toHaveLength(5);
       checkUpdatedCards(updatedCards, serverTime, addMinutes, 5, 'wait');
-      updatedCards.forEach((updatedCard) => {
-        expect(updatedCard.state).toBe('wait');
 
-        // Проверка nextTraining с допустимым отклонением в 30 секунд
-        const expectedNextTraining = addMinutes(serverTime, 60);
-        const nextTraining = new Date(updatedCard.nextTraining);
-        const timeDifference = Math.abs(
-          nextTraining.getTime() - expectedNextTraining.getTime(),
-        );
-        expect(timeDifference).not.toBeLessThanOrEqual(30000);
-      });
+      const checkUpdatedCards2 = (
+        updatedCards: any[],
+        serverTime: Date,
+        timeFunction: (date: Date | number, amount: number) => Date,
+        timeValue: number,
+        state: 'wait' | 'train',
+      ) => {
+        updatedCards.forEach((updatedCard) => {
+          expect(updatedCard.state).toBe(state ?? 'wait');
+
+          // Проверка nextTraining с допустимым отклонением в 30 секунд
+          const expectedNextTraining = timeFunction(serverTime, timeValue);
+          const nextTraining = new Date(updatedCard.nextTraining);
+          const timeDifference = Math.abs(
+            nextTraining.getTime() - expectedNextTraining.getTime(),
+          );
+          expect(timeDifference).toBeLessThanOrEqual(30000);
+        });
+      };
+      // updatedCards.forEach((updatedCard) => {
+      //   expect(updatedCard.state).toBe('wait');
+
+      //   // Проверка nextTraining с допустимым отклонением в 30 секунд
+      //   const expectedNextTraining = addMinutes(serverTime, 60);
+      //   const nextTraining = new Date(updatedCard.nextTraining);
+      //   const timeDifference = Math.abs(
+      //     nextTraining.getTime() - expectedNextTraining.getTime(),
+      //   );
+      //   expect(timeDifference).not.toBeLessThanOrEqual(30000);
+      // });
     });
     it('should correctly update cards [in box 1 middle answers] after training responses', async () => {
       await restoreDb();
@@ -586,6 +606,10 @@ export default () => {
       const updatedCards = await getCardsByBoxIndex(5);
       expect(updatedCards).toHaveLength(5);
       checkUpdatedCards(updatedCards, serverTime, addMonths, 1, 'wait');
+    });
+    it('validate initial cupboard state', async () => {
+      await restoreDb();
+      await validateInitialCupboardState(userToken);
     });
   });
 };

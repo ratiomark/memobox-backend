@@ -43,7 +43,7 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "lint:fix": "eslint --fix prisma/dataFromDb.ts",
-    "test": "cross-env NODE_ENV=testing jest --config test/jest-e2e.ts  --verbose -T --detectOpenHandles --colors",
+    "test": "cross-env NODE_ENV=testing jest --config test/jest-e2e.ts  --verbose=true -T --detectOpenHandles --colors",
     "test:pipe": "powershell ./test-pipe.ps1",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -79,6 +79,7 @@
     "class-validator": "0.14.0",
     "cookie-parser": "^1.4.6",
     "date-fns": "^2.30.0",
+    "date-fns-tz": "^2.0.0",
     "fb": "2.0.0",
     "google-auth-library": "9.2.0",
     "handlebars": "4.7.8",
@@ -89,6 +90,7 @@
     "multer-s3": "3.0.1",
     "nestjs-i18n": "10.3.7",
     "nestjs-prisma": "^0.22.0",
+    "node-cron": "^3.0.3",
     "nodemailer": "6.9.7",
     "passport": "0.6.0",
     "passport-anonymous": "1.0.1",
@@ -101,7 +103,8 @@
     "source-map-support": "0.5.21",
     "swagger-ui-express": "5.0.0",
     "twitter": "1.7.1",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@nestjs/schematics": "10.0.3",
@@ -121,6 +124,7 @@
     "@types/passport-local": "^1.0.38",
     "@types/supertest": "2.0.16",
     "@types/twitter": "1.7.4",
+    "@types/web-push": "^3.6.3",
     "@typescript-eslint/eslint-plugin": "6.12.0",
     "@typescript-eslint/parser": "6.12.0",
     "cross-env": "^7.0.3",
