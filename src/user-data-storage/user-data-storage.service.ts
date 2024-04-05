@@ -27,14 +27,7 @@ import { ModuleRef } from '@nestjs/core';
 import { RedisService } from '@/redis/redis.service';
 import { ShelvesProcessorService } from '@/shelves/services/shelves-data-processor.service';
 import { cacheOrFetchData } from '@/utils/helpers/cache-or-fetch';
-import {
-  addMinutes,
-  addHours,
-  addDays,
-  addWeeks,
-  addMonths,
-  subDays,
-} from 'date-fns';
+import { addMinutes, addHours, addDays, addWeeks, addMonths } from 'date-fns';
 import { PrismaService } from 'nestjs-prisma';
 import { AllConfigType } from '@/config/config.type';
 import { ConfigService, PathImpl2 } from '@nestjs/config';
@@ -488,8 +481,14 @@ export class CupboardClass {
     answer,
     now,
   }: CardTrainingData): TrainingOutcome {
+    // this.logger.log('shelfId', shelfId);
+    // this.logger.log('boxId', boxId);
+    // this.logger.log('answer', answer);
+    // this.logger.log('now', now);
     const shelfBoxes = this.getBoxesByShelfId(shelfId);
+    // this.logger.log('shelfBoxes', JSON.stringify(shelfBoxes, null, 3));
     const currentBox = shelfBoxes[boxId];
+    // this.logger.log('currentBox', currentBox);
     let targetBoxId: string;
     if (currentBox.index === 0) {
       const targetBox = shelfBoxes[currentBox.nextBoxIdKey];
@@ -501,6 +500,8 @@ export class CupboardClass {
       return { boxId: currentBox.nextBoxIdKey, id, nextTraining };
     } else if (currentBox.index === 1 && answer !== 'good') {
       const targetBox = currentBox;
+      // this.logger.log('targetBox', targetBox);
+      // this.logger.log('timing', targetBox.timing);
       const nextTraining = this.calculateNextTrainingTime(
         now,
         targetBox.timing,
