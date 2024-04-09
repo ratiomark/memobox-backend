@@ -58,6 +58,7 @@ export class PushService implements OnModuleInit {
   private VAPID_PRIVATE_KEY: string;
   private logger = new Logger(PushService.name);
   constructor(
+    private eventEmitter: EventEmitter2,
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService<AllConfigType>,
   ) {}
@@ -103,20 +104,18 @@ export class PushService implements OnModuleInit {
     browser: string,
     osName: string,
   ) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: 'yanagae@gmail.com' },
-    });
     const endpoint = subscription.endpoint;
     const alreadySubscribed = await this.prisma.pushSubscription.findUnique({
       where: { endpoint },
     });
     if (alreadySubscribed) {
-      return { message: 'Already subscribed' };
+      return { message: 'Subscribed' };
     }
+
     await this.prisma.pushSubscription.create({
       data: {
         subscription: JSON.stringify(subscription),
-        userId: user!.id!,
+        userId,
         endpoint,
         browser,
         osName,
@@ -124,6 +123,58 @@ export class PushService implements OnModuleInit {
     });
     return { message: 'Subscribed' };
   }
+
+  // async subscribePushNotification(
+  //   subscription: PushSubscription,
+  //   userId: UserId,
+  //   browser: string,
+  //   osName: string,
+  // ) {
+  //   const user = await this.prisma.user.findUnique({
+  //     where: { email: 'yanagae@gmail.com' },
+  //   });
+  //   const endpoint = subscription.endpoint;
+  //   const alreadySubscribed = await this.prisma.pushSubscription.findUnique({
+  //     where: { endpoint },
+  //   });
+  //   if (alreadySubscribed) {
+  //     return { message: 'Subscribed' };
+  //   }
+
+  //   await this.prisma.pushSubscription.create({
+  //     data: {
+  //       subscription: JSON.stringify(subscription),
+  //       userId: user!.id!,
+  //       endpoint,
+  //       browser,
+  //       osName,
+  //     },
+  //   });
+  //   return { message: 'Subscribed' };
+  // }
+
+  // @OnEvent(EVENT_USER_CREATED)
+  // async setNotificationInitialEmail(payload: {
+  //   email: string;
+  //   userId: UserId;
+  // }) {
+  //   this.logger.log('user.register event started ');
+  //   const { email, userId } = payload;
+  //   const notificationEmails: NotificationEmails[] = [
+  //     { email, verified: false },
+  //   ];
+  //   const notifications = notificationsMock;
+  //   notifications.notificationEmails = notificationEmails;
+  //   await this.prisma.notification.upsert({
+  //     where: { userId },
+  //     update: { settings: notifications as unknown as Prisma.InputJsonObject },
+  //     create: {
+  //       userId,
+  //       settings: notifications as unknown as Prisma.InputJsonObject,
+  //     },
+  //   });
+  //   this.logger.log('user.register event ended');
+  // }
 
   async unsubscribePushNotification(
     subscription: PushSubscription,
@@ -137,7 +188,7 @@ export class PushService implements OnModuleInit {
       await this.prisma.pushSubscription.delete({
         where: { endpoint },
       });
-      return { message: 'Unsubscribed successfully' };
+      return { message: 'Unsubscribed' };
     }
     return { message: 'User not subscribed' };
   }
