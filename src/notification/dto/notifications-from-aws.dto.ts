@@ -1,6 +1,7 @@
 import { IsArray, IsString } from 'class-validator';
 import { BoxId, CardId, ShelfId } from '@/common/types/prisma-entities';
 import { ClientResponse } from '@sendgrid/mail';
+import { PushTrainingNotification } from '../types/types';
 type language = 'en' | 'ru';
 
 process.env.TZ = 'Etc/UTC';
@@ -34,6 +35,11 @@ export type ResponseDTO =
   | SuccessResponseDTO
   | ErrorResponseDTO
   | SuccessResponseNoNotificationsDTO;
+
+export interface PushDataFromServerless {
+  en: PushTrainingNotification[];
+  ru: PushTrainingNotification[];
+}
 // export class UpdateCardDto extends PartialType(CreateCardDto) {
 
 //   @Exclude({ toClassOnly: true })

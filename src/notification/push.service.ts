@@ -35,14 +35,20 @@ import { cacheOrFetchData } from '@/utils/helpers/cache-or-fetch';
 import { PrismaService } from 'nestjs-prisma';
 import { UserNotificationData } from './types/types';
 import { TrainingNotificationItem } from '@/aws/types/db-tables';
-import { ResponseDTO } from './dto/notifications-from-aws.dto';
+import {
+  PushDataFromServerless,
+  ResponseDTO,
+} from './dto/notifications-from-aws.dto';
 import { appendTimeToFile } from '@/utils/helpers/append-data-to-file';
 import { isObject } from 'class-validator';
 import * as webPush from 'web-push';
-import { PushSubscription } from 'web-push';
+import { PushSubscription, SendResult } from 'web-push';
 import { sleep } from '@/utils/common/sleep';
 import { ConfigService } from '@nestjs/config';
 import { AllConfigType } from '@/config/config.type';
+import { ServerLessService } from '@/server-less/server-less.service';
+import { NotificationDataProcessorService } from './notification-data-processor.service';
+import { filter } from 'rxjs';
 // interface PushSubscription {
 //   endpoint: string;
 //   expirationTime?: number | null;
@@ -60,6 +66,8 @@ export class PushService implements OnModuleInit {
   constructor(
     private eventEmitter: EventEmitter2,
     private readonly prisma: PrismaService,
+    private readonly serverless: ServerLessService,
+    private readonly notificationProcessor: NotificationDataProcessorService,
     private readonly configService: ConfigService<AllConfigType>,
   ) {}
   onModuleInit() {
@@ -71,7 +79,93 @@ export class PushService implements OnModuleInit {
     );
   }
 
-  async sendNotificationToUsers(userIds: string[], payload: any) {
+  async recalculatePushNotificationsAfterServerless(
+    data: PushDataFromServerless,
+    apiKey: string,
+  ) {
+    // принимает {lang: PushTrainingNotification[]}
+    // отправляет пуши всем пользователям по языку
+    // высчитывает новое время пуша
+    // обновляет время пуша в базе на беке
+    // отправляет новое время на serverless
+    // await this.notificationProcessor.recalculatePushNotificationsAfterServerless(
+    //   data,
+    //   apiKey,
+    // );
+  }
+
+  async sendPushNotificationsToUsersProd(userIds: string[], payload: any) {
+    const subscriptions = await this.prisma.pushSubscription.findMany({
+      // where: {
+      //   userId: {
+      //     in: userIds,
+      //   },
+      // },
+    });
+    payload = {
+      data: { message: 'test' },
+      title: 'testtitle',
+      icon: 'testicon',
+    };
+    // this.logger.debug(JSON.stringify(subscriptions, null, 2));
+    const sendPushPromises = subscriptions.map((subscription) => {
+      return webPush.sendNotification(
+        JSON.parse(subscription.subscription as unknown as string),
+        JSON.stringify(payload),
+      );
+    });
+    const responses = await Promise.allSettled<SendResult>(sendPushPromises);
+
+    const rejectedEndpoints = responses
+      .map((response) => {
+        if (
+          response.status === 'rejected' &&
+          response.reason &&
+          response.reason.endpoint
+        ) {
+          return response.reason.endpoint;
+        } else {
+          return null;
+        }
+      })
+      .filter(Boolean);
+
+    await this.prisma.pushSubscription.deleteMany({
+      where: {
+        endpoint: { in: rejectedEndpoints },
+      },
+    });
+    this.logger.debug(JSON.stringify(rejectedEndpoints, null, 2));
+    this.logger.debug(JSON.stringify(responses, null, 2));
+    // let responses: any;
+    // try {
+    //   responses = await Promise.allSettled(sentPushPromises);
+    // } catch (error) {
+    //   this.logger.log(error);
+    // }
+    // this.logger.debug(JSON.stringify(responses, null, 2));
+    // [
+    //   {
+    //     statusCode: 201,
+    //     body: '',
+    //     headers: {
+    //       location:
+    //         'https://fcm.googleapis.com/0:1712799666977195%e609af1cf9fd7ecd',
+    //       'x-content-type-options': 'nosniff',
+    //       'x-frame-options': 'SAMEORIGIN',
+    //       'x-xss-protection': '0',
+    //       date: 'Thu, 11 Apr 2024 01:41:06 GMT',
+    //       'content-length': '0',
+    //       'content-type': 'text/html; charset=UTF-8',
+    //       'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+    //     },
+    //   },
+    // ];
+    // return responses;
+    // очистить записи в базе данных, если подписка не действительна или не существует
+  }
+
+  async sendPushNotificationsToUsers(userIds: string[], payload: any) {
     // await sleep(5);
     const user = await this.prisma.user.findUnique({
       where: { email: 'yanagae@gmail.com' },
@@ -83,6 +177,11 @@ export class PushService implements OnModuleInit {
           in: testUserIds,
           // in: userIds,
         },
+        // user: {
+        //   language: {
+        //     in: ['en'],
+        //   },
+        // },
       },
     });
     this.logger.debug(JSON.stringify(subscriptions, null, 2));
@@ -97,6 +196,20 @@ export class PushService implements OnModuleInit {
     return responses;
     // очистить записи в базе данных, если подписка не действительна или не существует
   }
+
+  // 	{
+  //   "en": [
+  //     {
+  //       "_id": "66172cf2524915e78cc2480a",
+  //       "notificationId": "97441b96-6f92-4f8b-8715-2ee2ece3f37c",
+  //       "name": "John",
+  //       "notificationTime": "2024-04-11T03:27:04.776Z",
+  //       "user_language": "en"
+  //     }
+  //   ],
+  //   "ru": []
+  // }
+  async reschedulePushNotification(userId: UserId, notificationTime: Date) {}
 
   async subscribePushNotification(
     subscription: PushSubscription,
@@ -122,6 +235,47 @@ export class PushService implements OnModuleInit {
       },
     });
     return { message: 'Subscribed' };
+  }
+
+  async unsubscribePushNotification(
+    subscription: PushSubscription,
+    userId: UserId,
+  ) {
+    const endpoint = subscription.endpoint;
+    const alreadySubscribed = await this.prisma.pushSubscription.findUnique({
+      where: { endpoint },
+    });
+    if (alreadySubscribed) {
+      await this.prisma.pushSubscription.delete({
+        where: { endpoint },
+      });
+      return { message: 'Unsubscribed' };
+    }
+    return { message: 'User not subscribed' };
+  }
+
+  initVariables() {
+    this.VAPID_PUBLIC_KEY = this.configService.getOrThrow<string>(
+      'VAPID_PUBLIC_KEY',
+      {
+        infer: true,
+      },
+    );
+    this.VAPID_PRIVATE_KEY = this.configService.getOrThrow<string>(
+      'VAPID_PRIVATE_KEY',
+      {
+        infer: true,
+      },
+    );
+    // this.baseUrl = this.configService.getOrThrow<string>(
+    //   'SERVERLESS_BASE_URL',
+    //   {
+    //     infer: true,
+    //   },
+    // );
+    // this.baseHeader = {
+    //   'x-api-key': this.xApiKey,
+    // };
   }
 
   // async subscribePushNotification(
@@ -175,48 +329,8 @@ export class PushService implements OnModuleInit {
   //   });
   //   this.logger.log('user.register event ended');
   // }
-
-  async unsubscribePushNotification(
-    subscription: PushSubscription,
-    userId: UserId,
-  ) {
-    const endpoint = subscription.endpoint;
-    const alreadySubscribed = await this.prisma.pushSubscription.findUnique({
-      where: { endpoint },
-    });
-    if (alreadySubscribed) {
-      await this.prisma.pushSubscription.delete({
-        where: { endpoint },
-      });
-      return { message: 'Unsubscribed' };
-    }
-    return { message: 'User not subscribed' };
-  }
-
-  initVariables() {
-    this.VAPID_PUBLIC_KEY = this.configService.getOrThrow<string>(
-      'VAPID_PUBLIC_KEY',
-      {
-        infer: true,
-      },
-    );
-    this.VAPID_PRIVATE_KEY = this.configService.getOrThrow<string>(
-      'VAPID_PRIVATE_KEY',
-      {
-        infer: true,
-      },
-    );
-    // this.baseUrl = this.configService.getOrThrow<string>(
-    //   'SERVERLESS_BASE_URL',
-    //   {
-    //     infer: true,
-    //   },
-    // );
-    // this.baseHeader = {
-    //   'x-api-key': this.xApiKey,
-    // };
-  }
 }
+
 // private generateVapidKeys(): void {
 //   const vapidKeys = webPush.generateVAPIDKeys();
 //   this.logger.warn(vapidKeys);

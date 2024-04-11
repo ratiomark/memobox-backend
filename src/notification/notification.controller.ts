@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  Header,
+  Headers,
   HttpCode,
   HttpStatus,
   Logger,
@@ -11,10 +13,14 @@ import { NotificationService } from './notification.service';
 import { GetCurrentUser, IsPublic } from '@/common/decorators';
 import { ApiTags } from '@nestjs/swagger';
 import { UserId } from '@/common/types/prisma-entities';
-import { ResponseDTO } from './dto/notifications-from-aws.dto';
+import {
+  PushDataFromServerless,
+  ResponseDTO,
+} from './dto/notifications-from-aws.dto';
 import { PushSubscription } from 'web-push';
 import { PushService } from './push.service';
 import { SubscriptionBaseDTO, SubscriptionDTO } from './dto/subscription-dto';
+import { sleep } from '@/utils/common/sleep';
 // import { ClientResponse } from '@sendgrid/mail';
 
 @ApiTags('Notification')
@@ -32,15 +38,74 @@ export class NotificationController {
   @IsPublic()
   @HttpCode(HttpStatus.OK)
   @Post('recalculateNotifications')
-  recalculateNotifications(@Body() data: ResponseDTO[]) {
-    this.logger.debug(JSON.stringify(data, null, 3));
-    void this.notificationService.recalculateNotificationsAfterAws(data);
+  recalculateNotifications(
+    @Headers('x-api-key') apiKey: string,
+    @Body() data: ResponseDTO[],
+  ) {
+    // this.logger.debug(JSON.stringify(data, null, 3));
+    void this.notificationService.recalculateEmailNotificationsAfterServerless(
+      data,
+      apiKey,
+    );
     return { success: true };
+  }
+
+  // принимает {lang: PushTrainingNotification[]}
+  // отправляет пуши всем пользователям по языку
+  // высчитывает новое время пуша
+  // обновляет время пуша в базе на беке
+  // отправляет новое время на serverless
+  @IsPublic()
+  @Post('sendAllTrainingPushes')
+  async sendPushes(
+    @Headers('x-api-key') apiKey: string,
+    @Body() body: PushDataFromServerless,
+  ) {
+    this.logger.log('sendAllTrainingPushes - started');
+    this.logger.log(apiKey);
+    this.logger.log(body);
+    this.logger.log('sendAllTrainingPushes - ended');
+    await this.pushService.sendPushNotificationsToUsersProd(['test'], {});
+    // await this.pushService.sendPushNotificationsToUsersProd(['test'], {});
+    // const res = await this.pushService.sendPushNotificationsToUsers(['test'], {
+    //   data: { message: 'test' },
+    //   title: 'testtitle',
+    //   icon: 'testicon',
+    // });
+    // this.logger.debug(res);
+    // return res;
+  }
+
+  // не нужен, поскольку пуши отправляются и сразу же пересчитываются
+  // @IsPublic()
+  // @HttpCode(HttpStatus.OK)
+  // @Post('recalculatePushNotifications')
+  // async recalculatePushes(@GetCurrentUser() userId: UserId) {
+  //   // const res = await this.pushService.sendPushNotificationsToUsers(['test'], {
+  //   //   data: { message: 'test' },
+  //   //   title: 'testtitle',
+  //   //   icon: 'testicon',
+  //   // });
+  //   // this.logger.debug(res);
+  //   // return res;
+  // }
+
+  @IsPublic()
+  @Post('test/sendPushes')
+  async sendTestPushes() {
+    await this.pushService.sendPushNotificationsToUsersProd(['test'], {});
+    // const res = await this.pushService.sendPushNotificationsToUsers(['test'], {
+    //   data: { message: 'test' },
+    //   title: 'testtitle',
+    //   icon: 'testicon',
+    // });
+    // this.logger.debug(res);
+    // return res;
   }
 
   @IsPublic()
   @HttpCode(HttpStatus.OK)
-  @Post('recalculateAll')
+  @Post('test/recalculateAll')
   async recalculateAll() {
     await this.notificationService.recalculateAll();
     return { success: true };
@@ -53,15 +118,16 @@ export class NotificationController {
   //   return { success: true };
   // }
 
-  @IsPublic()
+  // @IsPublic()
   @HttpCode(HttpStatus.OK)
   @Post('push/subscribe')
   async addSubscription(
     @Body() subscriptionDto: SubscriptionBaseDTO,
-    @GetCurrentUser() userId: UserId,
+    @GetCurrentUser('id') userId: UserId,
   ) {
     const { subscription, browserName, osName } = subscriptionDto;
-    // this.logger.debug(JSON.stringify(subscriptionDto, null, 3));
+
+    this.logger.debug(JSON.stringify(subscriptionDto, null, 3));
     // this.logger.debug(JSON.stringify(subscription.endpoint));
 
     const res = await this.pushService.subscribePushNotification(
@@ -87,17 +153,17 @@ export class NotificationController {
     );
   }
 
-  @IsPublic()
-  @Post('sendTest')
-  async sendTest(@GetCurrentUser() userId: UserId) {
-    const res = await this.pushService.sendNotificationToUsers(['test'], {
-      data: { message: 'test' },
-      title: 'testtitle',
-      icon: 'testicon',
-    });
-    this.logger.debug(res);
-    return res;
-  }
+  // @IsPublic()
+  // @Post('sendTest')
+  // async sendTest(@GetCurrentUser() userId: UserId) {
+  //   const res = await this.pushService.sendPushNotificationsToUsers(['test'], {
+  //     data: { message: 'test' },
+  //     title: 'testtitle',
+  //     icon: 'testicon',
+  //   });
+  //   this.logger.debug(res);
+  //   return res;
+  // }
 
   // @IsPublic()
   // @Get('getAllEmails')
