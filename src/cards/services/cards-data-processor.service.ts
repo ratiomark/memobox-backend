@@ -16,7 +16,9 @@ import { UpdateCardDto } from '../dto/update-card.dto';
 import { TrainingResponseDto } from '../dto/update-cards-after-training.dto';
 import { CardIncBox, TrainingCardsCondition } from '../entities/card.entity';
 import { timeLeft } from '../helpers/timeLeft';
-import { addHours } from 'date-fns';
+import { addHours, isBefore } from 'date-fns';
+import { PushService } from '@/notification/push.service';
+import { SEND_PUSH_NOTIFICATION_AFTER } from '@/common/const/notification-data';
 
 @Injectable()
 export class CardProcessorService {
@@ -25,23 +27,66 @@ export class CardProcessorService {
     private readonly prisma: PrismaService,
     private readonly i18n: I18nService,
     private readonly notificationService: NotificationService,
+    private readonly pushService: PushService,
     private moduleRef: ModuleRef,
   ) {}
 
   async getNotificationTime(userId: UserId, minimumCards = 20) {
     const cards = (await this.prisma.card.findMany({
-      where: { userId, isDeleted: false, nextTraining: { not: null } },
+      where: {
+        userId,
+        isDeleted: false,
+        nextTraining: { not: null },
+        shelf: {
+          notificationEnabled: { not: false },
+          isDeleted: false,
+        },
+      },
       select: { nextTraining: true },
-      orderBy: { nextTraining: 'desc' },
+      orderBy: { nextTraining: 'asc' },
       take: minimumCards,
     })) as { nextTraining: Date }[];
-
+    // this.logger.warn(JSON.stringify(cards, null, 3));
+    // this.logger.warn(cards.length);
+    // this.logger.warn(minimumCards);
+    // 2024-04-21T04:30:00.000Z
+    // 2024-04-20T04:30:00.000Z
+    // 2024-04-19T04:30:00.000Z
+    // 2024-04-15T04:30:00.000Z
     // если карточек меньше чем минимальное количество, то уведомления не нужно отправлять
     if (cards.length < minimumCards) return null;
-    const notificationTime = new Date(cards[0].nextTraining);
-    return notificationTime;
+    const notificationTime = new Date(cards[minimumCards - 1].nextTraining);
+    const now = new Date();
+    const notificationTimeCorrected = isBefore(notificationTime, now)
+      ? addHours(now, SEND_PUSH_NOTIFICATION_AFTER)
+      : notificationTime;
+    return notificationTimeCorrected;
   }
 
+  async getNotificationTimeEmailAndPush(userId: UserId) {
+    let emailTime: null | Date = null;
+    let pushTime: null | Date = null;
+    const result = { email: emailTime, push: pushTime };
+    const notificationSettings =
+      await this.notificationService.getNotificationSettings(userId);
+    // this.logger.log(notificationSettings);
+    if (!notificationSettings) {
+      return result;
+    }
+    if (notificationSettings.emailNotificationsEnabled) {
+      emailTime = await this.getNotificationTime(
+        userId,
+        notificationSettings.minimumCardsForEmailNotification,
+      );
+    }
+    if (notificationSettings.mobilePushEnabled) {
+      pushTime = await this.getNotificationTime(
+        userId,
+        notificationSettings.minimumCardsForPush,
+      );
+    }
+    return { email: emailTime, push: pushTime };
+  }
   // async getNotificationTime2(userId: UserId, minimumCards = 20) {
   //   this.logger.log('getNotificationTime - started');
   //   const cards = (await this.prisma.card.findMany({
@@ -70,36 +115,32 @@ export class CardProcessorService {
     if (skipNotificationUpdate || card.boxId === previousBoxId) return;
     try {
       const userId = card.userId;
-      const notificationSettings =
-        await this.notificationService.getNotificationSettings(userId);
-      this.logger.log(notificationSettings);
-      if (
-        !notificationSettings ||
-        !notificationSettings.emailNotificationsEnabled
-      ) {
+      const { email: emailNotificationTime, push: pushNotificationTime } =
+        await this.getNotificationTimeEmailAndPush(userId);
+
+      if (!emailNotificationTime && !pushNotificationTime) {
         return;
       }
 
-      const notificationTime = await this.getNotificationTime(
-        userId,
-        notificationSettings.minimumCardsForEmailNotification,
-      );
-      this.logger.debug('notificationTime ', notificationTime);
-      if (!notificationTime) {
-        this.logger.log('notificationTime is null');
-        return;
-      }
       const timeSleepSettings =
         await this.notificationService.getTimeSleepSettings(userId);
-      this.logger.debug('timeSleepSettings ');
+      // this.logger.debug('timeSleepSettings ');
 
-      this.logger.debug(JSON.stringify(timeSleepSettings, null, 3));
+      // this.logger.debug(JSON.stringify(timeSleepSettings, null, 3));
 
       if (!timeSleepSettings || !timeSleepSettings.isTimeSleepEnabled) {
-        void this.notificationService.rescheduleNotification(
-          userId,
-          notificationTime,
-        );
+        if (emailNotificationTime) {
+          void this.notificationService.rescheduleEmailNotification(
+            userId,
+            emailNotificationTime,
+          );
+        }
+        if (pushNotificationTime) {
+          void this.pushService.reschedulePushNotification(
+            userId,
+            pushNotificationTime,
+          );
+        }
         return;
       }
 
@@ -107,69 +148,207 @@ export class CardProcessorService {
         where: { id: userId },
       }))!.timezone!;
 
-      this.logger.debug('timezone  ', timezone);
-
-      const correctedTime =
-        this.notificationService.correctNotificationTimeForSleepUTC(
-          notificationTime,
-          timeSleepSettings,
-          timezone,
+      if (emailNotificationTime) {
+        const emailCorrectedTime =
+          this.notificationService.correctNotificationTimeForSleepUTC(
+            emailNotificationTime,
+            timeSleepSettings,
+            timezone,
+          );
+        void this.notificationService.rescheduleEmailNotification(
+          userId,
+          emailCorrectedTime,
         );
-      this.logger.debug(JSON.stringify(correctedTime, null, 3));
-      // this.logger.debug('correctedTime  ', correctedTime);
-      void this.notificationService.rescheduleNotification(
-        userId,
-        correctedTime,
-      );
+      }
+
+      if (pushNotificationTime) {
+        const pushCorrectedTime =
+          this.notificationService.correctNotificationTimeForSleepUTC(
+            pushNotificationTime,
+            timeSleepSettings,
+            timezone,
+          );
+        void this.pushService.reschedulePushNotification(
+          userId,
+          pushCorrectedTime,
+        );
+      }
     } catch (error) {
       console.error('Ошибка при обновлении уведомлений:', error);
     }
   }
+  // async handleNotificationAfterCardUpdate(
+  //   card: CardIncBox,
+  //   previousBoxId: BoxId | undefined,
+  //   skipNotificationUpdate = false,
+  // ) {
+  //   if (skipNotificationUpdate || card.boxId === previousBoxId) return;
+  //   try {
+  //     const userId = card.userId;
+  //     const notificationSettings =
+  //       await this.notificationService.getNotificationSettings(userId);
+  //     // this.logger.log(notificationSettings);
+  //     if (
+  //       !notificationSettings ||
+  //       !notificationSettings.emailNotificationsEnabled
+  //     ) {
+  //       return;
+  //     }
+
+  //     const notificationTime = await this.getNotificationTime(
+  //       userId,
+  //       notificationSettings.minimumCardsForEmailNotification,
+  //     );
+  //     this.logger.debug('notificationTime ', notificationTime);
+  //     if (!notificationTime) {
+  //       this.logger.log('notificationTime is null');
+  //       return;
+  //     }
+  //     const timeSleepSettings =
+  //       await this.notificationService.getTimeSleepSettings(userId);
+  //     this.logger.debug('timeSleepSettings ');
+
+  //     this.logger.debug(JSON.stringify(timeSleepSettings, null, 3));
+
+  //     if (!timeSleepSettings || !timeSleepSettings.isTimeSleepEnabled) {
+  //       void this.notificationService.rescheduleEmailNotification(
+  //         userId,
+  //         notificationTime,
+  //       );
+  //       return;
+  //     }
+
+  //     const timezone = (await this.prisma.user.findUnique({
+  //       where: { id: userId },
+  //     }))!.timezone!;
+
+  //     this.logger.debug('timezone  ', timezone);
+
+  //     const correctedTime =
+  //       this.notificationService.correctNotificationTimeForSleepUTC(
+  //         notificationTime,
+  //         timeSleepSettings,
+  //         timezone,
+  //       );
+  //     this.logger.debug(JSON.stringify(correctedTime, null, 3));
+  //     // this.logger.debug('correctedTime  ', correctedTime);
+  //     void this.notificationService.rescheduleEmailNotification(
+  //       userId,
+  //       correctedTime,
+  //     );
+  //   } catch (error) {
+  //     console.error('Ошибка при обновлении уведомлений:', error);
+  //   }
+  // }
 
   async handleNotificationAfterTraining(userId: UserId, timezone: string) {
     try {
-      const notificationSettings =
-        await this.notificationService.getNotificationSettings(userId);
-      this.logger.debug(notificationSettings);
-      if (
-        !notificationSettings ||
-        !notificationSettings.emailNotificationsEnabled
-      ) {
+      const { email: emailNotificationTime, push: pushNotificationTime } =
+        await this.getNotificationTimeEmailAndPush(userId);
+
+      if (!emailNotificationTime && !pushNotificationTime) {
         return;
       }
-      const notificationTime = await this.getNotificationTime(
-        userId,
-        notificationSettings.minimumCardsForEmailNotification,
-      );
-      if (!notificationTime) {
-        this.logger.log('notificationTime is null');
-        return;
-      }
+
       const timeSleepSettings =
         await this.notificationService.getTimeSleepSettings(userId);
+      // this.logger.debug('timeSleepSettings ');
+
+      // this.logger.debug(JSON.stringify(timeSleepSettings, null, 3));
 
       if (!timeSleepSettings || !timeSleepSettings.isTimeSleepEnabled) {
-        void this.notificationService.rescheduleNotification(
-          userId,
-          notificationTime,
-        );
+        if (emailNotificationTime) {
+          void this.notificationService.rescheduleEmailNotification(
+            userId,
+            emailNotificationTime,
+          );
+        }
+        if (pushNotificationTime) {
+          void this.pushService.reschedulePushNotification(
+            userId,
+            pushNotificationTime,
+          );
+        }
         return;
       }
 
-      const correctedTime =
-        this.notificationService.correctNotificationTimeForSleepUTC(
-          notificationTime,
-          timeSleepSettings,
-          timezone,
+      // const timezone = (await this.prisma.user.findUnique({
+      //   where: { id: userId },
+      // }))!.timezone!;
+
+      if (emailNotificationTime) {
+        const emailCorrectedTime =
+          this.notificationService.correctNotificationTimeForSleepUTC(
+            emailNotificationTime,
+            timeSleepSettings,
+            timezone,
+          );
+        void this.notificationService.rescheduleEmailNotification(
+          userId,
+          emailCorrectedTime,
         );
-      void this.notificationService.rescheduleNotification(
-        userId,
-        correctedTime,
-      );
+      }
+
+      if (pushNotificationTime) {
+        const pushCorrectedTime =
+          this.notificationService.correctNotificationTimeForSleepUTC(
+            pushNotificationTime,
+            timeSleepSettings,
+            timezone,
+          );
+        void this.pushService.reschedulePushNotification(
+          userId,
+          pushCorrectedTime,
+        );
+      }
     } catch (error) {
       console.error('Ошибка при обновлении уведомлений:', error);
     }
   }
+  // async handleNotificationAfterTraining(userId: UserId, timezone: string) {
+  //   try {
+  //     const notificationSettings =
+  //       await this.notificationService.getNotificationSettings(userId);
+  //     this.logger.debug(notificationSettings);
+  //     if (
+  //       !notificationSettings ||
+  //       !notificationSettings.emailNotificationsEnabled
+  //     ) {
+  //       return;
+  //     }
+  //     const notificationTime = await this.getNotificationTime(
+  //       userId,
+  //       notificationSettings.minimumCardsForEmailNotification,
+  //     );
+  //     if (!notificationTime) {
+  //       this.logger.log('notificationTime is null');
+  //       return;
+  //     }
+  //     const timeSleepSettings =
+  //       await this.notificationService.getTimeSleepSettings(userId);
+
+  //     if (!timeSleepSettings || !timeSleepSettings.isTimeSleepEnabled) {
+  //       void this.notificationService.rescheduleEmailNotification(
+  //         userId,
+  //         notificationTime,
+  //       );
+  //       return;
+  //     }
+
+  //     const correctedTime =
+  //       this.notificationService.correctNotificationTimeForSleepUTC(
+  //         notificationTime,
+  //         timeSleepSettings,
+  //         timezone,
+  //       );
+  //     void this.notificationService.rescheduleEmailNotification(
+  //       userId,
+  //       correctedTime,
+  //     );
+  //   } catch (error) {
+  //     console.error('Ошибка при обновлении уведомлений:', error);
+  //   }
+  // }
 
   enhanceCardListViewPage(cards: CardIncBox[]) {
     return cards.map((card) => this.enhanceCardViewPage(card));
