@@ -90,6 +90,25 @@ export class SettingsController {
     );
   }
 
+  @Patch('switchPushNotification')
+  async enablePush(
+    @GetCurrentUser('id') userId: UserId,
+    @Body() switchState: { pushEnabled: boolean },
+  ) {
+    return await this.settingsService.switchPushNotificationEnabled(
+      userId,
+      switchState.pushEnabled,
+    );
+    // console.log('timeSleep', timeSleep);
+    // const timeSleepObj = plainToClass(UpdateSettingTimeSleepDto, timeSleep);
+    // console.log('timeSleep', timeSleepObj);
+    // return this.settingsService.updateNotification(
+    //   userId,
+    //   notificationSettings,
+    // );
+    // return { success: true, message: 'Push notification toggled successfully' };
+  }
+
   // @Get(':id')
   // findOne(@Param('id') id: string) {
   //   return this.settingsService.findOne(+id);

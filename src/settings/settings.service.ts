@@ -232,6 +232,27 @@ export class SettingsService implements OnModuleInit {
     return requiredData;
   }
 
+  async switchPushNotificationEnabled(userId: UserId, enabled: boolean) {
+    const notificationSettingsRow = await this.prisma.notification.findUnique({
+      where: { userId },
+    });
+    if (!notificationSettingsRow) {
+      throw new Error('Notification settings not found');
+    }
+
+    const settingsData =
+      notificationSettingsRow.settings as unknown as NotificationSettings;
+    settingsData.mobilePushEnabled = enabled;
+
+    const result = await this.prisma.notification.update({
+      where: { userId },
+      data: {
+        settings: settingsData as unknown as Prisma.InputJsonObject,
+      },
+    });
+    return result.settings;
+  }
+
   getDefaultSettings() {
     return this.defaultSettings;
   }
