@@ -23,9 +23,14 @@ export interface JsonSavedData {
   viewPageCardRowsCount: number | string | undefined;
   commonShelfCollapsed: true;
   viewPageColumns: SortColumnObject[];
+  cupboard?: {
+    isDelimiterEnabled?: boolean;
+    isStartTrainingHotKeyVisible?: boolean;
+    isToolTipVisible?: boolean;
+  };
 }
 
-const viewPageColumns = [
+const viewPageColumns: SortColumnObject[] = [
   {
     index: 0,
     value: 'shelfId',
@@ -52,14 +57,36 @@ const viewPageColumns = [
   },
 ];
 
-export const jsonSettingsDefault = {
+export type Theme = 'app_dark_theme' | 'app_light_theme';
+
+export interface JsonSettings {
+  theme?: Theme;
+  isFirstVisit?: boolean;
+  settingsPageHasBeenOpen?: boolean;
+  postRegistrationStep: PostRegistrationStep;
+  hasCreatedFirstShelf: boolean;
+}
+export type PostRegistrationStep =
+  | 'LANGUAGE_CONFIRMATION'
+  | 'TIMEZONE_CONFIRMATION'
+  | 'TIMEZONE_SETUP'
+  | 'COMPLETED';
+
+export const jsonSettingsDefault: JsonSettings = {
   theme: 'app_light_theme',
   isFirstVisit: true,
   settingsPageHasBeenOpen: false,
+  postRegistrationStep: 'LANGUAGE_CONFIRMATION',
+  hasCreatedFirstShelf: false,
 };
 
-export const jsonSavedDataDefault = {
+export const jsonSavedDataDefault: JsonSavedData = {
   viewPageCardRowsCount: 2,
   commonShelfCollapsed: true,
   viewPageColumns,
+  cupboard: {
+    isDelimiterEnabled: true,
+    isStartTrainingHotKeyVisible: true,
+    isToolTipVisible: true,
+  },
 };
