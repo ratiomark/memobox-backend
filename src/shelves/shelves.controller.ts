@@ -72,13 +72,20 @@ export class ShelvesController {
   //     shelfTemplate.shelfTemplate as unknown as Prisma.InputJsonArray,
   //   );
   // }
+  // notificationEnabled;
 
-  @Patch(':id')
-  async update(
+  @Patch('toggleNotification/:id')
+  @Lock(LOCK_KEYS.restoringEntityFromTrash)
+  async toggleNotification(
+    @GetCurrentUser('id') userId: User['id'],
     @Param('id') shelfId: Shelf['id'],
-    @Body() updateShelfDto: UpdateShelfDto,
+    @Body() notificationEnabledBody: { notificationEnabled: boolean },
   ) {
-    return await this.shelvesService.update(shelfId, updateShelfDto);
+    return await this.shelvesService.toggleShelfNotification(
+      userId,
+      shelfId,
+      notificationEnabledBody.notificationEnabled,
+    );
   }
 
   @Patch('restore/:id')
@@ -88,6 +95,22 @@ export class ShelvesController {
     @Param('id') shelfId: Shelf['id'],
   ) {
     return this.shelvesService.restore(userId, shelfId);
+  }
+
+  @Patch(':id')
+  async update(
+    @Param('id') shelfId: Shelf['id'],
+    @Body() updateShelfDto: UpdateShelfDto,
+  ) {
+    return await this.shelvesService.update(shelfId, updateShelfDto);
+  }
+
+  @Delete('final/:id')
+  deletePermanently(
+    @GetCurrentUser('id') userId: User['id'],
+    @Param('id') shelfId: Shelf['id'],
+  ) {
+    return this.shelvesService.deletePermanently(userId, shelfId);
   }
 
   @Delete(':id')
@@ -102,13 +125,5 @@ export class ShelvesController {
       shelfId,
       removeShelfDto.index,
     );
-  }
-
-  @Delete('final/:id')
-  deletePermanently(
-    @GetCurrentUser('id') userId: User['id'],
-    @Param('id') shelfId: Shelf['id'],
-  ) {
-    return this.shelvesService.deletePermanently(userId, shelfId);
   }
 }

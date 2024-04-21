@@ -74,6 +74,10 @@ export class ShelvesService {
     userId: UserId,
     updateShelfBody: ShelfUpdateBoxesListDto,
   ) {
+    this.eventEmitter.emit(EVENT_SHELF_BOXES_UPDATE, {
+      userId,
+      event: EVENT_SHELF_BOXES_UPDATE,
+    });
     const { shelfId, boxesList } = updateShelfBody;
     const boxesListChecked = boxesList.map((box, index) => ({
       ...box,
@@ -129,12 +133,8 @@ export class ShelvesService {
           },
         });
       });
-
+      // не возвращает полноценную полку
       return await prisma.shelf.findFirst({ where: { id: shelfId } });
-    });
-    this.eventEmitter.emit(EVENT_SHELF_BOXES_UPDATE, {
-      userId,
-      event: EVENT_SHELF_BOXES_UPDATE,
     });
     return shelfUpdated;
   }
@@ -168,6 +168,20 @@ export class ShelvesService {
 
   findOne(id: number) {
     return `This action returns a #${id} shelf`;
+  }
+
+  async toggleShelfNotification(
+    userId: UserId,
+    id: ShelfId,
+    notificationEnabled: boolean,
+  ): Promise<Shelf> {
+    const shelfUpdated = await this.prisma.shelf.update({
+      where: { id, userId },
+      data: {
+        notificationEnabled,
+      },
+    });
+    return shelfUpdated;
   }
 
   async update(id: ShelfId, updateShelfDto: UpdateShelfDto): Promise<Shelf> {
