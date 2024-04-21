@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
+  IsEnum,
   IsOptional,
   IsString,
   MinLength,
@@ -20,7 +21,7 @@ export class AuthRegisterLoginDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty()
+  @ApiProperty({ minLength: 6, example: 'password' })
   @MinLength(6)
   password: string;
 
@@ -32,6 +33,10 @@ export class AuthRegisterLoginDto {
   @ApiProperty({ example: 'Europe/Moscow' })
   @IsOptional()
   timezone: string = 'UTC';
+
+  @ApiProperty({ example: 'en' })
+  @IsString()
+  language: string = 'en';
 
   // @ApiProperty({ example: 'John' })
   // @IsNotEmpty()

@@ -11,6 +11,7 @@ import {
   Delete,
   SerializeOptions,
   Headers,
+  Logger,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -37,6 +38,7 @@ import { request } from 'express';
   version: '1',
 })
 export class AuthController {
+  private logger = new Logger(AuthController.name);
   constructor(private readonly authService: AuthService) {}
 
   @Post('email/login')
@@ -56,9 +58,8 @@ export class AuthController {
   @IsPublic()
   async register(
     @Body() createUserDto: AuthRegisterLoginDto,
-    @Headers('x-custom-lang') lang: string,
   ): Promise<void | { hash: string }> {
-    return this.authService.register(createUserDto, lang);
+    return this.authService.register(createUserDto);
   }
 
   @Post('email/confirm')
@@ -76,6 +77,8 @@ export class AuthController {
   async forgotPassword(
     @Body() forgotPasswordDto: AuthForgotPasswordDto,
   ): Promise<void> {
+    this.logger.debug('forgotPassword');
+    this.logger.debug(forgotPasswordDto.email);
     return this.authService.forgotPassword(forgotPasswordDto.email);
   }
 

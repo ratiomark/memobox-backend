@@ -285,10 +285,10 @@ export class AuthService {
 
   async register(
     dto: AuthRegisterLoginDto,
-    language: string,
+    // language: string,
   ): Promise<void | { hash: string }> {
     this.logger.log('register new user - start');
-
+    const language = dto.language;
     const hash = crypto
       .createHash('sha256')
       .update(randomStringGenerator())
@@ -338,7 +338,9 @@ export class AuthService {
   }
 
   async forgotPassword(email: string): Promise<void> {
-    const user = await this.usersService.findOneByEmail({ where: { email } });
+    const user = await this.usersService.findOneByEmail({
+      where: { email },
+    });
     if (!user) {
       throw new HttpException(
         {
@@ -364,14 +366,19 @@ export class AuthService {
         },
       },
     });
-
-    // FIXME: нужно сделать отправку письма
-    // await this.mailService.forgotPassword({
-    //   to: email,
-    //   data: {
-    //     hash,
-    //   },
-    // });
+    const url = `${this.configService.getOrThrow('app.frontendDomain', {
+      infer: true,
+    })}/forgot-password?hash=${hash}`;
+    // this.logger.debug(JSON.stringify(user, null, 3));
+    void this.mailService.sendEmail({
+      to: email,
+      language: user.language ?? 'en',
+      emailType: 'forgotPassword',
+      data: {
+        hash: url,
+        name: user.firstName!,
+      },
+    });
   }
 
   async resetPassword(hash: string, newPassword: string): Promise<void> {
