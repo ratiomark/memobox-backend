@@ -17,6 +17,7 @@ export class ForgotService {
     return this.prisma.forgot.findFirst({
       where: {
         hash,
+        deletedAt: null,
       },
       include: {
         user: true,
