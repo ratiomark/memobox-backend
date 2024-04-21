@@ -45,6 +45,10 @@ import { ConfigService } from '@nestjs/config';
 import { ServerLessService } from '@/server-less/server-less.service';
 import { start } from 'repl';
 import { sleep } from '@/utils/common/sleep';
+import {
+  SEND_EMAIL_NOTIFICATION_AFTER,
+  SEND_PUSH_NOTIFICATION_AFTER,
+} from '@/common/const/notification-data';
 
 type NotificationPromise = Promise<TrainingNotificationItem | null | undefined>;
 
@@ -180,6 +184,9 @@ export class NotificationDataProcessorService implements OnModuleInit {
     userIdList: UserId[],
     notificationsSendSuccessfully: boolean,
   ) {
+    if (userIdList.length === 0) {
+      return;
+    }
     try {
       const notificationItemPromises: NotificationPromise[] = userIdList.map(
         (id) =>
@@ -235,18 +242,20 @@ export class NotificationDataProcessorService implements OnModuleInit {
           userId,
           isDeleted: false,
           nextTraining: { not: null },
-          shelf: { notificationEnabled: { not: false } },
+          shelf: {
+            notificationEnabled: { not: false },
+            isDeleted: false,
+          },
         },
         select: { nextTraining: true },
-        orderBy: { nextTraining: 'desc' },
+        orderBy: { nextTraining: 'asc' },
         take: minimumCards,
       })) as { nextTraining: Date }[];
 
       // если карточек меньше чем минимальное количество, то уведомления не нужно отправлять
       if (cards.length < minimumCards) return null;
-      const notificationTime = new Date(cards[0].nextTraining);
+      const notificationTime = new Date(cards[minimumCards - 1].nextTraining);
 
-      // this.logger.debug('notificationTime ', notificationTime);
       if (!notificationTime) {
         // this.logger.log('notificationTime is null');
         return null;
@@ -262,7 +271,10 @@ export class NotificationDataProcessorService implements OnModuleInit {
 
       // this.logger.debug('nextNotificationTime ', nextNotificationTime);
       if (notificationsSendSuccessfully) {
-        nextNotificationTime = addHours(nextNotificationTime, 4);
+        nextNotificationTime = addHours(
+          nextNotificationTime,
+          SEND_EMAIL_NOTIFICATION_AFTER,
+        );
       }
       // this.logger.debug('nextNotificationTime ', nextNotificationTime);
 
@@ -641,6 +653,91 @@ export class NotificationDataProcessorService implements OnModuleInit {
   // push
   // push
   // push
+
+  async getPushNotificationItemAfterServerless(userId: UserId) {
+    // userId
+    // настройки уведомлений
+    try {
+      const notificationSettings = await this.getNotificationSettings(userId);
+      // this.logger.log(notificationSettings);
+      if (!notificationSettings || !notificationSettings.mobilePushEnabled) {
+        return null;
+      }
+
+      const minimumCards = notificationSettings.minimumCardsForPush;
+
+      const cards = (await this.prisma.card.findMany({
+        where: {
+          userId,
+          isDeleted: false,
+          nextTraining: { not: null },
+          shelf: {
+            notificationEnabled: { not: false },
+            isDeleted: false,
+          },
+        },
+        select: { nextTraining: true },
+        orderBy: { nextTraining: 'asc' },
+        take: minimumCards,
+      })) as { nextTraining: Date }[];
+
+      // если карточек меньше чем минимальное количество, то уведомления не нужно отправлять
+      if (cards.length < minimumCards) return null;
+      const notificationTime = new Date(cards[minimumCards - 1].nextTraining);
+
+      if (!notificationTime) {
+        // this.logger.log('notificationTime is null');
+        return null;
+      }
+
+      const now = new Date();
+      let nextNotificationTime;
+      if (isBefore(notificationTime, now)) {
+        nextNotificationTime = now;
+      } else {
+        nextNotificationTime = notificationTime;
+      }
+
+      // this.logger.debug('nextNotificationTime ', nextNotificationTime);
+      nextNotificationTime = addHours(
+        nextNotificationTime,
+        SEND_PUSH_NOTIFICATION_AFTER,
+      );
+      // this.logger.debug('nextNotificationTime ', nextNotificationTime);
+
+      const timeSleepSettings = await this.getTimeSleepSettings(userId);
+      // this.logger.debug('timeSleepSettings ');
+
+      // this.logger.debug(JSON.stringify(timeSleepSettings, null, 2));
+
+      // this.logger.debug('timeSleepSettings ');
+      if (!timeSleepSettings || !timeSleepSettings.isTimeSleepEnabled) {
+        return await this.createPushNotificationItem(
+          userId,
+          nextNotificationTime,
+        );
+      }
+
+      const timezone = (await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { timezone: true },
+      }))!.timezone!;
+
+      // this.logger.debug('timezone  ', timezone);
+
+      const correctedTime = this.correctNotificationTimeForSleepUTC(
+        nextNotificationTime,
+        timeSleepSettings,
+        timezone,
+      );
+      // this.logger.debug(JSON.stringify(correctedTime, null, 3));
+      this.logger.debug('correctedTime  ', correctedTime);
+      return await this.createPushNotificationItem(userId, correctedTime);
+    } catch (error) {
+      this.logger.error('Ошибка при обновлении уведомлений:', error);
+    }
+  }
+
   async reschedulePushNotification(userId: UserId, notificationTime: Date) {
     this.logger.log(`reschedule Notification for user ${userId} - started.`);
     const notificationItem = await this.createPushNotificationItem(
@@ -691,7 +788,7 @@ export class NotificationDataProcessorService implements OnModuleInit {
     const notificationItem: PushTrainingNotification = {
       notificationId: userId,
       notificationTime: notificationTime.toISOString(),
-      name: userData.name,
+      // name: userData.name,
       user_language: userData.language,
     };
     return notificationItem;

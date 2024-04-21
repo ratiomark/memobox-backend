@@ -19,6 +19,28 @@ export type TrainingNotificationItem = {
 export type PushTrainingNotification = {
   notificationId: string;
   notificationTime: string;
-  name: string;
+  // name: string;
   user_language: string;
 };
+
+type PushNotificationTag = 'trainingNotification' | 'subscriptionNotification';
+
+interface PushNotificationBasePayload {
+  tag: PushNotificationTag;
+  title: string;
+  body: string;
+  icon?: string;
+  image?: string;
+  badge?: string;
+  data?: {
+    firstName?: string;
+    url?: string;
+  };
+}
+
+export interface PushTrainingNotificationPayload
+  extends PushNotificationBasePayload {
+  data: {
+    url: '/training/all/all';
+  };
+}

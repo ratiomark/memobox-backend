@@ -65,7 +65,8 @@ export class NotificationController {
     this.logger.log(apiKey);
     this.logger.log(body);
     this.logger.log('sendAllTrainingPushes - ended');
-    await this.pushService.sendPushNotificationsToUsersProd(['test'], {});
+    await this.pushService.processPushesByLang(body, apiKey);
+    // await this.pushService.sendPushNotificationsToUsersProd(['test'], {});
     // await this.pushService.sendPushNotificationsToUsersProd(['test'], {});
     // const res = await this.pushService.sendPushNotificationsToUsers(['test'], {
     //   data: { message: 'test' },
@@ -93,7 +94,8 @@ export class NotificationController {
   @IsPublic()
   @Post('test/sendPushes')
   async sendTestPushes() {
-    await this.pushService.sendPushNotificationsToUsersProd(['test'], {});
+    await sleep(1);
+    // await this.pushService.sendPushNotificationsToUsersProd(['test'], {});
     // const res = await this.pushService.sendPushNotificationsToUsers(['test'], {
     //   data: { message: 'test' },
     //   title: 'testtitle',

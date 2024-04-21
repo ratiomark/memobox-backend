@@ -33,7 +33,11 @@ import { DynamoDbService } from '@/aws/dynamo-db.service';
 import { RedisService } from '@/redis/redis.service';
 import { cacheOrFetchData } from '@/utils/helpers/cache-or-fetch';
 import { PrismaService } from 'nestjs-prisma';
-import { UserNotificationData } from './types/types';
+import {
+  PushTrainingNotification,
+  PushTrainingNotificationPayload,
+  UserNotificationData,
+} from './types/types';
 import { TrainingNotificationItem } from '@/aws/types/db-tables';
 import {
   PushDataFromServerless,
@@ -48,7 +52,8 @@ import { ConfigService } from '@nestjs/config';
 import { AllConfigType } from '@/config/config.type';
 import { ServerLessService } from '@/server-less/server-less.service';
 import { NotificationDataProcessorService } from './notification-data-processor.service';
-import { filter } from 'rxjs';
+import { async, filter } from 'rxjs';
+import { NOTIFICATION_USER_DEFAULT_NAME } from '@/common/const/notification-data';
 // interface PushSubscription {
 //   endpoint: string;
 //   expirationTime?: number | null;
@@ -62,6 +67,7 @@ import { filter } from 'rxjs';
 export class PushService implements OnModuleInit {
   private VAPID_PUBLIC_KEY: string;
   private VAPID_PRIVATE_KEY: string;
+  private xApiKey: string;
   private logger = new Logger(PushService.name);
   constructor(
     private eventEmitter: EventEmitter2,
@@ -94,24 +100,89 @@ export class PushService implements OnModuleInit {
     // );
   }
 
-  async sendPushNotificationsToUsersProd(userIds: string[], payload: any) {
-    const subscriptions = await this.prisma.pushSubscription.findMany({
-      // where: {
-      //   userId: {
-      //     in: userIds,
-      //   },
-      // },
-    });
-    payload = {
-      data: { message: 'test' },
-      title: 'testtitle',
-      icon: 'testicon',
+  async processPushesByLang(data: PushDataFromServerless, apiKey: string) {
+    if (apiKey !== this.xApiKey) {
+      throw new Error('Invalid apiKey');
+    }
+    const langs = Object.keys(data);
+    for (const lang of langs) {
+      const userIds = data[lang].map((item) => item.notificationId);
+      await this.sendPushTrainingNotificationsToUsersByLang(userIds, lang);
+    }
+  }
+
+  createTrainingNotificationPayload(
+    firstName: string,
+    language: string,
+  ): PushTrainingNotificationPayload {
+    const payloadBase = {
+      tag: 'trainingNotification' as const,
+      icon: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_the_United_States_%28DoS_ECA_Color_Standard%29.svg',
+      data: {
+        url: '/training/all/all' as const,
+      },
     };
-    // this.logger.debug(JSON.stringify(subscriptions, null, 2));
+    switch (language) {
+      case 'ru':
+        return {
+          title: `${firstName}, пора повторить карточки! Нажмите, чтобы начать 🚀`,
+          body: 'Готовы вспомнить изученный материал? Ваши карточки ждут повторения 💪',
+          ...payloadBase,
+        };
+      default:
+        return {
+          title: `${firstName}, it's time to train your cards! Click to start 🚀`,
+          body: 'Ready to refresh your knowledge? Your cards are waiting to be trained 💪',
+          ...payloadBase,
+        };
+    }
+  }
+
+  async sendPushTrainingNotificationsToUsersByLang(
+    userIds: string[],
+    language: string,
+  ) {
+    if (userIds.length === 0) {
+      return;
+    }
+    const subscriptions = await this.prisma.pushSubscription.findMany({
+      where: {
+        userId: {
+          in: userIds,
+        },
+      },
+      select: {
+        subscription: true,
+        user: {
+          select: {
+            language: true,
+            firstName: true,
+            id: true,
+          },
+        },
+      },
+    });
+    // Извлекаем userIds всех пользователей с подписками
+    const subscribedUserIds = subscriptions.map((sub) => sub.user.id);
+
+    // Находим userIds без подписок, чтобы удалить их из БД serverless
+    const userIdsWithoutSubscriptions = userIds.filter(
+      (id) => !subscribedUserIds.includes(id),
+    );
+    void this.serverless.removeTrainingPushNotifications(
+      userIdsWithoutSubscriptions,
+    );
+
     const sendPushPromises = subscriptions.map((subscription) => {
       return webPush.sendNotification(
         JSON.parse(subscription.subscription as unknown as string),
-        JSON.stringify(payload),
+        JSON.stringify(
+          this.createTrainingNotificationPayload(
+            subscription.user.firstName ?? NOTIFICATION_USER_DEFAULT_NAME,
+            subscription.user.language ?? 'en',
+            // language,
+          ),
+        ),
       );
     });
     const responses = await Promise.allSettled<SendResult>(sendPushPromises);
@@ -128,43 +199,138 @@ export class PushService implements OnModuleInit {
           return null;
         }
       })
-      .filter(Boolean);
+      .filter(Boolean) as string[];
 
-    await this.prisma.pushSubscription.deleteMany({
+    void this.prisma.pushSubscription.deleteMany({
       where: {
         endpoint: { in: rejectedEndpoints },
       },
     });
-    this.logger.debug(JSON.stringify(rejectedEndpoints, null, 2));
-    this.logger.debug(JSON.stringify(responses, null, 2));
-    // let responses: any;
-    // try {
-    //   responses = await Promise.allSettled(sentPushPromises);
-    // } catch (error) {
-    //   this.logger.log(error);
-    // }
+    // this.logger.debug(JSON.stringify(rejectedEndpoints, null, 2));
     // this.logger.debug(JSON.stringify(responses, null, 2));
-    // [
-    //   {
-    //     statusCode: 201,
-    //     body: '',
-    //     headers: {
-    //       location:
-    //         'https://fcm.googleapis.com/0:1712799666977195%e609af1cf9fd7ecd',
-    //       'x-content-type-options': 'nosniff',
-    //       'x-frame-options': 'SAMEORIGIN',
-    //       'x-xss-protection': '0',
-    //       date: 'Thu, 11 Apr 2024 01:41:06 GMT',
-    //       'content-length': '0',
-    //       'content-type': 'text/html; charset=UTF-8',
-    //       'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
-    //     },
-    //   },
-    // ];
-    // return responses;
-    // очистить записи в базе данных, если подписка не действительна или не существует
+    const pushNotificationUpdatePromises = subscribedUserIds.map((id) =>
+      this.notificationProcessor.getPushNotificationItemAfterServerless(id),
+    );
+    const updatedPushNotifications = await Promise.all(
+      pushNotificationUpdatePromises,
+    );
+
+    const updatedPushNotificationsFiltered = updatedPushNotifications.filter(
+      Boolean,
+    ) as PushTrainingNotification[];
+
+    // const updatedPushNotificationsFiltered: PushTrainingNotification[] =
+    //   updatedPushNotifications.filter(
+    //     (notification): notification is PushTrainingNotification =>
+    //       Boolean(notification),
+    //   );
+
+    void this.serverless.addOrUpdatePushTrainingNotificationList(
+      updatedPushNotificationsFiltered,
+    );
+
+    // this.logger.debug(JSON.stringify(updatedPushNotifications, null, 2));
   }
 
+  // сохранено для примера
+  // async sendPushNotificationsToUsersProd(userIds: string[], payload: any) {
+  //   const subscriptions = await this.prisma.pushSubscription.findMany({
+  //     where: {
+  //       userId: {
+  //         in: userIds,
+  //       },
+  //     },
+  //     select: {
+  //       subscription: true,
+  //       user: {
+  //         select: {
+  //           language: true,
+  //           firstName: true,
+  //           id: true,
+  //         },
+  //       },
+  //     },
+  //   });
+  //   // Извлекаем userIds всех пользователей с подписками
+  //   const subscribedUserIds = subscriptions.map((sub) => sub.user.id);
+
+  //   // Находим userIds без подписок, чтобы удалить их из БД serverless
+  //   const userIdsWithoutSubscriptions = userIds.filter(
+  //     (id) => !subscribedUserIds.includes(id),
+  //   );
+  //   void this.serverless.removeTrainingPushNotifications(
+  //     userIdsWithoutSubscriptions,
+  //   );
+  //   payload = {
+  //     data: { message: 'Hey, your cards are ready for training' },
+  //     title: 'Time to train!',
+  //     icon: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_the_United_States_%28DoS_ECA_Color_Standard%29.svg',
+  //   };
+  //   // this.logger.debug(JSON.stringify(subscriptions, null, 2));
+  //   const sendPushPromises = subscriptions.map((subscription) => {
+  //     return webPush.sendNotification(
+  //       JSON.parse(subscription.subscription as unknown as string),
+  //       JSON.stringify(
+  //         this.createNotificationPayload(
+  //           subscription.user.firstName!,
+  //           subscription.user.language!,
+  //         ),
+  //       ),
+  //       // JSON.stringify(payload),
+  //     );
+  //   });
+  //   const responses = await Promise.allSettled<SendResult>(sendPushPromises);
+
+  //   const rejectedEndpoints = responses
+  //     .map((response) => {
+  //       if (
+  //         response.status === 'rejected' &&
+  //         response.reason &&
+  //         response.reason.endpoint
+  //       ) {
+  //         return response.reason.endpoint;
+  //       } else {
+  //         return null;
+  //       }
+  //     })
+  //     .filter(Boolean);
+
+  //   await this.prisma.pushSubscription.deleteMany({
+  //     where: {
+  //       endpoint: { in: rejectedEndpoints },
+  //     },
+  //   });
+  //   this.logger.debug(JSON.stringify(rejectedEndpoints, null, 2));
+  //   this.logger.debug(JSON.stringify(responses, null, 2));
+  //   // let responses: any;
+  //   // try {
+  //   //   responses = await Promise.allSettled(sentPushPromises);
+  //   // } catch (error) {
+  //   //   this.logger.log(error);
+  //   // }
+  //   // this.logger.debug(JSON.stringify(responses, null, 2));
+  //   // [
+  //   //   {
+  //   //     statusCode: 201,
+  //   //     body: '',
+  //   //     headers: {
+  //   //       location:
+  //   //         'https://fcm.googleapis.com/0:1712799666977195%e609af1cf9fd7ecd',
+  //   //       'x-content-type-options': 'nosniff',
+  //   //       'x-frame-options': 'SAMEORIGIN',
+  //   //       'x-xss-protection': '0',
+  //   //       date: 'Thu, 11 Apr 2024 01:41:06 GMT',
+  //   //       'content-length': '0',
+  //   //       'content-type': 'text/html; charset=UTF-8',
+  //   //       'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+  //   //     },
+  //   //   },
+  //   // ];
+  //   // return responses;
+  //   // очистить записи в базе данных, если подписка не действительна или не существует
+  // }
+
+  // не использую, просто сохранил
   async sendPushNotificationsToUsers(userIds: string[], payload: any) {
     // await sleep(5);
     const user = await this.prisma.user.findUnique({
@@ -188,7 +354,10 @@ export class PushService implements OnModuleInit {
     const sentPushPromises = subscriptions.map((subscription) => {
       return webPush.sendNotification(
         JSON.parse(subscription.subscription as unknown as string),
-        JSON.stringify(payload),
+        JSON.stringify({
+          icon: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_the_United_States_%28DoS_ECA_Color_Standard%29.svg',
+        }),
+        // JSON.stringify(payload),
       );
     });
     const responses = await Promise.all(sentPushPromises);
@@ -209,7 +378,16 @@ export class PushService implements OnModuleInit {
   //   ],
   //   "ru": []
   // }
-  async reschedulePushNotification(userId: UserId, notificationTime: Date) {}
+  async reschedulePushNotification(userId: UserId, notificationTime: Date) {
+    const pushNotificationItem =
+      await this.notificationProcessor.createPushNotificationItem(
+        userId,
+        notificationTime,
+      );
+    void this.serverless.addOrUpdatePushTrainingNotification(
+      pushNotificationItem,
+    );
+  }
 
   async subscribePushNotification(
     subscription: PushSubscription,
@@ -263,6 +441,12 @@ export class PushService implements OnModuleInit {
     );
     this.VAPID_PRIVATE_KEY = this.configService.getOrThrow<string>(
       'VAPID_PRIVATE_KEY',
+      {
+        infer: true,
+      },
+    );
+    this.xApiKey = this.configService.getOrThrow<string>(
+      'SERVERLESS_X_API_KEY',
       {
         infer: true,
       },
