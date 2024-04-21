@@ -7,7 +7,7 @@ export class UserEntity implements User {
     Object.assign(this, partial);
   }
 
-  @ApiProperty({ example: 1 })
+  @ApiProperty({ example: '36d29595-a665-4403-8e5f-900bb6ee3b75' })
   id: User['id'];
 
   @ApiProperty({ example: 'user@example.com', required: false, nullable: true })
@@ -29,6 +29,7 @@ export class UserEntity implements User {
 
   @ApiProperty({ example: '1234567890', required: false, nullable: true })
   @Expose({ groups: ['ME', 'ADMIN'] })
+  @Exclude({ toPlainOnly: true })
   socialId: string | null;
 
   @ApiProperty({ example: 'John', required: false, nullable: true })
@@ -38,12 +39,15 @@ export class UserEntity implements User {
   lastName: string | null;
 
   @ApiProperty({ example: 1, required: false, nullable: true })
+  @Exclude({ toPlainOnly: true })
   photoId: string | null;
 
   @ApiProperty({ example: 1, required: false, nullable: true })
+  @Exclude({ toPlainOnly: true })
   roleId: number | null;
 
   @ApiProperty({ example: 1, required: false, nullable: true })
+  @Exclude({ toPlainOnly: true })
   statusId: number | null;
 
   @ApiProperty({
@@ -63,16 +67,24 @@ export class UserEntity implements User {
 
   @ApiProperty({
     example: 'Moscow/Europe',
-    required: false,
+    required: true,
     default: 'UTC',
     nullable: false,
   })
   timezone: string | null;
 
+  @ApiProperty({
+    example: 'Israel',
+    required: false,
+    nullable: true,
+  })
+  country: string | null;
+
   @ApiProperty({ example: '2022-10-21T14:48:00.000Z' })
   createdAt: Date;
 
   @ApiProperty({ example: '2022-10-21T14:48:00.000Z' })
+  @Exclude({ toPlainOnly: true })
   updatedAt: Date;
 
   @ApiProperty({
@@ -80,8 +92,11 @@ export class UserEntity implements User {
     required: false,
     nullable: true,
   })
+  @Exclude({ toPlainOnly: true })
   deletedAt: Date | null;
 
+  @Exclude({ toPlainOnly: true })
+  file: any;
   // @ApiProperty({
   //   example: '2022-10-21T14:48:00.000Z',
   //   required: false,

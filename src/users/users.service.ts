@@ -6,13 +6,18 @@ import { FilterUserDto, SortUserDto } from './dto/query-user.dto';
 import { AuthProviders, Prisma, User } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { UserEntity } from './entities/user.entity';
-import { UpdateJsonSavedDataDto, UpdateUserDto } from './dto/update-user.dto';
+import {
+  UpdateJsonSavedDataDto,
+  UpdateJsonSettingsDto,
+  UpdateUserDto,
+} from './dto/update-user.dto';
 import {
   jsonSavedDataDefault,
   jsonSettingsDefault,
 } from '../common/const/json-saved-data-and-settings-default';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EVENT_USER_CREATED } from '@/common/const/events';
+import { UserId } from '@/common/types/prisma-entities';
 
 @Injectable()
 export class UsersService {
@@ -38,8 +43,9 @@ export class UsersService {
       password: hashedPassword,
       dataAndSettingsJson: {
         create: {
-          jsonSavedData: jsonSavedDataDefault,
-          jsonSettings: jsonSettingsDefault,
+          jsonSavedData:
+            jsonSavedDataDefault as unknown as Prisma.InputJsonValue,
+          jsonSettings: jsonSettingsDefault as unknown as Prisma.InputJsonValue,
         },
       },
     };
@@ -84,8 +90,10 @@ export class UsersService {
         status: { connect: { id: statusId ?? undefined } },
         dataAndSettingsJson: {
           create: {
-            jsonSavedData: jsonSavedDataDefault,
-            jsonSettings: jsonSettingsDefault,
+            jsonSavedData:
+              jsonSavedDataDefault as unknown as Prisma.InputJsonValue,
+            jsonSettings:
+              jsonSettingsDefault as unknown as Prisma.InputJsonValue,
           },
         },
       },
@@ -212,7 +220,7 @@ export class UsersService {
     });
   }
 
-  async updateByUserId(id: User['id'], payload: UpdateUserDto): Promise<User> {
+  async updateByUserId(id: UserId, payload: UpdateUserDto): Promise<User> {
     if (payload.password) {
       payload.password = await this.hashPassword(payload.password);
     }
@@ -226,7 +234,7 @@ export class UsersService {
     });
   }
 
-  async updateJsonSavedData(id: User['id'], payload: UpdateJsonSavedDataDto) {
+  async updateJsonSavedData(id: UserId, payload: UpdateJsonSavedDataDto) {
     const user = await this.prisma.user.update({
       where: { id },
       data: {
@@ -241,6 +249,23 @@ export class UsersService {
       },
     });
     return user.dataAndSettingsJson?.jsonSavedData;
+  }
+
+  async updateJsonSettings(id: UserId, payload: UpdateJsonSettingsDto) {
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: {
+        dataAndSettingsJson: {
+          update: {
+            jsonSettings: payload as unknown as Prisma.InputJsonObject,
+          },
+        },
+      },
+      include: {
+        dataAndSettingsJson: true,
+      },
+    });
+    return user.dataAndSettingsJson?.jsonSettings;
   }
 
   async updateByWhere(
@@ -260,7 +285,7 @@ export class UsersService {
     });
   }
 
-  async softDelete(id: User['id']): Promise<void> {
+  async softDelete(id: UserId): Promise<void> {
     await this.prisma.user.update({
       where: { id },
       data: {

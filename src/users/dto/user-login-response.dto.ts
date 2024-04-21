@@ -28,6 +28,10 @@ export class UserLoginResponseDto {
 
   @Expose()
   @ApiProperty()
+  timezone: string;
+
+  @Expose()
+  @ApiProperty()
   emailVerified: boolean;
 
   @Expose()

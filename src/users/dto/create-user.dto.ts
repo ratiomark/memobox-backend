@@ -79,5 +79,8 @@ export class CreateUserDto {
   language?: string | null;
 
   @IsOptional()
-  timezone: string = 'UTC';
+  timezone: string;
+
+  @IsOptional()
+  country?: string;
 }

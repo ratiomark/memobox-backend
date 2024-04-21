@@ -11,10 +11,16 @@ import {
   HttpStatus,
   HttpCode,
   SerializeOptions,
+  Logger,
+  Headers,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateJsonSavedDataDto, UpdateUserDto } from './dto/update-user.dto';
+import {
+  UpdateJsonSavedDataDto,
+  UpdateJsonSettingsDto,
+  UpdateUserDto,
+} from './dto/update-user.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Roles } from '@/roles/roles.decorator';
 import { RoleEnum } from '@/roles/roles.enum';
@@ -25,6 +31,7 @@ import { User } from '@prisma/client';
 import { InfinityPaginationResultType } from '../utils/types/infinity-pagination-result.type';
 import { NullableType } from '../utils/types/nullable.type';
 import { QueryUserDto } from './dto/query-user.dto';
+import { UserEntity } from './entities/user.entity';
 
 @ApiBearerAuth()
 @Roles(RoleEnum.ADMIN)
@@ -35,6 +42,7 @@ import { QueryUserDto } from './dto/query-user.dto';
   version: '1',
 })
 export class UsersController {
+  private logger = new Logger(UsersController.name);
   constructor(private readonly usersService: UsersService) {}
 
   @SerializeOptions({
@@ -91,11 +99,22 @@ export class UsersController {
   })
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
-  update(
+  async update(
     @Param('id') userId: User['id'],
     @Body() updateProfileDto: UpdateUserDto,
+    @Headers('x-custom-lang') lang: string,
   ): Promise<User> {
-    return this.usersService.updateByUserId(userId, updateProfileDto);
+    // getTimezoneOffset
+    this.logger.log('updateProfileDto', updateProfileDto);
+    this.logger.log(JSON.stringify(updateProfileDto, null, 3));
+    this.logger.log(lang);
+    // const allTimeZones = listTimeZones();
+    // this.logger.log(allTimeZones);
+    const user = new UserEntity(
+      await this.usersService.updateByUserId(userId, updateProfileDto),
+    );
+    return user;
+    // return this.usersService.updateByUserId(userId, updateProfileDto);
   }
 
   @SerializeOptions({
@@ -111,6 +130,19 @@ export class UsersController {
       userId,
       updateJsonSavedDataDto,
     );
+  }
+
+  @SerializeOptions({
+    groups: ['ADMIN'],
+  })
+  @Patch(':id/json-settings')
+  @HttpCode(HttpStatus.OK)
+  updateJsonSettings(
+    @Param('id') userId: User['id'],
+    @Body() updateJsonSettingsDto: UpdateJsonSettingsDto,
+  ) {
+    this.logger.debug(JSON.stringify(updateJsonSettingsDto, null, 3));
+    return this.usersService.updateJsonSettings(userId, updateJsonSettingsDto);
   }
 
   @Delete(':id')
