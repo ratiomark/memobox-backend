@@ -5,13 +5,15 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
 import { MailData } from '@/mail/interfaces/mail-data.interface';
+import { PushTrainingNotification } from '@/notification/types/types';
+import { UserId } from 'aws-sdk/clients/appstream';
+import axios from 'axios';
 
 @Injectable()
 // export class ServerLessService {
 export class ServerLessService implements OnModuleInit {
   private nodeEnv: string;
   private xApiKey: string;
-  private baseUrl: string;
   private baseHeader: any;
   private readonly logger = new Logger(ServerLessService.name);
   constructor(
@@ -30,13 +32,13 @@ export class ServerLessService implements OnModuleInit {
     this.initVariables();
   }
 
-  async addOrUpdateTrainingNotification(
+  async addOrUpdateEmailTrainingNotification(
     notificationItem: TrainingNotificationItem,
   ) {
-    await this.addOrUpdateTrainingNotificationList([notificationItem]);
+    await this.addOrUpdateEmailTrainingNotificationList([notificationItem]);
   }
 
-  async addOrUpdateTrainingNotificationList(
+  async addOrUpdateEmailTrainingNotificationList(
     notificationItems: TrainingNotificationItem[],
   ) {
     if (this.nodeEnv === 'testing') {
@@ -54,9 +56,56 @@ export class ServerLessService implements OnModuleInit {
           headers: this.baseHeader,
         }),
       );
-      this.logger.debug(
-        'addOrUpdateTrainingNotificationList  ',
-        JSON.stringify(data, null, 3),
+      // this.logger.debug(
+      //   'addOrUpdateTrainingNotificationList  ',
+      //   JSON.stringify(data, null, 3),
+      // );
+    } catch (error) {
+      this.logger.error('Error adding batch of notification items:', error);
+      throw error;
+    }
+  }
+
+  async createIndexPushNotification() {
+    if (this.nodeEnv === 'testing') {
+      this.logger.log('Testing Mode - ServerLessService ignored');
+      return;
+    }
+    // if (notificationItems.length === 0) {
+    //   this.logger.debug('Empty notificationItems list');
+    //   return;
+    // }
+
+    try {
+      await firstValueFrom<{ data: any }>(
+        this.httpService.post(
+          `/createIndexPushNotification`,
+          {},
+          {
+            headers: this.baseHeader,
+          },
+        ),
+      );
+    } catch (error) {
+      this.logger.error('Error adding batch of notification items:', error);
+      throw error;
+    }
+  }
+
+  async createIndexEmailNotifications() {
+    if (this.nodeEnv === 'testing') {
+      this.logger.log('Testing Mode - ServerLessService ignored');
+      return;
+    }
+    try {
+      await firstValueFrom<{ data: any }>(
+        this.httpService.post(
+          `/createIndexEmailNotifications`,
+          {},
+          {
+            headers: this.baseHeader,
+          },
+        ),
       );
     } catch (error) {
       this.logger.error('Error adding batch of notification items:', error);
@@ -80,12 +129,19 @@ export class ServerLessService implements OnModuleInit {
           headers: this.baseHeader,
         }),
       );
-      this.logger.debug(
-        'addOrUpdateTrainingNotificationList  ',
-        JSON.stringify(data, null, 3),
-      );
+      this.logger.debug('sendEmail ', JSON.stringify(data, null, 3));
     } catch (error) {
-      console.error('Error calling ActivateEmail function:', error);
+      if (axios.isAxiosError(error)) {
+        this.logger.error('Ошибка запроса:', error.message);
+        if (error.response) {
+          this.logger.error('Статус ответа:', error.response.status);
+          this.logger.error('Заголовки ответа:', error.response.headers);
+          this.logger.error('Данные ответа:', error.response.data);
+        }
+      } else {
+        this.logger.error('Неожиданная ошибка:', error);
+      }
+      // console.error('Error calling ActivateEmail function:', error);
     }
   }
 
@@ -107,6 +163,91 @@ export class ServerLessService implements OnModuleInit {
       throw error;
     }
   }
+  async sendAllPushNotifications() {
+    if (this.nodeEnv === 'testing') {
+      this.logger.log('Testing Mode - ServerLessService ignored');
+      return;
+    }
+    try {
+      await firstValueFrom<{ data: any }>(
+        this.httpService.post(
+          `/sendAllPushNotifications`,
+          {},
+          { headers: this.baseHeader },
+        ),
+      );
+    } catch (error) {
+      this.logger.error('Error sendAllEmailNotifications:', error);
+      throw error;
+    }
+  }
+
+  async addOrUpdatePushTrainingNotification(
+    notificationItem: PushTrainingNotification,
+  ) {
+    await this.addOrUpdatePushTrainingNotificationList([notificationItem]);
+  }
+
+  async addOrUpdatePushTrainingNotificationList(
+    notificationItems: PushTrainingNotification[],
+  ) {
+    if (this.nodeEnv === 'testing') {
+      this.logger.log('Testing Mode - ServerLessService ignored');
+      return;
+    }
+    if (notificationItems.length === 0) {
+      this.logger.debug('Empty notificationItems list');
+      return;
+    }
+
+    try {
+      // const { data } =
+      await firstValueFrom<{ data: any }>(
+        this.httpService.post(`/addPushes`, notificationItems, {
+          headers: this.baseHeader,
+        }),
+      );
+      // this.logger.debug(
+      //   'addPushes  ',
+      //   JSON.stringify(data, null, 3),
+      // );
+    } catch (error) {
+      this.logger.error('Error adding batch of notification items:', error);
+      throw error;
+    }
+  }
+
+  async removeTrainingPushNotifications(notificationIds: UserId[]) {
+    if (this.nodeEnv === 'testing') {
+      this.logger.log('Testing Mode - ServerLessService ignored');
+      return;
+    }
+    if (notificationIds.length === 0) {
+      this.logger.debug('Empty notificationId list');
+      return;
+    }
+
+    try {
+      // const { data } =
+      await firstValueFrom<{ data: any }>(
+        this.httpService.post(
+          `/removePushes`,
+          { notificationIds },
+          {
+            headers: this.baseHeader,
+          },
+        ),
+      );
+      // this.logger.debug(
+      //   'removePushes  ',
+      //   JSON.stringify(data, null, 3),
+      // );
+    } catch (error) {
+      this.logger.error('Error adding batch of notification items:', error);
+      throw error;
+    }
+  }
+
   //   create(createServerLessDto: CreateServerLessDto) {
   //     return 'This action adds a new serverLess';
   //   }
@@ -132,12 +273,12 @@ export class ServerLessService implements OnModuleInit {
         infer: true,
       },
     );
-    this.baseUrl = this.configService.getOrThrow<string>(
-      'SERVERLESS_BASE_URL',
-      {
-        infer: true,
-      },
-    );
+    // this.baseUrl = this.configService.getOrThrow<string>(
+    //   'SERVERLESS_BASE_URL',
+    //   {
+    //     infer: true,
+    //   },
+    // );
     this.baseHeader = {
       'x-api-key': this.xApiKey,
     };

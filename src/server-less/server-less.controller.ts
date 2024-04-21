@@ -10,10 +10,34 @@ import {
 import { ServerLessService } from './server-less.service';
 import { CreateServerLessDto } from './dto/create-server-less.dto';
 import { UpdateServerLessDto } from './dto/update-server-less.dto';
+import { IsPublic } from '@/common/decorators';
+import { ApiTags } from '@nestjs/swagger';
 
-@Controller('server-less')
+@ApiTags('Serverless')
+@Controller({
+  path: 'serverless',
+  version: '1',
+})
 export class ServerLessController {
   constructor(private readonly serverLessService: ServerLessService) {}
+
+  @IsPublic()
+  @Post('createIndexesPushNotificationsTable')
+  async createPushTable() {
+    return await this.serverLessService.createIndexPushNotification();
+  }
+
+  @IsPublic()
+  @Post('createIndexesEmailNotificationsTable')
+  async createIndexesEmailNotifications() {
+    return await this.serverLessService.createIndexEmailNotifications();
+  }
+
+  // @IsPublic()
+  // @Post('sendAll')
+  // async createIndexesEmailNotifications() {
+  //   return await this.serverLessService.createIndexesEmailNotifications();
+  // }
 
   // @Post()
   // create(@Body() createServerLessDto: CreateServerLessDto) {
