@@ -186,6 +186,7 @@ export class UserDataStorageService implements OnModuleInit {
       return {
         id: shelf.id,
         index: index,
+        notificationEnabled: shelf.notificationEnabled,
         isCollapsed: shelf.isCollapsed,
         title: shelf.title,
         missedTrainingValue: shelf.missedTrainingValue,
