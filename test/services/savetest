@@ -1,0 +1,321 @@
+describe('correctNotificationTimeForSleep', () => {
+    const timeZone = 'Europe/London';
+    const baseTimeSleepSettings: TimeSleepSettings = {
+      isTimeSleepEnabled: true,
+      isDayByDayOptionEnabled: true,
+      generalTimeSleepData: {
+        up: { hours: 7, minutes: 0 },
+        down: { hours: 22, minutes: 0 },
+      },
+      dayByDayTimeSleepData: {
+        monday: {
+          up: { hours: 6, minutes: 30 },
+          down: { hours: 21, minutes: 30 },
+        },
+        tuesday: {
+          up: { hours: 8, minutes: 0 },
+          down: { hours: 23, minutes: 0 },
+        },
+        wednesday: {
+          up: { hours: 7, minutes: 30 },
+          down: { hours: 22, minutes: 30 },
+        },
+        thursday: {
+          up: { hours: 6, minutes: 0 },
+          down: { hours: 21, minutes: 0 },
+        },
+        friday: {
+          up: { hours: 9, minutes: 0 },
+          down: { hours: 0, minutes: 0 },
+        },
+        saturday: {
+          up: { hours: 10, minutes: 0 },
+          down: { hours: 1, minutes: 0 },
+        },
+        sunday: {
+          up: { hours: 8, minutes: 30 },
+          down: { hours: 23, minutes: 30 },
+        },
+      },
+    };
+
+    it('should adjust notification time based on day-by-day sleep settings', () => {
+      //   const expectedAdjustedTime = new Date('2024-03-11T06:30:00');
+      //   expect(
+      //     notificationService.getNotificationTimeAdjusted(
+      //       notificationTimeLocal,
+      //       baseTimeSleepSettings,
+      //     ),
+      //   ).toEqual(expectedAdjustedTime);
+      // });
+
+      const notificationTimeUTC = new Date('2024-03-11T05:00:00Z'); // Monday
+      const notificationTimeLocal = utcToZonedTime(
+        notificationTimeUTC,
+        timeZone,
+      );
+
+      const expectedAdjustedTimeUTC = new Date('2024-03-11T07:00:00Z');
+      expect(
+        notificationService.correctNotificationTimeForSleep(
+          notificationTimeUTC,
+          baseTimeSleepSettings,
+          timeZone,
+        ),
+      ).toEqual(expectedAdjustedTimeUTC);
+    });
+    it('should adjust notification time based on day-by-day sleep settings', () => {
+      const notificationTimeUTC = new Date('2024-03-11T05:00:00Z'); // Monday
+      const notificationTimeLocal = utcToZonedTime(
+        notificationTimeUTC,
+        timeZone,
+      ); // ты знаешь, что тут должно получиться, поэтому сразу ниже делаешь проверку
+      // expect(notificationTimeLocal).toEqual(УКАЖИ_ЧТО_ОЖИДАЕШЬ)
+      // далее, ты указываешь  expectedAdjustedTimeLocal
+      // const expectedAdjustedTimeLocal = УКАЖИ_РЕЛЕВАТНОЕ_ВРЕМЯ
+
+      // поскольку мы из correctNotificationTimeForSleep ожидаем получить локальное время(мы меняем это как раз для удобного тестирования), то мы должны сравнивать с локальным временем которое ты ожидаешь
+      expect(
+        notificationService.correctNotificationTimeForSleep(
+          notificationTimeUTC,
+          baseTimeSleepSettings,
+          timeZone,
+        ),
+      ).toEqual(expectedAdjustedTimeLocal);
+    });
+
+    it('should handle transition between days of the week', () => {
+      const notificationTimeUTC = new Date('2024-03-10T22:30:00Z');
+      const expectedAdjustedTimeUTC = new Date('2024-03-11T07:00:00Z');
+      expect(
+        notificationService.correctNotificationTimeForSleep(
+          notificationTimeUTC,
+          baseTimeSleepSettings,
+          timeZone,
+        ),
+      ).toEqual(expectedAdjustedTimeUTC);
+    });
+
+    it('should handle sleep time at midnight for specific days', () => {
+      const notificationTimeUTC = new Date('2024-03-15T23:30:00Z');
+      const expectedAdjustedTimeUTC = new Date('2024-03-16T09:30:00Z');
+      expect(
+        notificationService.correctNotificationTimeForSleep(
+          notificationTimeUTC,
+          baseTimeSleepSettings,
+          timeZone,
+        ),
+      ).toEqual(expectedAdjustedTimeUTC);
+    });
+
+    it('should handle notification time within wakeup period for specific day', () => {
+      const notificationTimeUTC = new Date('2024-03-14T07:00:00Z');
+      expect(
+        notificationService.correctNotificationTimeForSleep(
+          notificationTimeUTC,
+          baseTimeSleepSettings,
+          timeZone,
+        ),
+      ).toEqual(notificationTimeUTC);
+    });
+
+    it('should adjust notification time to next day wakeup time if it is after fall asleep time for specific day', () => {
+      const notificationTimeUTC = new Date('2024-03-12T22:30:00Z');
+      const expectedAdjustedTimeUTC = new Date('2024-03-13T08:00:00Z');
+      expect(
+        notificationService.correctNotificationTimeForSleep(
+          notificationTimeUTC,
+          baseTimeSleepSettings,
+          timeZone,
+        ),
+      ).toEqual(expectedAdjustedTimeUTC);
+    });
+
+    it('should handle notification time at day boundary', () => {
+      const notificationTimeUTC = new Date('2024-03-12T23:00:00Z');
+      const expectedAdjustedTimeUTC = new Date('2024-03-13T08:00:00Z');
+      expect(
+        notificationService.correctNotificationTimeForSleep(
+          notificationTimeUTC,
+          baseTimeSleepSettings,
+          timeZone,
+        ),
+      ).toEqual(expectedAdjustedTimeUTC);
+    });
+
+    it('should handle notification time before wakeup time for specific day', () => {
+      const notificationTimeUTC = new Date('2024-03-15T07:30:00Z');
+      const expectedAdjustedTimeUTC = new Date('2024-03-15T09:30:00Z');
+      expect(
+        notificationService.correctNotificationTimeForSleep(
+          notificationTimeUTC,
+          baseTimeSleepSettings,
+          timeZone,
+        ),
+      ).toEqual(expectedAdjustedTimeUTC);
+    });
+
+    it('should handle notification time after fall asleep time for specific day', () => {
+      const notificationTimeUTC = new Date('2024-03-17T00:30:00Z');
+      const expectedAdjustedTimeUTC = new Date('2024-03-17T09:00:00Z');
+      expect(
+        notificationService.correctNotificationTimeForSleep(
+          notificationTimeUTC,
+          baseTimeSleepSettings,
+          timeZone,
+        ),
+      ).toEqual(expectedAdjustedTimeUTC);
+    });
+
+    it('should adjust notification time considering before sleep offset', () => {
+      const notificationTimeUTC = new Date('2024-03-13T21:00:00Z');
+      const expectedAdjustedTimeUTC = new Date('2024-03-14T08:00:00Z');
+      expect(
+        notificationService.correctNotificationTimeForSleep(
+          notificationTimeUTC,
+          baseTimeSleepSettings,
+          timeZone,
+          60,
+          30,
+        ),
+      ).toEqual(expectedAdjustedTimeUTC);
+    });
+
+    it('should adjust notification time considering after sleep offset', () => {
+      const notificationTimeUTC = new Date('2024-03-14T06:00:00Z');
+      const expectedAdjustedTimeUTC = new Date('2024-03-14T06:30:00Z');
+      expect(
+        notificationService.correctNotificationTimeForSleep(
+          notificationTimeUTC,
+          baseTimeSleepSettings,
+          timeZone,
+          30,
+          60,
+        ),
+      ).toEqual(expectedAdjustedTimeUTC);
+    });
+
+    it('should handle different time zones', () => {
+      const notificationTimeUTC = new Date('2024-03-11T05:00:00Z');
+      const timeZone = 'America/New_York';
+      const expectedAdjustedTimeUTC = new Date('2024-03-11T11:00:00Z');
+      expect(
+        notificationService.correctNotificationTimeForSleep(
+          notificationTimeUTC,
+          baseTimeSleepSettings,
+          timeZone,
+        ),
+      ).toEqual(expectedAdjustedTimeUTC);
+    });
+
+    it('should handle daylight saving time transitions', () => {
+      const notificationTimeUTC = new Date('2024-03-31T05:00:00Z');
+      const timeZone = 'Europe/London';
+      const expectedAdjustedTimeUTC = new Date('2024-03-31T06:00:00Z');
+      expect(
+        notificationService.correctNotificationTimeForSleep(
+          notificationTimeUTC,
+          baseTimeSleepSettings,
+          timeZone,
+        ),
+      ).toEqual(expectedAdjustedTimeUTC);
+    });
+
+    it('should handle leap years', () => {
+      const notificationTimeUTC = new Date('2024-02-29T05:00:00Z');
+      const expectedAdjustedTimeUTC = new Date('2024-02-29T07:00:00Z');
+      expect(
+        notificationService.correctNotificationTimeForSleep(
+          notificationTimeUTC,
+          baseTimeSleepSettings,
+          timeZone,
+        ),
+      ).toEqual(expectedAdjustedTimeUTC);
+    });
+
+    it('should handle year boundaries', () => {
+      const notificationTimeUTC = new Date('2023-12-31T22:30:00Z');
+      const expectedAdjustedTimeUTC = new Date('2024-01-01T07:00:00Z');
+      expect(
+        notificationService.correctNotificationTimeForSleep(
+          notificationTimeUTC,
+          baseTimeSleepSettings,
+          timeZone,
+        ),
+      ).toEqual(expectedAdjustedTimeUTC);
+    });
+  });
+
+
+describe('getCurrentDayOfWeek', () => {
+    it('should return "sunday" for Sunday', () => {
+      const notificationTimeLocal = new Date('2024-03-17T12:00:00');
+      expect(
+        notificationService.getCurrentDayOfWeek(notificationTimeLocal),
+      ).toBe('sunday');
+    });
+
+    it('should return "monday" for Monday', () => {
+      const notificationTimeLocal = new Date('2024-03-11T12:00:00');
+      expect(
+        notificationService.getCurrentDayOfWeek(notificationTimeLocal),
+      ).toBe('monday');
+    });
+
+    it('should return "tuesday" for Tuesday', () => {
+      const notificationTimeLocal = new Date('2024-03-12T12:00:00');
+      expect(
+        notificationService.getCurrentDayOfWeek(notificationTimeLocal),
+      ).toBe('tuesday');
+    });
+
+    it('should return "saturday" for Saturday', () => {
+      const notificationTimeLocal = new Date('2024-03-16T12:00:00');
+      expect(
+        notificationService.getCurrentDayOfWeek(notificationTimeLocal),
+      ).toBe('saturday');
+    });
+
+    it('should return the correct day of the week for a date in the past', () => {
+      const notificationTimeLocal = new Date('2022-01-01T12:00:00');
+      expect(
+        notificationService.getCurrentDayOfWeek(notificationTimeLocal),
+      ).toBe('saturday');
+    });
+  });
+  describe('getNextDayOfWeek', () => {
+    it('should return "monday" when the current day is Sunday', () => {
+      const notificationTimeLocal = new Date('2024-03-17T12:00:00');
+      expect(notificationService.getNextDayOfWeek(notificationTimeLocal)).toBe(
+        'monday',
+      );
+    });
+
+    it('should return "tuesday" when the current day is Monday', () => {
+      const notificationTimeLocal = new Date('2024-03-11T12:00:00');
+      expect(notificationService.getNextDayOfWeek(notificationTimeLocal)).toBe(
+        'tuesday',
+      );
+    });
+
+    it('should return "wednesday" when the current day is Tuesday', () => {
+      const notificationTimeLocal = new Date('2024-03-12T12:00:00');
+      expect(notificationService.getNextDayOfWeek(notificationTimeLocal)).toBe(
+        'wednesday',
+      );
+    });
+
+    it('should return "sunday" when the current day is Saturday', () => {
+      const notificationTimeLocal = new Date('2024-03-16T12:00:00');
+      expect(notificationService.getNextDayOfWeek(notificationTimeLocal)).toBe(
+        'sunday',
+      );
+    });
+
+    it('should return the correct next day of the week for a date in the past', () => {
+      const notificationTimeLocal = new Date('2022-01-01T12:00:00');
+      expect(notificationService.getNextDayOfWeek(notificationTimeLocal)).toBe(
+        'sunday',
+      );
+    });
+  });

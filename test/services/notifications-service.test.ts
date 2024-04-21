@@ -12,6 +12,7 @@ import { PrismaService } from 'nestjs-prisma';
 import { ServerLessService } from '@/server-less/server-less.service';
 import { ConfigService } from '@nestjs/config';
 import { AllConfigType } from '@/config/config.type';
+import { NotificationDataProcessorService } from '@/notification/notification-data-processor.service';
 // Март 2024 года
 // понедельник - 4, 11, 18, 25
 // вторник - 5, 12, 19, 26
@@ -20,8 +21,8 @@ import { AllConfigType } from '@/config/config.type';
 // пятница - 1, 8, 15, 22, 29
 // суббота - 2, 9, 16, 23, 30
 // восскресенье - 3, 10, 17, 24, 31
-describe('NotificationService', () => {
-  let notificationService: NotificationService;
+describe('NotificationProcessorService', () => {
+  let notificationService: NotificationDataProcessorService;
   let mockEventEmitter: Partial<EventEmitter2>;
   let mockSettingsService: Partial<SettingsService>;
   let mockDynamoService: Partial<DynamoDbService>;
@@ -49,7 +50,7 @@ describe('NotificationService', () => {
     const module = await Test.createTestingModule({
       // Не забудьте добавить свой сервис и все его зависимости
       providers: [
-        NotificationService,
+        NotificationDataProcessorService,
         {
           provide: EventEmitter2,
           useValue: mockEventEmitter,
@@ -81,7 +82,9 @@ describe('NotificationService', () => {
       ],
     }).compile();
 
-    notificationService = module.get<NotificationService>(NotificationService);
+    notificationService = module.get<NotificationDataProcessorService>(
+      NotificationDataProcessorService,
+    );
     jest
       .spyOn(notificationService, 'getUserNotificationData')
       // eslint-disable-next-line @typescript-eslint/require-await

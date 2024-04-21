@@ -1,0 +1,2534 @@
+import { TimeSleepSettings } from '@/aggregate/entities/settings-types';
+import { NotificationService } from '@/notification/notification.service';
+import { SettingsService } from '@/settings/settings.service';
+import { generalTimeSleepDataDefault } from '../../prisma/mock-data/user-settings-templates';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Test } from '@nestjs/testing';
+import { utcToZonedTime } from 'date-fns-tz';
+import { getDay } from 'date-fns';
+
+describe('NotificationService', () => {
+  let notificationService: NotificationService;
+  let mockEventEmitter: Partial<EventEmitter2>;
+  let mockSettingsService: Partial<SettingsService>;
+
+  beforeEach(async () => {
+    mockEventEmitter = {};
+    mockSettingsService = {
+      // здесь мокируем методы, если они используются в вашем сервисе
+    };
+
+    const module = await Test.createTestingModule({
+      // Не забудьте добавить свой сервис и все его зависимости
+      providers: [
+        NotificationService,
+        {
+          provide: EventEmitter2,
+          useValue: mockEventEmitter,
+        },
+        {
+          provide: SettingsService,
+          useValue: mockSettingsService,
+        },
+      ],
+    }).compile();
+
+    notificationService = module.get<NotificationService>(NotificationService);
+  });
+  describe('getNotificationTimeAdjusted with generalTimeSleepData - sleep time after midnight', () => {
+    const baseTimeSleepSettings: TimeSleepSettings = {
+      isTimeSleepEnabled: true,
+      isDayByDayOptionEnabled: false,
+      generalTimeSleepData: {
+        up: { hours: 9, minutes: 0 },
+        down: { hours: 2, minutes: 0 },
+      },
+    };
+
+    it('should adjust notification time when it is before wakeup time', () => {
+      const notificationTimeLocal = new Date('2024-03-11T08:30:00');
+      // current day after wake up
+      const expectedAdjustedTime = new Date('2024-03-11T09:00:00');
+      expect(
+        notificationService.getNotificationTimeAdjusted(
+          notificationTimeLocal,
+          baseTimeSleepSettings,
+        ),
+      ).toEqual(expectedAdjustedTime);
+    });
+
+    it('should adjust notification time when it is after fall asleep time', () => {
+      const notificationTimeLocal = new Date('2024-03-11T02:30:00');
+      // current day after wake up
+      const expectedAdjustedTime = new Date('2024-03-11T09:00:00');
+      expect(
+        notificationService.getNotificationTimeAdjusted(
+          notificationTimeLocal,
+          baseTimeSleepSettings,
+        ),
+      ).toEqual(expectedAdjustedTime);
+    });
+
+    it('should not adjust notification time when it is within wakeup period', () => {
+      const notificationTimeLocal = new Date('2024-03-11T12:00:00');
+      // current day not wait
+      expect(
+        notificationService.getNotificationTimeAdjusted(
+          notificationTimeLocal,
+          baseTimeSleepSettings,
+        ),
+      ).toEqual(notificationTimeLocal);
+    });
+  });
+  describe('getNotificationTimeAdjusted with generalTimeSleepData - sleep time during the day', () => {
+    const baseTimeSleepSettings: TimeSleepSettings = {
+      isTimeSleepEnabled: true,
+      isDayByDayOptionEnabled: false,
+      generalTimeSleepData: {
+        up: { hours: 16, minutes: 0 },
+        down: { hours: 8, minutes: 0 },
+      },
+    };
+
+    it('should adjust notification time when it is before wakeup time', () => {
+      const notificationTimeLocal = new Date('2024-03-11T10:30:00');
+      // current day after wake up
+      const expectedAdjustedTime = new Date('2024-03-11T16:00:00');
+      expect(
+        notificationService.getNotificationTimeAdjusted(
+          notificationTimeLocal,
+          baseTimeSleepSettings,
+        ),
+      ).toEqual(expectedAdjustedTime);
+    });
+
+    it('should adjust notification time when it is after fall asleep time', () => {
+      const notificationTimeLocal = new Date('2024-03-11T09:00:00');
+      // current day after wake up
+      const expectedAdjustedTime = new Date('2024-03-11T16:00:00');
+      expect(
+        notificationService.getNotificationTimeAdjusted(
+          notificationTimeLocal,
+          baseTimeSleepSettings,
+        ),
+      ).toEqual(expectedAdjustedTime);
+    });
+
+    it('should not adjust notification time when it is within wakeup period', () => {
+      const notificationTimeLocal = new Date('2024-03-11T18:00:00');
+      // current day not wait
+      expect(
+        notificationService.getNotificationTimeAdjusted(
+          notificationTimeLocal,
+          baseTimeSleepSettings,
+        ),
+      ).toEqual(notificationTimeLocal);
+    });
+  });
+  // generalTimeSleepData - checked
+  // generalTimeSleepData - checked
+  // generalTimeSleepData - checked
+  describe('getNotificationTimeAdjusted with generalTimeSleepData', () => {
+    const baseTimeSleepSettings: TimeSleepSettings = {
+      isTimeSleepEnabled: true,
+      isDayByDayOptionEnabled: false,
+      generalTimeSleepData: {
+        up: { hours: 7, minutes: 0 },
+        down: { hours: 22, minutes: 0 },
+      },
+    };
+
+    it('should return the same notification time if it is within the wakeup period', () => {
+      const notificationTimeLocal = new Date('2024-03-10T12:00:00');
+      expect(
+        notificationService.getNotificationTimeAdjusted(
+          notificationTimeLocal,
+          baseTimeSleepSettings,
+        ),
+      ).toEqual(notificationTimeLocal);
+    });
+
+    it('should adjust the notification time to the wakeup time if it is before the wakeup time on the same day', () => {
+      const notificationTimeLocal = new Date('2024-03-10T06:00:00');
+      const expectedAdjustedTime = new Date('2024-03-10T07:00:00');
+      expect(
+        notificationService.getNotificationTimeAdjusted(
+          notificationTimeLocal,
+          baseTimeSleepSettings,
+        ),
+      ).toEqual(expectedAdjustedTime);
+    });
+
+    it('should adjust the notification time to the next day wakeup time if it is after the fall asleep time', () => {
+      const notificationTimeLocal = new Date('2024-03-10T23:00:00');
+      const expectedAdjustedTime = new Date('2024-03-11T07:00:00');
+      expect(
+        notificationService.getNotificationTimeAdjusted(
+          notificationTimeLocal,
+          baseTimeSleepSettings,
+        ),
+      ).toEqual(expectedAdjustedTime);
+    });
+
+    it('should adjust the notification time to the wakeup time if it is exactly at the fall asleep time', () => {
+      const notificationTimeLocal = new Date('2024-03-10T22:00:00');
+      const expectedAdjustedTime = new Date('2024-03-11T07:00:00');
+      expect(
+        notificationService.getNotificationTimeAdjusted(
+          notificationTimeLocal,
+          baseTimeSleepSettings,
+        ),
+      ).toEqual(expectedAdjustedTime);
+    });
+
+    it('should adjust the notification time to the wakeup time if it is exactly at the wakeup time', () => {
+      const notificationTimeLocal = new Date('2024-03-10T07:00:00');
+      expect(
+        notificationService.getNotificationTimeAdjusted(
+          notificationTimeLocal,
+          baseTimeSleepSettings,
+        ),
+      ).toEqual(notificationTimeLocal);
+    });
+
+    it('should handle time sleep settings with same wakeup and fall asleep times', () => {
+      const notificationTimeLocal = new Date('2024-03-10T12:00:00');
+      const timeSleepSettings: TimeSleepSettings = {
+        ...baseTimeSleepSettings,
+        generalTimeSleepData: {
+          up: { hours: 7, minutes: 0 },
+          down: { hours: 7, minutes: 0 },
+        },
+      };
+      const expectedAdjustedTime = new Date('2024-03-11T07:00:00');
+      expect(
+        notificationService.getNotificationTimeAdjusted(
+          notificationTimeLocal,
+          timeSleepSettings,
+        ),
+      ).toEqual(expectedAdjustedTime);
+    });
+
+    it('should handle time sleep settings with fall asleep time at midnight', () => {
+      const notificationTimeLocal = new Date('2024-03-10T23:30:00');
+      const timeSleepSettings: TimeSleepSettings = {
+        ...baseTimeSleepSettings,
+        generalTimeSleepData: {
+          up: { hours: 8, minutes: 0 },
+          down: { hours: 0, minutes: 0 },
+        },
+      };
+      const expectedAdjustedTime = new Date('2024-03-11T08:00:00');
+      expect(
+        notificationService.getNotificationTimeAdjusted(
+          notificationTimeLocal,
+          timeSleepSettings,
+        ),
+      ).toEqual(expectedAdjustedTime);
+    });
+
+    it('should handle time sleep settings with wakeup time at midnight', () => {
+      const notificationTimeLocal = new Date('2024-03-10T23:30:00');
+      const timeSleepSettings: TimeSleepSettings = {
+        ...baseTimeSleepSettings,
+        generalTimeSleepData: {
+          up: { hours: 0, minutes: 0 },
+          down: { hours: 22, minutes: 0 },
+        },
+      };
+      const expectedAdjustedTime = new Date('2024-03-11T00:00:00');
+      expect(
+        notificationService.getNotificationTimeAdjusted(
+          notificationTimeLocal,
+          timeSleepSettings,
+        ),
+      ).toEqual(expectedAdjustedTime);
+    });
+  });
+  // generalTimeSleepData - checked
+  // generalTimeSleepData - checked
+  // generalTimeSleepData - checked
+  // dayByDayTimeSleepData v1 - checked
+  // dayByDayTimeSleepData v1 - checked
+  // dayByDayTimeSleepData v1 - checked
+  // describe('getNotificationTimeAdjusted with isDayByDayOptionEnabled - dayByDayTimeSleepData v1', () => {
+  //   const baseTimeSleepSettings: TimeSleepSettings = {
+  //     isTimeSleepEnabled: true,
+  //     isDayByDayOptionEnabled: true,
+  //     generalTimeSleepData: {
+  //       up: { hours: 8, minutes: 0 },
+  //       down: { hours: 23, minutes: 0 },
+  //     },
+  //     dayByDayTimeSleepData: {
+  //       monday: {
+  //         up: { hours: 7, minutes: 30 },
+  //         down: { hours: 22, minutes: 30 },
+  //       },
+  //       tuesday: {
+  //         up: { hours: 6, minutes: 0 },
+  //         down: { hours: 21, minutes: 0 },
+  //       },
+  //       wednesday: {
+  //         up: { hours: 9, minutes: 0 },
+  //         down: { hours: 0, minutes: 0 },
+  //       },
+  //       thursday: {
+  //         up: { hours: 8, minutes: 30 },
+  //         down: { hours: 23, minutes: 30 },
+  //       },
+  //       friday: {
+  //         up: { hours: 7, minutes: 0 },
+  //         down: { hours: 22, minutes: 0 },
+  //       },
+  //       saturday: {
+  //         up: { hours: 10, minutes: 30 },
+  //         down: { hours: 2, minutes: 0 },
+  //       },
+  //       sunday: {
+  //         up: { hours: 9, minutes: 30 },
+  //         down: { hours: 0, minutes: 30 },
+  //       },
+  //     },
+  //   };
+
+  //   it('should adjust notification time when it is before wakeup time on Monday', () => {
+  //     //  monday: {
+  //     //   up: { hours: 7, minutes: 30 },
+  //     //   down: { hours: 22, minutes: 30 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-11T06:45:00'); // Monday
+  //     // current day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-11T07:30:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+
+  //   it('should adjust notification time when it is after fall asleep time on Tuesday', () => {
+  //     //  tuesday: {
+  //     //   up: { hours: 6, minutes: 0 },
+  //     //   down: { hours: 21, minutes: 0 },
+  //     // },
+  //     //  wednesday: {
+  //     //   up: { hours: 9, minutes: 0 },
+  //     //   down: { hours: 0, minutes: 0 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-12T21:30:00'); // Tuesday
+  //     // next day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-13T09:00:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+
+  //   it('should handle notification time when sleep time ends at midnight on Wednesday', () => {
+  //     //  wednesday: {
+  //     //   up: { hours: 9, minutes: 0 },
+  //     //   down: { hours: 0, minutes: 0 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-13T23:45:00'); // Wednesday
+  //     // current day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-14T08:30:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+
+  //   it('should handle notification time when it is within wakeup period on Thursday', () => {
+  //     // thursday: {
+  //     //   up: { hours: 8, minutes: 30 },
+  //     //   down: { hours: 23, minutes: 30 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-14T10:15:00'); // Thursday
+  //     // current day not wait
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(notificationTimeLocal);
+  //   });
+
+  //   it('should adjust notification time when it is after fall asleep time on Friday', () => {
+  //     //  friday: {
+  //     //   up: { hours: 7, minutes: 0 },
+  //     //   down: { hours: 22, minutes: 0 },
+  //     // },
+  //     //  saturday: {
+  //     //   up: { hours: 10, minutes: 30 },
+  //     //   down: { hours: 2, minutes: 0 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-15T22:30:00'); // Friday
+  //     // next day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-16T10:30:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+
+  //   it('should handle notification time when sleep time starts after midnight on Saturday', () => {
+  //     //  saturday: {
+  //     //   up: { hours: 10, minutes: 30 },
+  //     //   down: { hours: 2, minutes: 0 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-16T01:15:00'); // Saturday
+  //     // current day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-16T10:30:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+
+  //   it('should adjust notification time when it is before wakeup time on Sunday', () => {
+  //     //  sunday: {
+  //     //   up: { hours: 9, minutes: 30 },
+  //     //   down: { hours: 0, minutes: 30 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-17T08:45:00'); // Sunday
+  //     // current day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-17T09:30:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+
+  //   it('should handle transition from Sunday to Monday when notification time is after fall asleep time', () => {
+  //     //  sunday: {
+  //     //   up: { hours: 9, minutes: 30 },
+  //     //   down: { hours: 0, minutes: 30 },
+  //     // },
+  //     //  monday: {
+  //     //   up: { hours: 7, minutes: 30 },
+  //     //   down: { hours: 22, minutes: 30 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-18T01:00:00'); // Monday (transitioned from Sunday)
+  //     // next day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-18T07:30:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+  // });
+  // dayByDayTimeSleepData v1 - checked
+  // dayByDayTimeSleepData v1 - checked
+  // dayByDayTimeSleepData v1 - checked
+  // dayByDayTimeSleepData v2 - checked
+  // dayByDayTimeSleepData v2 - checked
+  // dayByDayTimeSleepData v2 - checked
+  // describe('getNotificationTimeAdjusted with isDayByDayOptionEnabled - dayByDayTimeSleepData v2', () => {
+  //   const baseTimeSleepSettings: TimeSleepSettings = {
+  //     isTimeSleepEnabled: true,
+  //     isDayByDayOptionEnabled: true,
+  //     generalTimeSleepData: {
+  //       up: { hours: 7, minutes: 0 },
+  //       down: { hours: 22, minutes: 0 },
+  //     },
+  //     dayByDayTimeSleepData: {
+  //       monday: {
+  //         up: { hours: 6, minutes: 30 },
+  //         down: { hours: 21, minutes: 30 },
+  //       },
+  //       tuesday: {
+  //         up: { hours: 8, minutes: 0 },
+  //         down: { hours: 23, minutes: 0 },
+  //       },
+  //       wednesday: {
+  //         up: { hours: 7, minutes: 30 },
+  //         down: { hours: 22, minutes: 30 },
+  //       },
+  //       thursday: {
+  //         up: { hours: 6, minutes: 0 },
+  //         down: { hours: 21, minutes: 0 },
+  //       },
+  //       friday: {
+  //         up: { hours: 9, minutes: 0 },
+  //         down: { hours: 0, minutes: 0 },
+  //       },
+  //       saturday: {
+  //         up: { hours: 10, minutes: 0 },
+  //         down: { hours: 1, minutes: 0 },
+  //       },
+  //       sunday: {
+  //         up: { hours: 8, minutes: 30 },
+  //         down: { hours: 23, minutes: 30 },
+  //       },
+  //     },
+  //   };
+
+  //   it('should adjust notification time based on day-by-day sleep settings', () => {
+  //     //  monday: {
+  //     //   up: { hours: 6, minutes: 30 },
+  //     //   down: { hours: 21, minutes: 30 },
+  //     // }
+  //     const notificationTimeLocal = new Date('2024-03-11T05:45:00'); // Monday
+  //     // current day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-11T06:30:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+
+  //   it('should handle transition between days of the week', () => {
+  //     //  sunday: {
+  //     //   up: { hours: 8, minutes: 30 },
+  //     //   down: { hours: 23, minutes: 30 },
+  //     // },
+  //     // monday: {
+  //     //   up: { hours: 6, minutes: 30 },
+  //     //   down: { hours: 21, minutes: 30 },
+  //     // }
+  //     const notificationTimeLocal = new Date('2024-03-11T00:15:00'); // Monday (transitioned from Sunday)
+  //     // next day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-11T06:30:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+
+  //   it('should handle sleep time at midnight for specific days', () => {
+  //     //  friday: {
+  //     //   up: { hours: 9, minutes: 0 },
+  //     //   down: { hours: 0, minutes: 0 },
+  //     // },
+  //     // saturday: {
+  //     //   up: { hours: 10, minutes: 0 },
+  //     //   down: { hours: 1, minutes: 0 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-15T23:30:00'); // Friday
+  //     // next day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-16T10:00:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+
+  //   it('should handle notification time within wakeup period for specific day', () => {
+  //     // thursday: {
+  //     //   up: { hours: 6, minutes: 0 },
+  //     //   down: { hours: 21, minutes: 0 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-14T07:30:00'); // Thursday
+  //     // current day not wait
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(notificationTimeLocal);
+  //   });
+
+  //   it('should adjust notification time to next day wakeup time if it is after fall asleep time for specific day', () => {
+  //     //  tuesday: {
+  //     //     up: { hours: 8, minutes: 0 },
+  //     //     down: { hours: 23, minutes: 0 },
+  //     //   },
+  //     //   wednesday: {
+  //     //     up: { hours: 7, minutes: 30 },
+  //     //     down: { hours: 22, minutes: 30 },
+  //     //   },
+  //     const notificationTimeLocal = new Date('2024-03-12T23:15:00'); // Tuesday
+  //     // next day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-13T07:30:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+
+  //   it('should handle notification time at day boundary', () => {
+  //     //  tuesday: {
+  //     //     up: { hours: 8, minutes: 0 },
+  //     //     down: { hours: 23, minutes: 0 },
+  //     //   },
+  //     //   wednesday: {
+  //     //     up: { hours: 7, minutes: 30 },
+  //     //     down: { hours: 22, minutes: 30 },
+  //     //   },
+  //     const notificationTimeLocal = new Date('2024-03-13T00:00:00'); // Wednesday (transitioned from Tuesday)
+  //     // next day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-13T07:30:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+
+  //   it('should handle notification time before wakeup time for specific day', () => {
+  //     // friday: {
+  //     //   up: { hours: 9, minutes: 0 },
+  //     //   down: { hours: 0, minutes: 0 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-15T08:15:00'); // Friday
+  //     // current day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-15T09:00:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+
+  //   it('should handle notification time after fall asleep time for specific day', () => {
+  //     // saturday: {
+  //     //   up: { hours: 10, minutes: 0 },
+  //     //   down: { hours: 1, minutes: 0 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-16T02:45:00'); // Saturday
+  //     // current day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-16T10:00:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+  // });
+  // dayByDayTimeSleepData v2 - checked
+  // dayByDayTimeSleepData v2 - checked
+  // dayByDayTimeSleepData v2 - checked
+  // dayByDayTimeSleepData v3 - not checked
+  // dayByDayTimeSleepData v3 - not checked
+  // dayByDayTimeSleepData v3 - not checked
+  // describe('getNotificationTimeAdjusted with isDayByDayOptionEnabled - dayByDayTimeSleepData v3', () => {
+  //   const baseTimeSleepSettings: TimeSleepSettings = {
+  //     isTimeSleepEnabled: true,
+  //     isDayByDayOptionEnabled: true,
+  //     generalTimeSleepData: {
+  //       up: { hours: 8, minutes: 0 },
+  //       down: { hours: 22, minutes: 0 },
+  //     },
+  //     dayByDayTimeSleepData: {
+  //       monday: {
+  //         up: { hours: 7, minutes: 0 },
+  //         down: { hours: 23, minutes: 0 },
+  //       },
+  //       tuesday: {
+  //         up: { hours: 6, minutes: 30 },
+  //         down: { hours: 22, minutes: 30 },
+  //       },
+  //       wednesday: {
+  //         up: { hours: 8, minutes: 30 },
+  //         down: { hours: 0, minutes: 0 },
+  //       },
+  //       thursday: {
+  //         up: { hours: 7, minutes: 30 },
+  //         down: { hours: 23, minutes: 30 },
+  //       },
+  //       friday: {
+  //         up: { hours: 9, minutes: 0 },
+  //         down: { hours: 1, minutes: 0 },
+  //       },
+  //       saturday: {
+  //         up: { hours: 10, minutes: 0 },
+  //         down: { hours: 2, minutes: 0 },
+  //       },
+  //       sunday: {
+  //         up: { hours: 8, minutes: 0 },
+  //         down: { hours: 0, minutes: 0 },
+  //       },
+  //     },
+  //   };
+
+  //   it('should adjust notification time when it is before wakeup time on Monday', () => {
+  //     //  monday: {
+  //     //   up: { hours: 7, minutes: 0 },
+  //     //   down: { hours: 23, minutes: 0 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-11T06:30:00'); // Monday
+  //     // current day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-11T07:00:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+
+  //   it('should handle notification time within wakeup period on Tuesday', () => {
+  //     //  tuesday: {
+  //     //   up: { hours: 6, minutes: 30 },
+  //     //   down: { hours: 22, minutes: 30 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-12T12:00:00'); // Tuesday
+  //     // current day not wait
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(notificationTimeLocal);
+  //   });
+
+  //   it('should adjust notification time when it is after fall asleep time on Wednesday', () => {
+  //     //  wednesday: {
+  //     //   up: { hours: 8, minutes: 30 },
+  //     //   down: { hours: 0, minutes: 0 },
+  //     // },
+  //     //  thursday: {
+  //     //   up: { hours: 7, minutes: 30 },
+  //     //   down: { hours: 23, minutes: 30 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-13T23:45:00'); // Wednesday
+  //     // next day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-14T07:30:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+
+  //   it('should handle notification time at day boundary on Friday', () => {
+  //     //  friday: {
+  //     //   up: { hours: 9, minutes: 0 },
+  //     //   down: { hours: 1, minutes: 0 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-15T00:30:00'); // Friday
+  //     // current day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-15T09:00:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+
+  //   it('should adjust notification time when it is after fall asleep time on Saturday', () => {
+  //     //  saturday: {
+  //     //   up: { hours: 10, minutes: 0 },
+  //     //   down: { hours: 2, minutes: 0 },
+  //     // },
+  //     //  sunday: {
+  //     //   up: { hours: 8, minutes: 0 },
+  //     //   down: { hours: 0, minutes: 0 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-16T02:30:00'); // Saturday
+  //     // current day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-16T10:00:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+
+  //   it('should adjust notification time when it is after fall asleep time on Saturday', () => {
+  //     //  saturday: {
+  //     //   up: { hours: 10, minutes: 0 },
+  //     //   down: { hours: 2, minutes: 0 },
+  //     // },
+  //     //  sunday: {
+  //     //   up: { hours: 8, minutes: 0 },
+  //     //   down: { hours: 0, minutes: 0 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-16T02:30:00'); // Saturday
+  //     // next day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-17T08:00:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+
+  //   it('should handle transition from Sunday to Monday when notification time is after fall asleep time', () => {
+  //     //  sunday: {
+  //     //   up: { hours: 8, minutes: 0 },
+  //     //   down: { hours: 0, minutes: 0 },
+  //     // },
+  //     //  monday: {
+  //     //   up: { hours: 7, minutes: 0 },
+  //     //   down: { hours: 23, minutes: 0 },
+  //     // },
+  //     const notificationTimeLocal = new Date('2024-03-18T00:15:00'); // Monday (transitioned from Sunday)
+  //     // next day after wake up
+  //     const expectedAdjustedTime = new Date('2024-03-18T07:00:00');
+  //     expect(
+  //       notificationService.getNotificationTimeAdjusted(
+  //         notificationTimeLocal,
+  //         baseTimeSleepSettings,
+  //       ),
+  //     ).toEqual(expectedAdjustedTime);
+  //   });
+  // });
+  // dayByDayTimeSleepData v3 - not checked
+  // dayByDayTimeSleepData v3 - not checked
+  // dayByDayTimeSleepData v3 - not checked
+});
+// describe('getNotificationTimeAdjusted with isDayByDayOptionEnabled', () => {
+//   const baseTimeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: true,
+//     isDayByDayOptionEnabled: true,
+//     generalTimeSleepData: {
+//       up: { hours: 7, minutes: 0 },
+//       down: { hours: 22, minutes: 0 },
+//     },
+//     dayByDayTimeSleepData: {
+//       monday: {
+//         up: { hours: 6, minutes: 30 },
+//         down: { hours: 21, minutes: 30 },
+//       },
+//       tuesday: {
+//         up: { hours: 8, minutes: 0 },
+//         down: { hours: 23, minutes: 0 },
+//       },
+//       wednesday: {
+//         up: { hours: 7, minutes: 30 },
+//         down: { hours: 22, minutes: 30 },
+//       },
+//       thursday: {
+//         up: { hours: 6, minutes: 0 },
+//         down: { hours: 21, minutes: 0 },
+//       },
+//       friday: {
+//         up: { hours: 9, minutes: 0 },
+//         down: { hours: 0, minutes: 0 },
+//       },
+//       saturday: {
+//         up: { hours: 10, minutes: 0 },
+//         down: { hours: 1, minutes: 0 },
+//       },
+//       sunday: {
+//         up: { hours: 8, minutes: 30 },
+//         down: { hours: 23, minutes: 30 },
+//       },
+//     },
+//   };
+
+//   it('should adjust notification time based on day-by-day sleep settings', () => {
+//     const notificationTimeLocal = new Date('2024-03-11T06:00:00'); // Monday
+//     const expectedAdjustedTime = new Date('2024-03-11T06:30:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle transition between days of the week', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T23:30:00'); // Sunday to Monday
+//     const expectedAdjustedTime = new Date('2024-03-11T06:30:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle sleep time at midnight for specific days', () => {
+//     const notificationTimeLocal = new Date('2024-03-16T00:30:00'); // Saturday
+//     const expectedAdjustedTime = new Date('2024-03-16T10:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+// });
+
+//
+//
+//
+//
+
+// GPT
+// describe('getNotificationTimeAdjusted with isDayByDayOptionEnabled and Sleep Time Offsets', () => {
+//   const beforeSleepMinutes = 30;
+//   const afterSleepMinutes = 30;
+//   const baseTimeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: true,
+//     isDayByDayOptionEnabled: true,
+//     generalTimeSleepData: {
+//       up: { hours: 7, minutes: 0 },
+//       down: { hours: 22, minutes: 0 },
+//     },
+//     dayByDayTimeSleepData: {
+//       monday: {
+//         up: { hours: 6, minutes: 30 },
+//         down: { hours: 21, minutes: 30 },
+//       },
+//       tuesday: {
+//         up: { hours: 8, minutes: 0 },
+//         down: { hours: 23, minutes: 0 },
+//       },
+//       wednesday: {
+//         up: { hours: 7, minutes: 30 },
+//         down: { hours: 22, minutes: 30 },
+//       },
+//       thursday: {
+//         up: { hours: 6, minutes: 0 },
+//         down: { hours: 21, minutes: 0 },
+//       },
+//       friday: {
+//         up: { hours: 9, minutes: 0 },
+//         down: { hours: 0, minutes: 0 },
+//       },
+//       saturday: {
+//         up: { hours: 10, minutes: 0 },
+//         down: { hours: 1, minutes: 0 },
+//       },
+//       sunday: {
+//         up: { hours: 8, minutes: 30 },
+//         down: { hours: 23, minutes: 30 },
+//       },
+//     },
+//   };
+
+//   it('should adjust notification time for early morning before wake-up time with offset', () => {
+//     const notificationTimeLocal = new Date('2024-03-11T06:00:00'); // Monday
+//     const expectedAdjustedTime = new Date('2024-03-11T07:00:00'); // Adjusted for afterSleepMinutes
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//         beforeSleepMinutes,
+//         afterSleepMinutes,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle transition between days of the week with sleep offsets', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T23:00:00'); // Sunday to Monday
+//     const expectedAdjustedTime = new Date('2024-03-11T07:00:00'); // Adjusted for afterSleepMinutes
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//         beforeSleepMinutes,
+//         afterSleepMinutes,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should adjust for sleep time at midnight with offsets', () => {
+//     const notificationTimeLocal = new Date('2024-03-16T00:30:00'); // Saturday
+//     const expectedAdjustedTime = new Date('2024-03-16T10:30:00'); // Adjusted for afterSleepMinutes
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//         beforeSleepMinutes,
+//         afterSleepMinutes,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('notification time within wakeup period should remain unchanged with offsets', () => {
+//     const notificationTimeLocal = new Date('2024-03-14T08:00:00'); // Thursday
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//         beforeSleepMinutes,
+//         afterSleepMinutes,
+//       ),
+//     ).toEqual(notificationTimeLocal);
+//   });
+
+//   it('should adjust notification time to next day wakeup time if after fall asleep time', () => {
+//     const notificationTimeLocal = new Date('2024-03-12T23:00:00'); // Tuesday
+//     const expectedAdjustedTime = new Date('2024-03-13T08:00:00'); // Adjusted for afterSleepMinutes
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//         beforeSleepMinutes,
+//         afterSleepMinutes,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle notification time at day boundary with offsets', () => {
+//     const notificationTimeLocal = new Date('2024-03-13T00:00:00'); // Tuesday to Wednesday
+//     const expectedAdjustedTime = new Date('2024-03-13T08:00:00'); // Adjusted for afterSleepMinutes
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//         beforeSleepMinutes,
+//         afterSleepMinutes,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should adjust notification time before wakeup time for specific day with offset', () => {
+//     const notificationTimeLocal = new Date('2024-03-15T08:00:00'); // Friday
+//     const expectedAdjustedTime = new Date('2024-03-15T09:30:00'); // Considering beforeSleepMinutes
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//         beforeSleepMinutes,
+//         afterSleepMinutes,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should adjust notification time after fall asleep time for specific day with offsets', () => {
+//     const notificationTimeLocal = new Date('2024-03-17T01:00:00'); // Saturday
+//     const expectedAdjustedTime = new Date('2024-03-17T08:30:00'); // Adjusted for afterSleepMinutes
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//         beforeSleepMinutes,
+//         afterSleepMinutes,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+// });
+
+// CLOUD  beforeSleepMinutes = 30 afterSleepMinutes = 30;
+// describe('getNotificationTimeAdjusted with isDayByDayOptionEnabled', () => {
+//   const baseTimeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: true,
+//     isDayByDayOptionEnabled: true,
+//     generalTimeSleepData: {
+//       up: { hours: 7, minutes: 0 },
+//       down: { hours: 22, minutes: 0 },
+//     },
+//     dayByDayTimeSleepData: {
+//       monday: {
+//         up: { hours: 6, minutes: 30 },
+//         down: { hours: 21, minutes: 30 },
+//       },
+//       tuesday: {
+//         up: { hours: 8, minutes: 0 },
+//         down: { hours: 23, minutes: 0 },
+//       },
+//       wednesday: {
+//         up: { hours: 7, minutes: 30 },
+//         down: { hours: 22, minutes: 30 },
+//       },
+//       thursday: {
+//         up: { hours: 6, minutes: 0 },
+//         down: { hours: 21, minutes: 0 },
+//       },
+//       friday: {
+//         up: { hours: 9, minutes: 0 },
+//         down: { hours: 0, minutes: 0 },
+//       },
+//       saturday: {
+//         up: { hours: 10, minutes: 0 },
+//         down: { hours: 1, minutes: 0 },
+//       },
+//       sunday: {
+//         up: { hours: 8, minutes: 30 },
+//         down: { hours: 23, minutes: 30 },
+//       },
+//     },
+//   };
+
+//   const beforeSleepMinutes = 30;
+//   const afterSleepMinutes = 30;
+
+//   it('should adjust notification time based on day-by-day sleep settings', () => {
+//     const notificationTimeLocal = new Date('2024-03-11T06:00:00'); // Monday
+//     const expectedAdjustedTime = new Date('2024-03-11T07:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//         beforeSleepMinutes,
+//         afterSleepMinutes,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle transition between days of the week', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T23:00:00'); // Sunday to Monday
+//     const expectedAdjustedTime = new Date('2024-03-11T07:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//         beforeSleepMinutes,
+//         afterSleepMinutes,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle sleep time at midnight for specific days', () => {
+//     const notificationTimeLocal = new Date('2024-03-16T00:30:00'); // Saturday
+//     const expectedAdjustedTime = new Date('2024-03-16T10:30:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//         beforeSleepMinutes,
+//         afterSleepMinutes,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle notification time within wakeup period for specific day', () => {
+//     const notificationTimeLocal = new Date('2024-03-14T08:30:00'); // Thursday
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//         beforeSleepMinutes,
+//         afterSleepMinutes,
+//       ),
+//     ).toEqual(notificationTimeLocal);
+//   });
+
+//   it('should adjust notification time to next day wakeup time if it is after fall asleep time for specific day', () => {
+//     //  tuesday: {
+//     //     up: { hours: 8, minutes: 0 },
+//     //     down: { hours: 23, minutes: 0 },
+//     //   },
+//     //   wednesday: {
+//     //     up: { hours: 7, minutes: 30 },
+//     //     down: { hours: 22, minutes: 30 },
+//     //   },
+//     const notificationTimeLocal = new Date('2024-03-12T23:00:00'); // Tuesday
+//     const expectedAdjustedTime = new Date('2024-03-13T08:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//         beforeSleepMinutes,
+//         afterSleepMinutes,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle notification time at day boundary', () => {
+//     const notificationTimeLocal = new Date('2024-03-13T00:00:00'); // Tuesday(12 march) to Wednesday(13 march)
+//     const expectedAdjustedTime = new Date('2024-03-13T08:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//         beforeSleepMinutes,
+//         afterSleepMinutes,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle notification time before wakeup time for specific day', () => {
+//     const notificationTimeLocal = new Date('2024-03-15T08:30:00'); // Friday
+//     const expectedAdjustedTime = new Date('2024-03-15T09:30:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//         beforeSleepMinutes,
+//         afterSleepMinutes,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle notification time after fall asleep time for specific day', () => {
+//     // saturday: {
+//     //   up: { hours: 10, minutes: 0 },
+//     //   down: { hours: 1, minutes: 0 },
+//     // },
+//     // sunday: {
+//     //   up: { hours: 8, minutes: 30 },
+//     //   down: { hours: 23, minutes: 30 },
+//     // },
+//     const notificationTimeLocal = new Date('2024-03-17T01:00:00'); // Saturday
+//     // next day after wake up
+//     const expectedAdjustedTime = new Date('2024-03-17T09:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//         beforeSleepMinutes,
+//         afterSleepMinutes,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+// });
+
+// CLOUD new test monday - 0
+// describe('getNotificationTimeAdjusted with isDayByDayOptionEnabled', () => {
+//   const baseTimeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: true,
+//     isDayByDayOptionEnabled: true,
+//     generalTimeSleepData: {
+//       up: { hours: 7, minutes: 0 },
+//       down: { hours: 22, minutes: 0 },
+//     },
+//     dayByDayTimeSleepData: {
+//       monday: {
+//         up: { hours: 6, minutes: 30 },
+//         down: { hours: 21, minutes: 30 },
+//       },
+//       tuesday: {
+//         up: { hours: 8, minutes: 0 },
+//         down: { hours: 23, minutes: 0 },
+//       },
+//       wednesday: {
+//         up: { hours: 7, minutes: 30 },
+//         down: { hours: 22, minutes: 30 },
+//       },
+//       thursday: {
+//         up: { hours: 6, minutes: 0 },
+//         down: { hours: 21, minutes: 0 },
+//       },
+//       friday: {
+//         up: { hours: 9, minutes: 0 },
+//         down: { hours: 0, minutes: 0 },
+//       },
+//       saturday: {
+//         up: { hours: 10, minutes: 0 },
+//         down: { hours: 1, minutes: 0 },
+//       },
+//       sunday: {
+//         up: { hours: 8, minutes: 30 },
+//         down: { hours: 23, minutes: 30 },
+//       },
+//     },
+//   };
+
+//   it('should adjust notification time based on day-by-day sleep settings', () => {
+//     //  monday: {
+//     //   up: { hours: 6, minutes: 30 },
+//     //   down: { hours: 21, minutes: 30 },
+//     // }
+//     const notificationTimeLocal = new Date('2024-03-11T06:00:00'); // Monday
+//     // const notificationTimeLocal = new Date('2024-03-17T01:30:00'); // Saturday
+//     const dayOfWeekNumber = getDay(notificationTimeLocal);
+//     console.log('00000000000000000000000');
+//     console.log('dayOfWeekNumber   ', dayOfWeekNumber);
+//     const currentDay = notificationService.getCurrentDayOfWeek(
+//       notificationTimeLocal,
+//     );
+//     console.log('currentDay', currentDay);
+//     const nextDay = notificationService.getNextDayOfWeek(
+//       notificationTimeLocal,
+//     );
+//     console.log('nextDay', nextDay);
+//     // const expectedAdjustedTime = new Date('2024-03-17T08:30:00');
+//     const expectedAdjustedTime = new Date('2024-03-11T06:30:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle transition between days of the week', () => {
+//     //  sunday: {
+//     //   up: { hours: 8, minutes: 30 },
+//     //   down: { hours: 23, minutes: 30 },
+//     // },
+//     // monday: {
+//     //   up: { hours: 6, minutes: 30 },
+//     //   down: { hours: 21, minutes: 30 },
+//     // }
+//     const notificationTimeLocal = new Date('2024-03-11T00:30:00'); // Monday (transitioned from Sunday)
+//     const expectedAdjustedTime = new Date('2024-03-11T06:30:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle sleep time at midnight for specific days', () => {
+//     //  friday: {
+//     //   up: { hours: 9, minutes: 0 },
+//     //   down: { hours: 0, minutes: 0 },
+//     // },
+//     const notificationTimeLocal = new Date('2024-03-15T23:30:00'); // Friday
+//     const expectedAdjustedTime = new Date('2024-03-16T09:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle notification time within wakeup period for specific day', () => {
+//     // thursday: {
+//     //   up: { hours: 6, minutes: 0 },
+//     //   down: { hours: 21, minutes: 0 },
+//     // },
+//     const notificationTimeLocal = new Date('2024-03-14T08:00:00'); // Thursday
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(notificationTimeLocal);
+//   });
+
+//   it('should adjust notification time to next day wakeup time if it is after fall asleep time for specific day', () => {
+//     //  tuesday: {
+//     //     up: { hours: 8, minutes: 0 },
+//     //     down: { hours: 23, minutes: 0 },
+//     //   },
+//     //   wednesday: {
+//     //     up: { hours: 7, minutes: 30 },
+//     //     down: { hours: 22, minutes: 30 },
+//     //   },
+//     const notificationTimeLocal = new Date('2024-03-12T23:30:00'); // Tuesday
+//     const expectedAdjustedTime = new Date('2024-03-13T07:30:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle notification time at day boundary', () => {
+//     //  tuesday: {
+//     //     up: { hours: 8, minutes: 0 },
+//     //     down: { hours: 23, minutes: 0 },
+//     //   },
+//     //   wednesday: {
+//     //     up: { hours: 7, minutes: 30 },
+//     //     down: { hours: 22, minutes: 30 },
+//     //   },
+//     const notificationTimeLocal = new Date('2024-03-13T00:00:00'); // Wednesday (transitioned from Tuesday)
+//     const expectedAdjustedTime = new Date('2024-03-13T07:30:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle notification time before wakeup time for specific day', () => {
+//     // friday: {
+//     //   up: { hours: 9, minutes: 0 },
+//     //   down: { hours: 0, minutes: 0 },
+//     // },
+//     const notificationTimeLocal = new Date('2024-03-15T08:30:00'); // Friday
+//     const expectedAdjustedTime = new Date('2024-03-15T09:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle notification time after fall asleep time for specific day', () => {
+//     // saturday: {
+//     //   up: { hours: 10, minutes: 0 },
+//     //   down: { hours: 1, minutes: 0 },
+//     // },
+//     const notificationTimeLocal = new Date('2024-03-16T01:30:00'); // Saturday
+//     const expectedAdjustedTime = new Date('2024-03-16T10:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+// });
+// CLOUD new test monday - 0
+// CLOUD new test monday - 0
+// CLOUD new test monday - 0
+// проверенная база
+// проверенная база
+// проверенная база
+// проверенная база
+// проверенная база
+// describe('getNotificationTimeAdjusted with isDayByDayOptionEnabled', () => {
+//   const baseTimeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: true,
+//     isDayByDayOptionEnabled: true,
+//     generalTimeSleepData: {
+//       up: { hours: 7, minutes: 0 },
+//       down: { hours: 22, minutes: 0 },
+//     },
+//     dayByDayTimeSleepData: {
+//       monday: {
+//         up: { hours: 6, minutes: 30 },
+//         down: { hours: 21, minutes: 30 },
+//       },
+//       tuesday: {
+//         up: { hours: 8, minutes: 0 },
+//         down: { hours: 23, minutes: 0 },
+//       },
+//       wednesday: {
+//         up: { hours: 7, minutes: 30 },
+//         down: { hours: 22, minutes: 30 },
+//       },
+//       thursday: {
+//         up: { hours: 6, minutes: 0 },
+//         down: { hours: 21, minutes: 0 },
+//       },
+//       friday: {
+//         up: { hours: 9, minutes: 0 },
+//         down: { hours: 0, minutes: 0 },
+//       },
+//       saturday: {
+//         up: { hours: 10, minutes: 0 },
+//         down: { hours: 1, minutes: 0 },
+//       },
+//       sunday: {
+//         up: { hours: 8, minutes: 30 },
+//         down: { hours: 23, minutes: 30 },
+//       },
+//     },
+//   };
+
+//   it('should adjust notification time based on day-by-day sleep settings', () => {
+//     //  monday: {
+//     //   up: { hours: 6, minutes: 30 },
+//     //   down: { hours: 21, minutes: 30 },
+//     // }
+//     const notificationTimeLocal = new Date('2024-03-11T06:00:00'); // Monday
+//     const expectedAdjustedTime = new Date('2024-03-11T06:30:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle transition between days of the week', () => {
+//     //  monday: {
+//     //   up: { hours: 6, minutes: 30 },
+//     //   down: { hours: 21, minutes: 30 },
+//     // }
+//     // sunday: {
+//     //   up: { hours: 8, minutes: 30 },
+//     //   down: { hours: 23, minutes: 30 },
+//     // },
+//     const notificationTimeLocal = new Date('2024-03-10T23:30:00'); // Sunday to Monday
+//     const expectedAdjustedTime = new Date('2024-03-11T06:30:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle sleep time at midnight for specific days', () => {
+//     //  saturday: {
+//     //   up: { hours: 10, minutes: 0 },
+//     //   down: { hours: 1, minutes: 0 },
+//     // },
+//     const notificationTimeLocal = new Date('2024-03-16T00:30:00'); // Saturday
+//     const expectedAdjustedTime = new Date('2024-03-16T10:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle notification time within wakeup period for specific day', () => {
+//     // thursday: {
+//     //   up: { hours: 6, minutes: 0 },
+//     //   down: { hours: 21, minutes: 0 },
+//     // },
+//     const notificationTimeLocal = new Date('2024-03-14T08:00:00'); // Thursday
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(notificationTimeLocal);
+//   });
+
+//   it('should adjust notification time to next day wakeup time if it is after fall asleep time for specific day', () => {
+//     //  tuesday: {
+//     //     up: { hours: 8, minutes: 0 },
+//     //     down: { hours: 23, minutes: 0 },
+//     //   },
+//     //   wednesday: {
+//     //     up: { hours: 7, minutes: 30 },
+//     //     down: { hours: 22, minutes: 30 },
+//     //   },
+//     const notificationTimeLocal = new Date('2024-03-12T23:30:00'); // Tuesday
+//     const expectedAdjustedTime = new Date('2024-03-13T07:30:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle notification time at day boundary', () => {
+//     //  tuesday: {
+//     //     up: { hours: 8, minutes: 0 },
+//     //     down: { hours: 23, minutes: 0 },
+//     //   },
+//     //   wednesday: {
+//     //     up: { hours: 7, minutes: 30 },
+//     //     down: { hours: 22, minutes: 30 },
+//     //   },
+//     const notificationTimeLocal = new Date('2024-03-13T00:00:00'); // Tuesday(12 march) to Wednesday(13 march)
+//     const expectedAdjustedTime = new Date('2024-03-13T07:30:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle notification time before wakeup time for specific day', () => {
+//     // friday: {
+//     //   up: { hours: 9, minutes: 0 },
+//     //   down: { hours: 0, minutes: 0 },
+//     // },
+//     const notificationTimeLocal = new Date('2024-03-15T08:30:00'); // Friday
+//     const expectedAdjustedTime = new Date('2024-03-15T09:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle notification time after fall asleep time for specific day', () => {
+//     // saturday: {
+//     //   up: { hours: 10, minutes: 0 },
+//     //   down: { hours: 1, minutes: 0 },
+//     // },
+//     // sunday: {
+//     //   up: { hours: 8, minutes: 30 },
+//     //   down: { hours: 23, minutes: 30 },
+//     // },
+//     const notificationTimeLocal = new Date('2024-03-17T01:30:00'); // Saturday
+//     const dayOfWeekNumber = getDay(notificationTimeLocal);
+//     console.log('00000000000000000000000');
+//     console.log('dayOfWeekNumber   ', dayOfWeekNumber);
+//     const currentDay = notificationService.getCurrentDayOfWeek(
+//       notificationTimeLocal,
+//     );
+//     console.log('currentDay', currentDay);
+//     const nextDay = notificationService.getNextDayOfWeek(
+//       notificationTimeLocal,
+//     );
+//     console.log('nextDay', nextDay);
+//     const expectedAdjustedTime = new Date('2024-03-17T08:30:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+// });
+
+// проверенная база
+// проверенная база
+// проверенная база
+// проверенная база
+// проверенная база
+// проверенная база
+// проверенная база
+// проверенная база
+// проверенная база
+// describe('Test methods inside correctNotificationTimeForSleep', () => {
+//   it('should check time sleep settings', () => {
+//     const timeSleepSettings: TimeSleepSettings = {
+//       isTimeSleepEnabled: false,
+//       isDayByDayOptionEnabled: false,
+//       generalTimeSleepData: generalTimeSleepDataDefault,
+//     };
+
+//     let result =
+//       notificationService.isTimeSleepSettingsEnabled(timeSleepSettings);
+//     expect(result).toEqual(false);
+
+//     timeSleepSettings.isTimeSleepEnabled = true;
+//     result =
+//       notificationService.isTimeSleepSettingsEnabled(timeSleepSettings);
+//     expect(result).toEqual(true);
+//   });
+// });
+
+// describe('getNotificationTimeAdjusted', () => {
+//   const baseTimeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: true,
+//     isDayByDayOptionEnabled: false,
+//     generalTimeSleepData: {
+//       up: { hours: 7, minutes: 0 },
+//       down: { hours: 22, minutes: 0 },
+//     },
+//   };
+
+//   it('should return the same notification time if it is within the wakeup period', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T12:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(notificationTimeLocal);
+//   });
+
+//   it('should adjust the notification time to the wakeup time if it is before the wakeup time on the same day', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T06:00:00');
+//     const expectedAdjustedTime = new Date('2024-03-10T07:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should adjust the notification time to the next day wakeup time if it is after the fall asleep time', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T23:00:00');
+//     const expectedAdjustedTime = new Date('2024-03-11T07:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should adjust the notification time to the wakeup time if it is exactly at the fall asleep time', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T22:00:00');
+//     const expectedAdjustedTime = new Date('2024-03-11T07:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should adjust the notification time to the wakeup time if it is exactly at the wakeup time', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T07:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(notificationTimeLocal);
+//   });
+
+//   it('should handle time sleep settings with same wakeup and fall asleep times', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T12:00:00');
+//     const timeSleepSettings: TimeSleepSettings = {
+//       ...baseTimeSleepSettings,
+//       generalTimeSleepData: {
+//         up: { hours: 7, minutes: 0 },
+//         down: { hours: 7, minutes: 0 },
+//       },
+//     };
+//     const expectedAdjustedTime = new Date('2024-03-11T07:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         timeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle time sleep settings with fall asleep time at midnight', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T23:30:00');
+//     const timeSleepSettings: TimeSleepSettings = {
+//       ...baseTimeSleepSettings,
+//       generalTimeSleepData: {
+//         up: { hours: 8, minutes: 0 },
+//         down: { hours: 0, minutes: 0 },
+//       },
+//     };
+//     const expectedAdjustedTime = new Date('2024-03-11T08:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         timeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+
+//   it('should handle time sleep settings with wakeup time at midnight', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T23:30:00');
+//     const timeSleepSettings: TimeSleepSettings = {
+//       ...baseTimeSleepSettings,
+//       generalTimeSleepData: {
+//         up: { hours: 0, minutes: 0 },
+//         down: { hours: 22, minutes: 0 },
+//       },
+//     };
+//     const expectedAdjustedTime = new Date('2024-03-11T00:00:00');
+//     expect(
+//       notificationService.getNotificationTimeAdjusted(
+//         notificationTimeLocal,
+//         timeSleepSettings,
+//       ),
+//     ).toEqual(expectedAdjustedTime);
+//   });
+// });
+// проверена база
+// проверена база
+// проверена база
+// проверена база
+// проверена база
+// проверена база
+// проверена база
+// проверена база
+// проверена база
+// проверена база
+// проверена база
+// проверена база
+// проверена база
+// проверена база
+// проверена база
+// проверена база
+
+// describe('adjustSleepIntervalForNotificationTime', () => {
+
+//   it('should return the same sleep interval when notification time is within sleep interval', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T23:30:00');
+//     const sleepInterval = {
+//       start: new Date('2024-03-10T22:00:00'),
+//       end: new Date('2024-03-11T07:30:00'),
+//     };
+//     expect(
+//       notificationService.adjustSleepIntervalForNotificationTime(
+//         notificationTimeLocal,
+//         sleepInterval,
+//       ),
+//     ).toEqual(sleepInterval);
+//   });
+
+//   it('should return the same sleep interval when notification time is before sleep start and same day', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T21:30:00');
+//     const sleepInterval = {
+//       start: new Date('2024-03-10T22:00:00'),
+//       end: new Date('2024-03-11T07:30:00'),
+//     };
+//     expect(
+//       notificationService.adjustSleepIntervalForNotificationTime(
+//         notificationTimeLocal,
+//         sleepInterval,
+//       ),
+//     ).toEqual(sleepInterval);
+//   });
+
+//   it('should return the same sleep interval when notification time is after sleep interval', () => {
+//     const notificationTimeLocal = new Date('2024-03-11T08:00:00');
+//     const sleepInterval = {
+//       start: new Date('2024-03-10T22:00:00'),
+//       end: new Date('2024-03-11T07:30:00'),
+//     };
+//     expect(
+//       notificationService.adjustSleepIntervalForNotificationTime(
+//         notificationTimeLocal,
+//         sleepInterval,
+//       ),
+//     ).toEqual(sleepInterval);
+//   });
+
+//   it('should return the same sleep interval when notification time is equal to sleep start time', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T22:00:00');
+//     const sleepInterval = {
+//       start: new Date('2024-03-10T22:00:00'),
+//       end: new Date('2024-03-11T07:30:00'),
+//     };
+//     expect(
+//       notificationService.adjustSleepIntervalForNotificationTime(
+//         notificationTimeLocal,
+//         sleepInterval,
+//       ),
+//     ).toEqual(sleepInterval);
+//   });
+
+//   it('should return the same sleep interval when notification time is equal to sleep end time', () => {
+//     const notificationTimeLocal = new Date('2024-03-11T07:30:00');
+//     const sleepInterval = {
+//       start: new Date('2024-03-10T22:00:00'),
+//       end: new Date('2024-03-11T07:30:00'),
+//     };
+//     expect(
+//       notificationService.adjustSleepIntervalForNotificationTime(
+//         notificationTimeLocal,
+//         sleepInterval,
+//       ),
+//     ).toEqual(sleepInterval);
+//   });
+// });
+// describe('isNotificationTimeWithinSleepInterval', () => {
+//   it('should return true when notification time is within sleep interval', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T23:30:00');
+//     const sleepInterval = {
+//       start: new Date('2024-03-10T22:00:00'),
+//       end: new Date('2024-03-11T07:30:00'),
+//     };
+//     expect(
+//       notificationService.isNotificationTimeWithinSleepInterval(
+//         notificationTimeLocal,
+//         sleepInterval,
+//       ),
+//     ).toBe(true);
+//   });
+
+//   it('should return false when notification time is before sleep interval', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T21:30:00');
+//     const sleepInterval = {
+//       start: new Date('2024-03-10T22:00:00'),
+//       end: new Date('2024-03-11T07:30:00'),
+//     };
+//     expect(
+//       notificationService.isNotificationTimeWithinSleepInterval(
+//         notificationTimeLocal,
+//         sleepInterval,
+//       ),
+//     ).toBe(false);
+//   });
+
+//   it('should return false when notification time is after sleep interval', () => {
+//     const notificationTimeLocal = new Date('2024-03-11T08:00:00');
+//     const sleepInterval = {
+//       start: new Date('2024-03-10T22:00:00'),
+//       end: new Date('2024-03-11T07:30:00'),
+//     };
+//     expect(
+//       notificationService.isNotificationTimeWithinSleepInterval(
+//         notificationTimeLocal,
+//         sleepInterval,
+//       ),
+//     ).toBe(false);
+//   });
+
+//   it('should return true when notification time is equal to sleep start time', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T22:00:00');
+//     const sleepInterval = {
+//       start: new Date('2024-03-10T22:00:00'),
+//       end: new Date('2024-03-11T07:30:00'),
+//     };
+//     expect(
+//       notificationService.isNotificationTimeWithinSleepInterval(
+//         notificationTimeLocal,
+//         sleepInterval,
+//       ),
+//     ).toBe(true);
+//   });
+
+//   it('should return true when notification time is equal to sleep end time', () => {
+//     const notificationTimeLocal = new Date('2024-03-11T07:30:00');
+//     const sleepInterval = {
+//       start: new Date('2024-03-10T22:00:00'),
+//       end: new Date('2024-03-11T07:30:00'),
+//     };
+//     expect(
+//       notificationService.isNotificationTimeWithinSleepInterval(
+//         notificationTimeLocal,
+//         sleepInterval,
+//       ),
+//     ).toBe(true);
+//   });
+// });
+
+// describe('getSleepInterval with day-by-day settings', () => {
+//   const baseTimeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: true,
+//     isDayByDayOptionEnabled: true,
+//     generalTimeSleepData: {
+//       up: { hours: 7, minutes: 0 },
+//       down: { hours: 22, minutes: 0 },
+//     },
+//     dayByDayTimeSleepData: {
+//       monday: {
+//         up: { hours: 6, minutes: 30 },
+//         down: { hours: 21, minutes: 30 },
+//       },
+//       tuesday: {
+//         up: { hours: 8, minutes: 0 },
+//         down: { hours: 23, minutes: 0 },
+//       },
+//       wednesday: {
+//         up: { hours: 7, minutes: 30 },
+//         down: { hours: 22, minutes: 30 },
+//       },
+//       thursday: {
+//         up: { hours: 6, minutes: 0 },
+//         down: { hours: 21, minutes: 0 },
+//       },
+//       friday: {
+//         up: { hours: 9, minutes: 0 },
+//         down: { hours: 0, minutes: 0 },
+//       },
+//       saturday: {
+//         up: { hours: 10, minutes: 0 },
+//         down: { hours: 1, minutes: 0 },
+//       },
+//       sunday: {
+//         up: { hours: 8, minutes: 30 },
+//         down: { hours: 23, minutes: 30 },
+//       },
+//     },
+//   };
+
+//   it('should return correct sleep interval for Monday', () => {
+//     const notificationTimeLocal = new Date('2024-03-11T12:00:00');
+//     const expectedSleepInterval = {
+//       start: new Date('2024-03-11T21:30:00'),
+//       end: new Date('2024-03-12T06:30:00'),
+//     };
+//     expect(
+//       notificationService.getSleepInterval(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedSleepInterval);
+//   });
+
+//   it('should return correct sleep interval for Tuesday', () => {
+//     const notificationTimeLocal = new Date('2024-03-12T12:00:00');
+//     const expectedSleepInterval = {
+//       start: new Date('2024-03-12T23:00:00'),
+//       end: new Date('2024-03-13T08:00:00'),
+//     };
+//     expect(
+//       notificationService.getSleepInterval(
+//         notificationTimeLocal,
+//         baseTimeSleepSettings,
+//       ),
+//     ).toEqual(expectedSleepInterval);
+//   });
+
+// Другие тесты для остальных дней недели...
+
+// it('should fall back to general sleep settings if day-by-day settings are missing', () => {
+//   const notificationTimeLocal = new Date('2024-03-18T12:00:00');
+//   const timeSleepSettingsWithMissingDays: TimeSleepSettings = {
+//     ...baseTimeSleepSettings,
+//     dayByDayTimeSleepData: {
+//       monday: {
+//         up: { hours: 6, minutes: 30 },
+//         down: { hours: 21, minutes: 30 },
+//       },
+//       // Пропущены настройки для остальных дней
+//     },
+//   };
+//   const expectedSleepInterval = {
+//     start: new Date('2024-03-18T22:00:00'),
+//     end: new Date('2024-03-19T07:00:00'),
+//   };
+//   expect(
+//     notificationService.getSleepInterval(
+//       notificationTimeLocal,
+//       timeSleepSettingsWithMissingDays,
+//     ),
+//   ).toEqual(expectedSleepInterval);
+// });
+
+// =========
+// =========
+// =========
+// =========
+// =========
+// describe('getSleepInterval', () => {
+//   const baseTimeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: true,
+//     isDayByDayOptionEnabled: false,
+//     generalTimeSleepData: {
+//       up: { hours: 0, minutes: 0 },
+//       down: { hours: 0, minutes: 0 },
+//     },
+//   };
+
+//   it('should return correct sleep interval for simple case', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T12:00:00');
+//     const timeSleepSettings: TimeSleepSettings = {
+//       ...baseTimeSleepSettings,
+//       generalTimeSleepData: {
+//         up: { hours: 7, minutes: 30 },
+//         down: { hours: 22, minutes: 0 },
+//       },
+//     };
+//     const expectedSleepInterval = {
+//       start: new Date('2024-03-10T22:00:00'),
+//       end: new Date('2024-03-11T07:30:00'),
+//     };
+//     expect(
+//       notificationService.getSleepInterval(
+//         notificationTimeLocal,
+//         timeSleepSettings,
+//       ),
+//     ).toEqual(expectedSleepInterval);
+//   });
+
+//   it('should handle sleep interval crossing midnight', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T12:00:00');
+//     const timeSleepSettings: TimeSleepSettings = {
+//       ...baseTimeSleepSettings,
+//       generalTimeSleepData: {
+//         up: { hours: 6, minutes: 0 },
+//         down: { hours: 23, minutes: 30 },
+//       },
+//     };
+//     const expectedSleepInterval = {
+//       start: new Date('2024-03-10T23:30:00'),
+//       end: new Date('2024-03-11T06:00:00'),
+//     };
+//     expect(
+//       notificationService.getSleepInterval(
+//         notificationTimeLocal,
+//         timeSleepSettings,
+//       ),
+//     ).toEqual(expectedSleepInterval);
+//   });
+
+//   it('should handle sleep interval starting at midnight', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T12:00:00');
+//     const timeSleepSettings: TimeSleepSettings = {
+//       ...baseTimeSleepSettings,
+//       generalTimeSleepData: {
+//         up: { hours: 8, minutes: 0 },
+//         down: { hours: 0, minutes: 0 },
+//       },
+//     };
+//     const expectedSleepInterval = {
+//       start: new Date('2024-03-10T00:00:00'),
+//       end: new Date('2024-03-10T08:00:00'),
+//     };
+//     expect(
+//       notificationService.getSleepInterval(
+//         notificationTimeLocal,
+//         timeSleepSettings,
+//       ),
+//     ).toEqual(expectedSleepInterval);
+//   });
+
+//   it('should handle sleep interval ending at midnight', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T12:00:00');
+//     const timeSleepSettings: TimeSleepSettings = {
+//       ...baseTimeSleepSettings,
+//       generalTimeSleepData: {
+//         up: { hours: 0, minutes: 0 },
+//         down: { hours: 22, minutes: 30 },
+//       },
+//     };
+//     const expectedSleepInterval = {
+//       start: new Date('2024-03-10T22:30:00'),
+//       end: new Date('2024-03-11T00:00:00'),
+//     };
+//     expect(
+//       notificationService.getSleepInterval(
+//         notificationTimeLocal,
+//         timeSleepSettings,
+//       ),
+//     ).toEqual(expectedSleepInterval);
+//   });
+
+//   it('should handle sleep interval with same start and end time', () => {
+//     const notificationTimeLocal = new Date('2024-03-10T12:00:00');
+//     const timeSleepSettings: TimeSleepSettings = {
+//       ...baseTimeSleepSettings,
+//       generalTimeSleepData: {
+//         up: { hours: 7, minutes: 0 },
+//         down: { hours: 7, minutes: 0 },
+//       },
+//     };
+//     const expectedSleepInterval = {
+//       start: new Date('2024-03-10T07:00:00'),
+//       end: new Date('2024-03-11T07:00:00'),
+//     };
+//     expect(
+//       notificationService.getSleepInterval(
+//         notificationTimeLocal,
+//         timeSleepSettings,
+//       ),
+//     ).toEqual(expectedSleepInterval);
+//   });
+// });
+// it('should not change notification time if sleep settings are disabled', () => {
+//   const notificationTimeUTC = new Date('2024-03-10T10:00:00Z');
+//   const timeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: false,
+//     isDayByDayOptionEnabled: false,
+//     generalTimeSleepData: generalTimeSleepDataDefault,
+//     // Другие поля настроек...
+//   };
+//   const timeZone = 'Europe/Moscow';
+
+//   const result = notificationService.correctNotificationTimeForSleep(
+//     notificationTimeUTC,
+//     timeSleepSettings,
+//     timeZone,
+//   );
+//   expect(result).toEqual(notificationTimeUTC);
+// });
+// =========
+// =========
+// =========
+// =========
+// =========
+// it('should not change notification time if sleep settings are disabled', () => {
+//   const notificationTimeUTC = new Date('2024-03-10T10:00:00Z');
+//   const timeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: false,
+//     isDayByDayOptionEnabled: false,
+//     generalTimeSleepData: generalTimeSleepDataDefault,
+//     // Другие поля настроек...
+//   };
+//   const timeZone = 'Europe/Moscow';
+
+//   const result = notificationService.correctNotificationTimeForSleep(
+//     notificationTimeUTC,
+//     timeSleepSettings,
+//     timeZone,
+//   );
+//   expect(result).toEqual(notificationTimeUTC);
+// });
+// it('should not change notification time if it is outside sleep interval (before sleep)', () => {
+//   const mockTimeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: true,
+//     isDayByDayOptionEnabled: false,
+//     generalTimeSleepData: {
+//       up: { hours: 7, minutes: 0 },
+//       down: { hours: 23, minutes: 0 },
+//     },
+//   };
+//   const mockTimeZone = 'Europe/Moscow';
+// 	const initialNotificationTimeUTC = new Date('2024-03-10T19:30:00Z'); // 22:30 in Moscow
+//   const correctedTime = notificationService.correctNotificationTimeForSleep(
+//     initialNotificationTimeUTC,
+//     mockTimeSleepSettings,
+//     mockTimeZone,
+//   );
+//   expect(correctedTime).toEqual(initialNotificationTimeUTC);
+// });
+
+// it('should not change notification time if it is outside sleep interval (after wake up)', () => {
+//   const mockTimeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: true,
+//     isDayByDayOptionEnabled: false,
+//     generalTimeSleepData: {
+//       up: { hours: 7, minutes: 0 },
+//       down: { hours: 23, minutes: 0 },
+//     },
+//   };
+//   const mockTimeZone = 'Europe/Moscow';
+//   const initialNotificationTimeUTC = new Date('2024-03-11T05:00:00Z'); // 08:00 in Moscow
+//   const correctedTime = notificationService.correctNotificationTimeForSleep(
+//     initialNotificationTimeUTC,
+//     mockTimeSleepSettings,
+//     mockTimeZone,
+//   );
+//   expect(correctedTime).toEqual(initialNotificationTimeUTC);
+// });
+
+// it('should correct notification time if it is within sleep interval (midnight)', () => {
+//   const mockTimeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: true,
+//     isDayByDayOptionEnabled: false,
+//     generalTimeSleepData: {
+//       up: { hours: 8, minutes: 30 },
+//       down: { hours: 22, minutes: 0 },
+//     },
+//   };
+//   const mockTimeZone = 'America/New_York';
+//   const initialNotificationTimeUTC = new Date('2024-03-11T05:00:00Z'); // 00:00 in New York
+//   const correctedTime = notificationService.correctNotificationTimeForSleep(
+//     initialNotificationTimeUTC,
+//     mockTimeSleepSettings,
+//     mockTimeZone,
+//   );
+//   const expectedCorrectedTimeUTC = new Date('2024-03-11T13:00:00Z'); // 08:30 + 30 min in New York
+//   expect(correctedTime).toEqual(expectedCorrectedTimeUTC);
+// });
+// it('should correct notification time if it is within sleep interval (midnight)', () => {
+//   const mockTimeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: true,
+//     isDayByDayOptionEnabled: false,
+//     generalTimeSleepData: {
+//       up: { hours: 8, minutes: 30 },
+//       down: { hours: 22, minutes: 0 },
+//     },
+//   };
+//   const mockTimeZone = 'America/New_York';
+//   const initialNotificationTimeUTC = new Date('2024-03-11T05:00:00Z'); // 00:00 in New York
+//   const correctedTime =
+//     notificationService.correctNotificationTimeForSleepReturnLocal(
+//       initialNotificationTimeUTC,
+//       mockTimeSleepSettings,
+//       mockTimeZone,
+//     );
+//   const expectedCorrectedTimeUTC = new Date('2024-03-11T13:00:00Z'); // 08:30 + 30 min in New York
+//   expect(correctedTime).toEqual(expectedCorrectedTimeUTC);
+// });
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// 111111111111111111111111111
+// it('should correct notification time if it is within sleep interval (early morning)', () => {
+//   const mockTimeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: true,
+//     isDayByDayOptionEnabled: false,
+//     generalTimeSleepData: {
+//       up: { hours: 9, minutes: 0 },
+//       down: { hours: 22, minutes: 0 },
+//     },
+//   };
+//   const mockTimeZone = 'Asia/Tokyo';
+//   const initialNotificationTimeUTC = new Date('2024-03-10T22:00:00Z'); // 07:00 in Tokyo
+//   const correctedTime = notificationService.correctNotificationTimeForSleep(
+//     initialNotificationTimeUTC,
+//     mockTimeSleepSettings,
+//     mockTimeZone,
+//   );
+//   const expectedCorrectedTimeUTC = new Date('2024-03-11T00:30:00Z'); // 09:30 in Tokyo
+//   expect(correctedTime).toEqual(expectedCorrectedTimeUTC);
+// });
+//
+//
+//
+//
+//
+//
+//
+// it('should correct notification time if it is within sleep interval (day by day settings)', () => {
+//   const mockTimeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: true,
+//     isDayByDayOptionEnabled: true,
+//     generalTimeSleepData: {
+//       up: { hours: 8, minutes: 0 },
+//       down: { hours: 23, minutes: 0 },
+//     },
+//     dayByDayTimeSleepData: {
+//       monday: {
+//         up: { hours: 7, minutes: 30 },
+//         down: { hours: 22, minutes: 30 },
+//       },
+//     },
+//   };
+//   const mockTimeZone = 'Europe/London';
+//   const initialNotificationTimeUTC = new Date('2024-03-11T06:00:00Z'); // 06:00 in London (Monday)
+//   const correctedTime = notificationService.correctNotificationTimeForSleep(
+//     initialNotificationTimeUTC,
+//     mockTimeSleepSettings,
+//     mockTimeZone,
+//   );
+//   const expectedCorrectedTimeUTC = new Date('2024-03-11T07:00:00Z'); // 07:30 + 30 min in London
+//   expect(correctedTime).toEqual(expectedCorrectedTimeUTC);
+// });
+// it('should correctly determine sleep interval for the given notification time', () => {
+//   const mockTimeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: true,
+//     isDayByDayOptionEnabled: false,
+//     generalTimeSleepData: {
+//       up: { hours: 7, minutes: 0 },
+//       down: { hours: 23, minutes: 0 },
+//     },
+//   };
+//   const mockNotificationTimeLocal = new Date('2024-03-10T01:00:00');
+
+//   const sleepInterval = notificationService.getSleepInterval(
+//     mockNotificationTimeLocal,
+//     mockTimeSleepSettings,
+//   );
+
+//   expect(sleepInterval.start.getHours()).toBe(23);
+//   expect(sleepInterval.start.getMinutes()).toBe(0);
+//   expect(sleepInterval.end.getHours()).toBe(7);
+//   expect(sleepInterval.end.getMinutes()).toBe(0);
+//   expect(sleepInterval.end.getDate()).toBe(
+//     mockNotificationTimeLocal.getDate() + 1,
+//   );
+// });
+
+// it('should correct the notification time to after the sleep period', () => {
+//   const mockTimeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: true,
+//     isDayByDayOptionEnabled: false,
+//     generalTimeSleepData: {
+//       up: { hours: 7, minutes: 0 },
+//       down: { hours: 23, minutes: 0 },
+//     },
+//   };
+//   const mockTimeZone = 'Europe/Moscow';
+//   const initialNotificationTimeUTC = new Date('2024-03-10T22:00:00Z');
+//   console.log('Initial notification time (UTC):', initialNotificationTimeUTC);
+
+//   const localTimeInMoscow = utcToZonedTime(
+//     initialNotificationTimeUTC,
+//     mockTimeZone,
+//   );
+//   console.log('Initial notification time (Moscow):', localTimeInMoscow);
+
+//   const correctedTime = notificationService.correctNotificationTimeForSleep(
+//     initialNotificationTimeUTC,
+//     mockTimeSleepSettings,
+//     mockTimeZone,
+//   );
+//   console.log('Corrected notification time (UTC):', correctedTime);
+
+//   const correctedTimeInMoscow = utcToZonedTime(correctedTime, mockTimeZone);
+//   console.log('Corrected notification time (Moscow):', correctedTimeInMoscow);
+
+//   // ...
+// });
+
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+// it('should correct the notification time to after the sleep period', () => {
+//   const mockTimeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: true,
+//     isDayByDayOptionEnabled: false,
+//     generalTimeSleepData: {
+//       up: { hours: 7, minutes: 0 },
+//       down: { hours: 23, minutes: 0 },
+//     },
+//   };
+//   const mockTimeZone = 'Europe/Moscow';
+//   const initialNotificationTimeUTC = new Date('2024-03-10T22:00:00Z');
+//   console.log('Initial notification time (UTC):', initialNotificationTimeUTC);
+
+//   const localTimeInMoscow = utcToZonedTime(
+//     initialNotificationTimeUTC,
+//     mockTimeZone,
+//   );
+//   console.log('Initial notification time (Moscow):', localTimeInMoscow);
+
+//   const correctedTime = notificationService.correctNotificationTimeForSleep(
+//     initialNotificationTimeUTC,
+//     mockTimeSleepSettings,
+//     mockTimeZone,
+//   );
+
+//   const correctedTimeInMoscow = utcToZonedTime(correctedTime, mockTimeZone);
+//   console.log('Corrected notification time (Moscow):', correctedTimeInMoscow);
+
+//   expect(correctedTimeInMoscow.getHours()).toBeGreaterThanOrEqual(7);
+//   expect(correctedTimeInMoscow.getMinutes()).toBe(30);
+// });
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+// it('should correct the notification time to after the sleep period', () => {
+//   const mockTimeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: true,
+//     isDayByDayOptionEnabled: false,
+//     generalTimeSleepData: {
+//       up: { hours: 7, minutes: 0 },
+//       down: { hours: 23, minutes: 0 },
+//     },
+//   };
+//   const mockTimeZone = 'Europe/Moscow';
+//   const initialNotificationTimeUTC = new Date('2024-03-10T22:00:00Z'); // 01:00 in Moscow, within the sleep period
+//   const localTimeInMoscow = utcToZonedTime(
+//     initialNotificationTimeUTC,
+//     mockTimeZone,
+//   );
+//   console.log(
+//     'initialNotificationTimeUTC',
+//     initialNotificationTimeUTC.toString(),
+//   );
+//   console.debug('localTimeInMoscow', localTimeInMoscow.toString());
+//   const correctedTime = notificationService.correctNotificationTimeForSleep(
+//     initialNotificationTimeUTC,
+//     mockTimeSleepSettings,
+//     mockTimeZone,
+//   );
+
+//   console.log('correctedTime', correctedTime.toString());
+//   // Проверяем, что корректированное время выходит за пределы периода сна
+//   const correctedTimeInMoscow = utcToZonedTime(correctedTime, mockTimeZone);
+// });
+// it('should correctly handle time correction when sleep settings are disabled', () => {
+//   const notificationTimeUTC = new Date('2024-03-10T15:00:00Z');
+//   const timeSleepSettings: TimeSleepSettings = {
+//     isTimeSleepEnabled: false,
+//     isDayByDayOptionEnabled: false,
+//     generalTimeSleepData: generalTimeSleepDataDefault,
+//     // Остальные настройки...
+//   };
+//   const timeZone = 'Europe/Moscow';
+
+//   const correctedTime = service.correctNotificationTimeForSleep(
+//     notificationTimeUTC,
+//     timeSleepSettings,
+//     timeZone,
+//   );
+//   expect(correctedTime).toEqual(notificationTimeUTC);
+// });
+
+// Дополнительные тесты...
+// });
+// // import { CupboardClass } from '@/user-data-storage/user-data-storage.service';
+// // import { getFullUrl } from 'test/utils/helpers/getFullUrl';
+// // import request from 'supertest';
+// // import { loginAndGetToken } from 'test/utils/helpers/loginAndGetToken';
+// // import { restoreDb } from 'test/utils/helpers/restoreDb';
+// // import { AnswerType } from '@/common/types/frontend/types';
+// // import {
+// //   diffInMinutes,
+// //   diffInHours,
+// //   diffInFullTime,
+// // } from 'test/utils/timeFormaters';
+// // import { validateInitialCupboardState } from 'test/utils/helpers/validateInitialCupboardState';
+// // import { addMonths, addWeeks } from 'date-fns';
+// // import { createTestUtils } from 'test/utils/utils';
+// import { TimeSleepSettings } from '@/aggregate/entities/settings-types';
+// import { NotificationService } from '@/notification/notification.service';
+// import { SettingsService } from '@/settings/settings.service';
+// import { TestingModule, Test } from '@nestjs/testing';
+// import { generalTimeSleepDataDefault } from '../../prisma/mock-data/user-settings-templates';
+// import { EventEmitter2 } from '@nestjs/event-emitter';
+
+// describe('NotificationService', () => {
+//   let service: NotificationService;
+
+//   beforeEach(async () => {
+//     const mockEventEmitter = {
+//       // Здесь добавляем моки для методов, которые используются в сервисе
+//       emit: jest.fn(),
+//     };
+
+//     const module: TestingModule = await Test.createTestingModule({
+//       providers: [
+//         NotificationService,
+//         {
+//           provide: SettingsService,
+//           useValue: {
+//             // Мок для SettingsService, если он используется внутри NotificationService
+//           },
+//         },
+//         {
+//           provide: EventEmitter2,
+//           useValue: mockEventEmitter, // Предоставляем мок EventEmitter2
+//         },
+//       ],
+//     }).compile();
+
+//     service = module.get<NotificationService>(NotificationService);
+//   });
+//   it('should correctly handle time correction when sleep settings are disabled', () => {
+//     const notificationTimeUTC = new Date('2024-03-10T15:00:00Z');
+//     const timeSleepSettings: TimeSleepSettings = {
+//       isTimeSleepEnabled: false,
+//       isDayByDayOptionEnabled: false,
+//       generalTimeSleepData: generalTimeSleepDataDefault,
+//       // Остальные настройки...
+//     };
+//     const timeZone = 'Europe/Moscow';
+
+//     const correctedTime = service.correctNotificationTimeForSleep(
+//       notificationTimeUTC,
+//       timeSleepSettings,
+//       timeZone,
+//     );
+//     expect(correctedTime).toEqual(notificationTimeUTC);
+//   });
+
+//   // Дополнительные тесты...
+// });

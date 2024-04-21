@@ -3,6 +3,9 @@ require('dotenv').config();
 export const APP_URL = `http://localhost:${process.env.APP_PORT}`;
 export const API_PREFIX = '/api/v1';
 export const TESTER_EMAIL = 'john.doe@example.com';
+// process.env.NODE_ENV === 'development'
+//   ? 'yanagae@gmail.com'
+//   : 'john.doe@example.com';
 export const TESTER_PASSWORD = 'secret';
 export const ADMIN_EMAIL = 'admin@example.com';
 export const ADMIN_PASSWORD = 'secret';

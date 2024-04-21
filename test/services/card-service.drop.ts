@@ -201,7 +201,7 @@ describe('CardsService', () => {
     await cardsService.update(card.id, updateCardDto);
 
     expect(prismaService.card.update).toHaveBeenCalledWith(expectedUpdateArg);
-    expect(notificationService.rescheduleNotification).toHaveBeenCalledWith(
+    expect(notificationService.rescheduleEmailNotification).toHaveBeenCalledWith(
       card.userId,
       expectedNotificationTime,
     );
@@ -217,7 +217,7 @@ describe('CardsService', () => {
     await cardsService.update(card.id, updateCardDto);
 
     expect(prismaService.card.update).toHaveBeenCalledWith(expectedUpdateArg);
-    expect(notificationService.rescheduleNotification).not.toHaveBeenCalled();
+    expect(notificationService.rescheduleEmailNotification).not.toHaveBeenCalled();
   });
 });
 // import { CardsService } from '@/cards/cards.service';
