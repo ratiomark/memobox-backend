@@ -90,6 +90,7 @@ model User {
   // 
   language            String?              @default("en")
   timezone            String?              @default("UTC")
+  country             String?              @default("unknown")
   // 
   shelf               Shelf[]
   box                 Box[]
@@ -116,6 +117,7 @@ model Shelf {
   isCollapsed         Boolean              @default(true)
   missedTrainingValue MissedTrainingValue? @default(none)
   isDeleted           Boolean?             @default(false)
+  notificationEnabled Boolean?             @default(true)
   // 
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @default(now()) @updatedAt

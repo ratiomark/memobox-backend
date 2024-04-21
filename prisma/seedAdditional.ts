@@ -144,6 +144,7 @@ async function createSeedsInDB(index: number) {
         missedTrainingValue: 'none',
         index: 0,
         isDeleted: false,
+        notificationEnabled: true,
       },
     ];
     const createdShelves = await prismaExtended.shelf.createManyAndReturn({
@@ -284,8 +285,8 @@ async function createSeedsInDB(index: number) {
     await prisma.dataAndSettingsJson.create({
       data: {
         userId,
-        jsonSavedData: jsonSavedDataDefault,
-        jsonSettings: jsonSettingsDefault,
+        jsonSavedData: jsonSavedDataDefault as unknown as Prisma.InputJsonValue,
+        jsonSettings: jsonSettingsDefault as unknown as Prisma.InputJsonValue,
       },
     });
     console.log('✔️ json saved data and settings');

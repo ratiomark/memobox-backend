@@ -185,6 +185,7 @@ async function createSeedsInDB() {
         missedTrainingValue: 'none',
         index: 0,
         isDeleted: false,
+        notificationEnabled: true,
       },
       // {
       //   id: shelfB,
@@ -378,8 +379,8 @@ async function createSeedsInDB() {
     await prisma.dataAndSettingsJson.create({
       data: {
         userId,
-        jsonSavedData: jsonSavedDataDefault,
-        jsonSettings: jsonSettingsDefault,
+        jsonSavedData: jsonSavedDataDefault as unknown as Prisma.InputJsonValue,
+        jsonSettings: jsonSettingsDefault as unknown as Prisma.InputJsonValue,
       },
     });
     console.log('✔️ json saved data and settings');
