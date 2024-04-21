@@ -70,8 +70,8 @@ export class SessionService {
         id: criteria.id
           ? criteria.id
           : excludeId
-          ? { not: { equals: excludeId } }
-          : undefined,
+            ? { not: { equals: excludeId } }
+            : undefined,
       },
       data: {
         deletedAt: new Date(),
