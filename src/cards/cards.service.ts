@@ -60,13 +60,18 @@ export class CardsService {
         cardsWithAnswer,
         now,
       );
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { timezone: true },
+    });
     const updatesJson = updates.map((u) => JSON.stringify(u));
     const query = `SELECT update_cards_after_training($1::jsonb[])`;
     await this.prisma.$executeRawUnsafe(query, updatesJson);
-    this.logger.log(cardsWithAnswer.timezone); //в моем случае Asia/Jerusalem
+    this.logger.log(user!.timezone); //в моем случае Asia/Jerusalem
+
     void this.cardDataProcessor.handleNotificationAfterTraining(
       userId,
-      cardsWithAnswer.timezone,
+      user!.timezone!,
     );
     return updates;
   }
