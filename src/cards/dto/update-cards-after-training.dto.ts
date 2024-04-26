@@ -70,8 +70,8 @@ export class TrainingResponseDto {
   @Type(() => CardDetails)
   responses: CardDetails[];
 
-  @IsString()
-  timezone: string;
+  // @IsString()
+  // timezone: string;
 }
 // [cardId: string]: TrainingCardResponse;
 // export class TrainingBodyDto {
