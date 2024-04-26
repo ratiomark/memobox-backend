@@ -58,7 +58,7 @@ export class AuthController {
   @IsPublic()
   async register(
     @Body() createUserDto: AuthRegisterLoginDto,
-  ): Promise<void | { hash: string }> {
+  ): Promise<void | { id: string }> {
     return this.authService.register(createUserDto);
   }
 

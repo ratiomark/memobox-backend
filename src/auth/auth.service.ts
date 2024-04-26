@@ -286,7 +286,7 @@ export class AuthService {
   async register(
     dto: AuthRegisterLoginDto,
     // language: string,
-  ): Promise<void | { hash: string }> {
+  ): Promise<void | { id: string }> {
     this.logger.log('register new user - start');
     const language = dto.language;
     const hash = crypto
@@ -294,7 +294,7 @@ export class AuthService {
       .update(randomStringGenerator())
       .digest('hex');
 
-    await this.usersService.create({
+    const user = await this.usersService.create({
       ...dto,
       email: dto.email.toLowerCase(),
       roleId: RoleEnum.USER,
@@ -319,6 +319,8 @@ export class AuthService {
     });
 
     this.logger.log('register new user - end');
+    return { id: user.id };
+
     // return this.devResponseService.sendResponseIfDev({ hash });
     // }
   }
