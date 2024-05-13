@@ -61,8 +61,10 @@ export class ServerLessService implements OnModuleInit {
       //   JSON.stringify(data, null, 3),
       // );
     } catch (error) {
-      this.logger.error('Error adding batch of notification items:', error);
-      throw error;
+      this.logger.error(
+        'Error addOrUpdateEmailTrainingNotificationList:',
+        error,
+      );
     }
   }
 
@@ -87,8 +89,8 @@ export class ServerLessService implements OnModuleInit {
         ),
       );
     } catch (error) {
-      this.logger.error('Error adding batch of notification items:', error);
-      throw error;
+      this.logger.error('Error createIndexPushNotification:', error);
+      // throw error;
     }
   }
 
@@ -108,8 +110,8 @@ export class ServerLessService implements OnModuleInit {
         ),
       );
     } catch (error) {
-      this.logger.error('Error adding batch of notification items:', error);
-      throw error;
+      this.logger.error('Error createIndexEmailNotifications:', error);
+      // throw error;
     }
   }
 
@@ -160,7 +162,7 @@ export class ServerLessService implements OnModuleInit {
       );
     } catch (error) {
       this.logger.error('Error sendAllEmailNotifications:', error);
-      throw error;
+      // throw error;
     }
   }
   async sendAllPushNotifications() {
@@ -178,7 +180,7 @@ export class ServerLessService implements OnModuleInit {
       );
     } catch (error) {
       this.logger.error('Error sendAllEmailNotifications:', error);
-      throw error;
+      // throw error;
     }
   }
 
@@ -212,8 +214,11 @@ export class ServerLessService implements OnModuleInit {
       //   JSON.stringify(data, null, 3),
       // );
     } catch (error) {
-      this.logger.error('Error adding batch of notification items:', error);
-      throw error;
+      this.logger.error(
+        'Error addOrUpdatePushTrainingNotificationList:',
+        error,
+      );
+      // throw error;
     }
   }
 
@@ -243,8 +248,8 @@ export class ServerLessService implements OnModuleInit {
       //   JSON.stringify(data, null, 3),
       // );
     } catch (error) {
-      this.logger.error('Error adding batch of notification items:', error);
-      throw error;
+      this.logger.error('Error removeTrainingPushNotifications:', error);
+      // throw error;
     }
   }
 
