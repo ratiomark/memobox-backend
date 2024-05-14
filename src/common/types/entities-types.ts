@@ -30,5 +30,6 @@ export interface CardTrainingData {
 export interface TrainingOutcome {
   boxId: BoxId;
   nextTraining: string; // date.toISOString()
+  lastTraining: string | Date;
   id: CardId;
 }

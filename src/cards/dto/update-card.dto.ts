@@ -40,7 +40,7 @@ export class UpdateCardDto extends PartialType(CreateCardDto) {
   @Transform(({ obj }) => obj.box?.specialType, { toClassOnly: true })
   specialType: string;
 
-  @Transform(({ value }) => (value ? value : '---'), { toClassOnly: true })
+  // @Transform(({ value }) => (value ? value : '---'), { toClassOnly: true })
   lastTraining: Date | string;
 
   state: 'wait' | 'train';
