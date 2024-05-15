@@ -8,7 +8,8 @@ BEGIN
         UPDATE card
         SET
             "boxId" = (card_update ->> 'boxId')::uuid,
-            "nextTraining" = (card_update ->> 'nextTraining')::timestamp
+            "nextTraining" = (card_update ->> 'nextTraining')::timestamp,
+            "lastTraining" = (card_update ->> 'lastTraining')::timestamp
         WHERE "id" = (card_update ->> 'id')::uuid;
     END LOOP;
 END;
