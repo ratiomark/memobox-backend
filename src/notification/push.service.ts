@@ -119,7 +119,7 @@ export class PushService implements OnModuleInit {
       tag: 'trainingNotification' as const,
       icon: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_the_United_States_%28DoS_ECA_Color_Standard%29.svg',
       data: {
-        url: '/training/all/all' as const,
+        url: '/training/all/all?utm_source=push&utm_medium=training_notification' as const,
       },
     };
     switch (language) {
