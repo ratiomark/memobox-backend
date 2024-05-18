@@ -41,6 +41,6 @@ interface PushNotificationBasePayload {
 export interface PushTrainingNotificationPayload
   extends PushNotificationBasePayload {
   data: {
-    url: '/training/all/all';
+    url: '/training/all/all?utm_source=push&utm_medium=training_notification';
   };
 }
