@@ -498,7 +498,12 @@ export class CupboardClass {
         targetBox.timing,
       );
       // no matter what answer is, we should move card to the box 1
-      return { boxId: currentBox.nextBoxIdKey, id, nextTraining };
+      return {
+        boxId: currentBox.nextBoxIdKey,
+        id,
+        nextTraining,
+        lastTraining: now,
+      };
     } else if (currentBox.index === 1 && answer !== 'good') {
       const targetBox = currentBox;
       // this.logger.log('targetBox', targetBox);
@@ -508,7 +513,7 @@ export class CupboardClass {
         targetBox.timing,
       );
       // no matter what answer is, we should not move card to the new cards box
-      return { boxId, id, nextTraining };
+      return { boxId, id, nextTraining, lastTraining: now };
     }
 
     // console.log(currentBox);
@@ -531,7 +536,7 @@ export class CupboardClass {
     // console.log(targetBox.timing);
     const nextTraining = this.calculateNextTrainingTime(now, targetBox.timing);
     // targetBoxId = targetBoxId
-    return { boxId: targetBoxId, id, nextTraining };
+    return { boxId: targetBoxId, id, nextTraining, lastTraining: now };
   }
 
   calculateNextTrainingTime(now: Date, timing: TimingBlock): string {
