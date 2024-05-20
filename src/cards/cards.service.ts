@@ -67,7 +67,7 @@ export class CardsService {
     const updatesJson = updates.map((u) => JSON.stringify(u));
     const query = `SELECT update_cards_after_training($1::jsonb[])`;
     await this.prisma.$executeRawUnsafe(query, updatesJson);
-    this.logger.log(user!.timezone); //в моем случае Asia/Jerusalem
+    // this.logger.log(updatesJson); //в моем случае Asia/Jerusalem
 
     void this.cardDataProcessor.handleNotificationAfterTraining(
       userId,
