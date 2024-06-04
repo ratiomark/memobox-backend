@@ -9,7 +9,11 @@ import { ServerLessModule } from '@/server-less/server-less.module';
 import { NotificationDataProcessorService } from './notification-data-processor.service';
 
 @Module({
-  imports: [SettingsModule, AwsModule, ServerLessModule],
+  imports: [
+    SettingsModule,
+    // AwsModule,
+    ServerLessModule,
+  ],
   controllers: [NotificationController],
   providers: [
     NotificationDataProcessorService,

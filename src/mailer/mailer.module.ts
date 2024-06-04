@@ -5,6 +5,6 @@ import { AwsModule } from '@/aws/aws.module';
 @Module({
   providers: [MailerService],
   exports: [MailerService],
-  imports: [AwsModule],
+  // imports: [AwsModule],
 })
 export class MailerModule {}

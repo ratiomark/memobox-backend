@@ -4,15 +4,16 @@ import { ConfigService } from '@nestjs/config';
 import sgMail, { MailDataRequired } from '@sendgrid/mail';
 import Handlebars from 'handlebars';
 import { AllConfigType } from '@/config/config.type';
-import { text } from 'express';
-import { LambdaService } from '@/aws/lambda.service';
 
 @Injectable()
 export class MailerService {
-  constructor(private readonly lambda: LambdaService) {
-    // sgMail.setApiKey(
-    //   this.configService.getOrThrow('mail.sendgridApiKey', { infer: true }),
-    // );
+  constructor(
+    // private readonly lambda: LambdaService
+    private readonly configService: ConfigService<AllConfigType>,
+  ) {
+    sgMail.setApiKey(
+      this.configService.getOrThrow('mail.sendgridApiKey', { infer: true }),
+    );
   }
 
   async sendMail({

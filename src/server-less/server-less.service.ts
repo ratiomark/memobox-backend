@@ -6,7 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
 import { MailData } from '@/mail/interfaces/mail-data.interface';
 import { PushTrainingNotification } from '@/notification/types/types';
-import { UserId } from 'aws-sdk/clients/appstream';
+import { UserId } from '@/common/types/prisma-entities';
 import axios from 'axios';
 
 @Injectable()

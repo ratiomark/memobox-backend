@@ -35,8 +35,8 @@ import {
 import { DevResponseService } from '@/dev-response/dev-response.service';
 import { TeapotException } from '@/common/exceptions/teapot-exception';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Lambda } from 'aws-sdk';
-import { LambdaService } from '@/aws/lambda.service';
+// import { Lambda } from 'aws-sdk';
+// import { LambdaService } from '@/aws/lambda.service';
 import { register } from 'module';
 import { EMAIL_TYPES } from '@/common/const/email-types';
 import { UserLoginResponseDto } from '@/users/dto/user-login-response.dto';

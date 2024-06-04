@@ -22,6 +22,7 @@ import { RemoveShelfDto } from './dto/remove-shelf.dto';
 import { LOCK_KEYS } from '@/common/const/lock-keys-patterns';
 import { Lock } from '@/common/decorators/lock.decorator';
 import { ShelfUpdateBoxesListDto } from './dto/update-boxes-list.dto';
+import { SwaggerCreateNewShelf } from './swagger';
 
 @ApiTags('Shelves')
 @Controller({
@@ -33,6 +34,7 @@ export class ShelvesController {
 
   @Post()
   @Lock(LOCK_KEYS.creatingNewShelf)
+  @SwaggerCreateNewShelf()
   @HttpCode(HttpStatus.CREATED)
   async create(
     @GetCurrentUser('id') userId: User['id'],

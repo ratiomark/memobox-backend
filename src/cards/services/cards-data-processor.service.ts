@@ -1,5 +1,5 @@
 import { NEW_CARDS_COUNTS_AS_TRAIN } from '@/common/const/flags';
-import { BoxId, ShelfId } from '@/common/types/prisma-entities';
+import { BoxId, ShelfId, UserId } from '@/common/types/prisma-entities';
 import { NotificationService } from '@/notification/notification.service';
 import {
   CupboardClass,
@@ -8,7 +8,6 @@ import {
 import { Injectable, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { BoxSpecialType } from '@prisma/client';
-import { UserId } from 'aws-sdk/clients/appstream';
 import { plainToClass } from 'class-transformer';
 import { I18nService } from 'nestjs-i18n';
 import { PrismaService } from 'nestjs-prisma';

@@ -6,7 +6,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test } from '@nestjs/testing';
 import { utcToZonedTime } from 'date-fns-tz';
 import { getDay } from 'date-fns';
-import { DynamoDbService } from '@/aws/dynamo-db.service';
+// import { DynamoDbService } from '@/aws/dynamo-db.service';
 import { RedisService } from '@/redis/redis.service';
 import { PrismaService } from 'nestjs-prisma';
 import { ServerLessService } from '@/server-less/server-less.service';
@@ -25,7 +25,7 @@ describe('NotificationProcessorService', () => {
   let notificationService: NotificationDataProcessorService;
   let mockEventEmitter: Partial<EventEmitter2>;
   let mockSettingsService: Partial<SettingsService>;
-  let mockDynamoService: Partial<DynamoDbService>;
+  // let mockDynamoService: Partial<DynamoDbService>;
   let mockRedisService: Partial<RedisService>;
   let mockPrismaService: Partial<PrismaService>;
   let serverless: Partial<ServerLessService>;
@@ -36,7 +36,7 @@ describe('NotificationProcessorService', () => {
     mockSettingsService = {
       // здесь мокируем методы, если они используются в вашем сервисе
     };
-    mockDynamoService = {};
+    // mockDynamoService = {};
     serverless = {};
     configService = {};
     mockRedisService = {
@@ -63,10 +63,10 @@ describe('NotificationProcessorService', () => {
           provide: PrismaService,
           useValue: mockPrismaService,
         },
-        {
-          provide: DynamoDbService,
-          useValue: mockDynamoService,
-        },
+        // {
+        //   provide: DynamoDbService,
+        //   useValue: mockDynamoService,
+        // },
         {
           provide: RedisService,
           useValue: mockRedisService,

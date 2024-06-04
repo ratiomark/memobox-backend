@@ -4,7 +4,7 @@ import { IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 import { lowerCaseTransformer } from '@/utils/transformers/lower-case.transformer';
 
 export class CreateShelfDto {
-  @ApiProperty({ example: 'biology' })
+  @ApiProperty({ example: 'Biology' })
   @IsNotEmpty()
   // @IsEmail()
   // @Validate(IsNotExist, ['USER'], { message: 'emailAlreadyExists' })

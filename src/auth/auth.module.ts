@@ -23,7 +23,7 @@ import { ServerLessModule } from '@/server-less/server-less.module';
     PassportModule,
     MailModule,
     JwtModule.register({}),
-    AwsModule,
+    // AwsModule,
     ServerLessModule,
   ],
   controllers: [AuthController],

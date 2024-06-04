@@ -6,7 +6,7 @@ import {
   loggingMiddleware,
 } from 'nestjs-prisma';
 import { UsersModule } from './users/users.module';
-import { FilesModule } from './files/files.module';
+// import { FilesModule } from './files/files.module';
 import { AuthModule } from './auth/auth.module';
 import databaseConfig from './config/database.config';
 import authConfig from './config/auth.config';
@@ -30,7 +30,7 @@ import { MailModule } from './mail/mail.module';
 import { HomeModule } from './home/home.module';
 import { AllConfigType } from './config/config.type';
 import { SessionModule } from './session/session.module';
-import { MailerModule } from './mailer/mailer.module';
+// import { MailerModule } from './mailer/mailer.module';
 import { DevResponseModule } from './dev-response/dev-response.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtGuard } from './common/guards';
@@ -46,10 +46,10 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { RedisModule } from './redis/redis.module';
-import { AwsModule } from './aws/aws.module';
-import { LambdaService } from './aws/lambda.service';
+// import { AwsModule } from './aws/aws.module';
+// import { LambdaService } from './aws/lambda.service';
 import { ServerLessModule } from './server-less/server-less.module';
-import awsConfig from './config/aws.config';
+// import awsConfig from './config/aws.config';
 
 @Module({
   imports: [
@@ -59,7 +59,7 @@ import awsConfig from './config/aws.config';
       load: [
         databaseConfig,
         authConfig,
-        awsConfig,
+        // awsConfig,
         appConfig,
         EmailConfig,
         fileConfig,
@@ -118,10 +118,10 @@ import awsConfig from './config/aws.config';
     // CacheModule.register(),
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
-    AwsModule,
+    // AwsModule,
     RedisModule,
     UsersModule,
-    FilesModule,
+    // FilesModule,
     AuthModule,
     AuthFacebookModule,
     AuthGoogleModule,
@@ -130,7 +130,7 @@ import awsConfig from './config/aws.config';
     ForgotModule,
     SessionModule,
     MailModule,
-    MailerModule,
+    // MailerModule,
     HomeModule,
     DevResponseModule,
     ShelvesModule,
@@ -153,7 +153,7 @@ import awsConfig from './config/aws.config';
      * @see {@link https://nestjs-prisma.dev/docs/exception-filter}
      */
     providePrismaClientExceptionFilter(),
-    LambdaService,
+    // LambdaService,
   ],
 })
 export class AppModule {}

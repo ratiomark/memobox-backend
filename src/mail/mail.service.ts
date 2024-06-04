@@ -6,7 +6,7 @@ import { AllConfigType } from '@/config/config.type';
 import { MaybeType } from '../utils/types/maybe.type';
 import { MailerService } from '@/mailer/mailer.service';
 import path from 'path';
-import { LambdaService } from '@/aws/lambda.service';
+// import { LambdaService } from '@/aws/lambda.service';
 import { ServerLessService } from '@/server-less/server-less.service';
 
 @Injectable()
@@ -14,7 +14,7 @@ export class MailService {
   constructor(
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService<AllConfigType>,
-    private readonly lambda: LambdaService,
+    // private readonly lambda: LambdaService,
     private readonly serverless: ServerLessService,
   ) {}
 
