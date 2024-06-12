@@ -1,5 +1,4 @@
 import { DaysOfWeek, SleepPeriod } from '@/aggregate/entities/settings-types';
-import { sleep } from '@/utils/common/sleep';
 import { addMinutes, getDay, isWithinInterval, subMinutes } from 'date-fns';
 
 interface IsNotificationWithinSleepIntervalProps {
@@ -57,7 +56,6 @@ export const getNextDayOfWeek = (notificationTimeLocal: Date): DaysOfWeek => {
   ];
 
   const dayOfWeek = daysOfWeek[dayOfWeekNumber + 1];
-  // console.log('Day of week:', dayOfWeek);
   return dayOfWeek;
 };
 
