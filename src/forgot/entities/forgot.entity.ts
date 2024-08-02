@@ -6,7 +6,9 @@ export class ForgotEntity implements Forgot {
   @ApiProperty({ example: 1 })
   id: number;
 
-  @ApiProperty({ example: 'somehash123' })
+  @ApiProperty({
+    example: '2e1d14e7415b25a5c9006947ff6968a717bb50b3eac574e2abecb0a7f04c9c6d',
+  })
   hash: string;
 
   @ApiProperty({ type: UserEntity })
